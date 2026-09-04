@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/louis8791/sideby/schemas/itinerary.schema.json",
-  "title": "AI Couple Date Planner Public Itinerary",
+  "title": "Sideby Public Itinerary",
   "description": "A validated, public-safe itinerary. It contains no private input or private explanation.",
   "type": "object",
   "additionalProperties": false,

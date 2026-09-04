@@ -1,4 +1,4 @@
-# AI Couple Date Planner — Model / RAG Boundary
+# Sideby — Model / RAG Boundary
 
 ## 文件目的
 
@@ -107,4 +107,3 @@ data/fixtures/eval-cases.example.json 提供不含秘密的範例案例。實作
 ## 證據邊界
 
 JSON schema 通過只證明格式；離線評測只證明案例；本地生成只證明開發環境；雙裝置測試才涵蓋部分 Runtime；公開畫面與 Owner sign-off 仍須另外驗收。回報時不得把其中一層升格為完整產品能力。
-

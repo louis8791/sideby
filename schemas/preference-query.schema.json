@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/louis8791/sideby/schemas/preference-query.schema.json",
-  "title": "AI Couple Date Planner Preference Query",
+  "title": "Sideby Preference Query",
   "description": "Structured preference output for one partner in one date-planning session. Raw private text must not be returned to the other partner.",
   "type": "object",
   "additionalProperties": false,

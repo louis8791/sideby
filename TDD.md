@@ -1,4 +1,4 @@
-# AI Couple Date Planner MVP — TDD
+# Sideby — MVP TDD
 
 ## 1. 技術決策
 
@@ -142,4 +142,3 @@ Privacy Guard 必須在公開輸出前執行：
 ## 10. 未完成不代表通過
 
 本 TDD 只定義如何做與如何驗收。尚未有 App 實作、雙裝置測試、外部連結驗證或 Owner sign-off 時，必須回報為未驗證，不得以文件 commit 代替 Runtime acceptance。
-

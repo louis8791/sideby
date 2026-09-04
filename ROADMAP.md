@@ -1,4 +1,4 @@
-# AI Couple Date Planner MVP — ROADMAP
+# Sideby — MVP ROADMAP
 
 ## 交付原則
 
@@ -95,4 +95,3 @@
 ## 明確不排程項目
 
 CRM、商家後台、App 內付款、訂閱、社群、遊戲化、驚喜約會、住宿／SPA／酒吧／過夜、全臺資料、模型微調與大規模 RAG。
-
