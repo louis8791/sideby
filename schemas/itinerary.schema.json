@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/itinerary.schema.json",
+  "title": "Itinerary",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["itinerary_id", "title", "starts_at", "ends_at", "estimated_total_cost", "stops", "validation"],
+  "properties": {
+    "itinerary_id": {"type": "string"},
+    "title": {"type": "string"},
+    "starts_at": {"type": "string"},
+    "ends_at": {"type": "string"},
+    "estimated_total_cost": {"type": "number", "minimum": 0},
+    "public_reason": {"type": "string"},
+    "stops": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["venue_id", "arrives_at", "leaves_at", "estimated_cost"],
+        "properties": {
+          "venue_id": {"type": "string"},
+          "arrives_at": {"type": "string"},
+          "leaves_at": {"type": "string"},
+          "estimated_cost": {"type": "number", "minimum": 0},
+          "transport_from_previous": {"type": ["object", "null"]}
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hard_constraints_passed", "checked_at"],
+      "properties": {
+        "hard_constraints_passed": {"const": true},
+        "checked_at": {"type": "string"}
+      }
+    }
+  }
+}

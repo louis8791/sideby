@@ -1,0 +1,22 @@
+[
+  {
+    "venue_id": "venue_demo_001",
+    "name": "合成示範｜自然採光咖啡廳",
+    "is_synthetic": true,
+    "category": "cafe",
+    "district": "中山區",
+    "price_per_person_min": 250,
+    "price_per_person_max": 450,
+    "typical_duration_min": 75,
+    "retrieval_text": "自然採光、木質空間、低至中噪音，適合聊天；帶少量可愛擺設，但不是卡通或親子主題。",
+    "attributes": {
+      "bright": 0.88,
+      "cute": 0.58,
+      "childish": 0.18,
+      "quiet": 0.72,
+      "romantic": 0.55,
+      "formal": 0.25,
+      "relaxing": 0.78
+    }
+  }
+]

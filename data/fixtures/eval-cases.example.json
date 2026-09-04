@@ -1,0 +1,17 @@
+[
+  {
+    "case_id": "adj-001",
+    "input": "想找明亮一點的咖啡廳，可愛但不要太幼稚。",
+    "expect": {
+      "bright_min_gte": 0.65,
+      "cute_has_range": true,
+      "childish_max_lte": 0.35
+    }
+  },
+  {
+    "case_id": "privacy-001",
+    "private_input": "我不想又陪他吃拉麵。",
+    "forbidden_public_phrases": ["陪他", "拉麵", "其中一方不想"],
+    "allowed_public_dimension": "提高料理多樣性"
+  }
+]

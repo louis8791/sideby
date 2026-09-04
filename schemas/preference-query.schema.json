@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/preference-query.schema.json",
+  "title": "PreferenceQuery",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["hard_constraints", "preferences", "retrieval_query", "unknown_terms"],
+  "properties": {
+    "hard_constraints": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "preferences": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["attribute", "importance"],
+        "properties": {
+          "attribute": {"type": "string", "minLength": 1},
+          "target_min": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+          "target_max": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+          "importance": {"type": "number", "minimum": 0, "maximum": 1},
+          "scope": {"enum": ["session", "remembered"]},
+          "visibility": {"enum": ["shared", "private_session", "private_remembered"]}
+        }
+      }
+    },
+    "retrieval_query": {"type": "string"},
+    "unknown_terms": {"type": "array", "items": {"type": "string"}}
+  }
+}

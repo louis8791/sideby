@@ -1,0 +1,38 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# Next.js
+.next/
+out/
+
+# environment and secrets
+.env
+.env.*
+!.env.example
+
+# Supabase local
+.supabase/
+
+# tests / build
+coverage/
+playwright-report/
+test-results/
+
+# local and real data
+.local/
+data/demo/
+data/private/
+*.sqlite
+*.db
+
+# editors / OS
+.DS_Store
+.idea/
+.vscode/
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
