@@ -12,7 +12,7 @@ MVP 採模組化單體，不拆微服務。建議以 React、Next.js、TypeScrip
 
 「不使用 API」不影響應用 API、Realtime 或自管推論介面。應用後端維持模組化單體；必要的模型執行程序屬推論部署元件，前端不直接存取推論服務或向量索引。資料庫／同步的部署位置另行確認，不能把自管模型宣稱為全系統離線。
 
-分工：另一位成員負責前端 UIUX；使用者負責後端與模型／RAG。雙方共用下列應用 API 與 JSON 契約，先用合成資料驗證格式，再串真實後端。
+分工：另一位成員負責前端 UIUX；使用者負責應用後端、權限、規則與整合；模型／RAG 拆為獨立工作包，承接人待確認。協作者共用下列應用 API 與 JSON 契約，先用合成資料驗證格式，再串真實後端。
 
 ### 1.2 推論與推薦流程
 
@@ -36,6 +36,17 @@ MVP 採模組化單體，不拆微服務。建議以 React、Next.js、TypeScrip
 - 私密原文不進共用索引。個人查詢只在該使用者／Session 的權限邊界內處理，暫存與日誌不得洩漏內容。
 - 檢索結果是不可信資料，不能執行其中指令；公開說明僅接收驗證後的公開事實，不能以「用了 RAG」代替隱私檢查。
 - 模型檔、索引、快取位於專案根目錄下的明確子目錄；路徑、版本、來源、授權與重建方式需在實作時記錄，內容不進 Git。
+
+### 1.4 Phase 1B 已實作選擇（2026-09-04）
+
+- Next.js App Router＋TypeScript＋pg＋Zod；版本鎖定 package-lock.json。
+- 匿名 Bearer 憑證只存雜湊、七天到期；邀請碼 24 小時到期，A／B 固定兩個席位。
+- PostgreSQL 私有資料庫：anonymous_users、couples、couple_members、date_sessions、session_confirmations。其他下列資料表仍是後续規格。
+- 共同條件採 optimistic version，交易鎖序列化修改／確認；編輯後清空兩方確認。
+- Phase 1B 以 SSE＋500ms 查庫提供公開快照，10 秒心跳、30 秒在線期限、60 秒重連。尚未接 Supabase Realtime／RLS。
+- 應用 API 是唯一資料入口；共同狀態固定欄位輸出，不對前端開放資料表。每房間暫定一個 Session，重送建立回原 Session。
+- db/001_rooms.sql 為實際 migration；本機開發／測試使用可攜 PostgreSQL，資料、密碼與紀錄留在 .local/ 並排除 Git。
+- 已實作路由、公開狀態、輸入範圍與錯誤以 [BACKEND_API](docs/BACKEND_API.md) 為 Phase 1B 串接契約；下文完整 MVP API 不代表已全部可用。
 
 ## 2. 邏輯分層
 
@@ -191,4 +202,4 @@ Privacy Guard 必須在公開輸出前執行：
 
 ## 10. 未完成不代表通過
 
-本 TDD 只定義如何做與如何驗收。尚未有 App 實作、雙裝置測試、外部連結驗證或 Owner sign-off 時，必須回報為未驗證，不得以文件 commit 代替 Runtime acceptance。
+Phase 1B 已有可執行 API、migration 與真實 PostgreSQL／HTTP 整合測試；完整 MVP 下列各層仍依各自證據驗收。真實雙裝置、私密輸入隔離、模型／RAG、推薦、外部連結及 Owner sign-off 尚未完成，不得以文件或房間測試代替。
