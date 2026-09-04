@@ -20,7 +20,7 @@
 
 ### 排除
 
-住宿、SPA、酒吧與夜生活、過夜、長途旅遊、App 內付款、CRM、商家後台、訂閱、社群、即時聊天、遊戲化、驚喜約會、全臺擴張、模型微調與大量評論／照片 RAG。
+住宿、SPA、酒吧與夜生活、過夜、長途旅遊、App 內付款、CRM、商家後台、訂閱、社群、即時聊天、遊戲化、驚喜約會、全臺擴張、大型生成模型微調與大量評論／照片 RAG。小型需求分類器訓練與有條件的 SetFit 比較已納入，詳見 TDD §11。
 
 核心 Demo 不得依賴外部 API 才能完成；外部地點／路線服務只能作為可替換的補充。
 
@@ -213,13 +213,15 @@ Partner A 不得透過任何 API 取得 Partner B 的 raw_text、structured_inpu
 
 ## 13. 系統架構
 
-前端是 React、Next.js、TypeScript 的 Responsive Web／PWA；後端是 Next.js Server Routes 的模組化單體；資料庫使用 PostgreSQL；匿名身分、Realtime 與 Row Level Security 可由 Supabase 提供。生成與 Embedding 模型由團隊自行部署，結合核准場地資料的 RAG；不呼叫外部模型 API。前後端應用 API、自管推論內部介面與雙人同步保留；地點／路線為 optional adapter。
+前端是 React、Next.js、TypeScript 的 Responsive Web／PWA；後端是 Next.js Server Routes 的模組化單體；資料庫使用 PostgreSQL；匿名身分、Realtime 與 Row Level Security 可由 Supabase 提供（當前房間後端採 SSE，未接 Supabase RLS）。生成與 Embedding 模型由團隊自行部署，結合核准場地資料的 RAG；不呼叫外部模型 API。前後端應用 API、自管推論內部介面與雙人同步保留；本次不接 Google API，地點／路線以核准資料與本地交通矩陣提供。
+
+黑客松先行解析：需求表有人工答案後，用固定規則作基準，再訓練字元 TF-IDF＋Logistic Regression，處理 4–6 個核心屬性的方向。數值、單位及程度另有可檢查規則；模糊語意先釐清。SetFit 是可選比較，不預設已訓練；自管生成模型是後續經評測才接入的補充。完整標註、分組切分、防資料洩漏、保留題驗收及六小時工作安排以四份權威文件為準。
 
 RAG 文件保存 venue_id、來源、更新時間及索引版本，私密對話不進共用索引。候選經硬限制過濾、雙人計分與行程驗證後才產生公開結果；RAG 不取代這些程式規則。模型／索引失效不得偷偷切換雲端，模型型號與工具待目標硬體驗證後決定。
 
 資料流：雙方裝置 → Session／Auth／Validation → 解析器 → 硬限制過濾 → 偏好與雙人計分 → 行程組合 → 程式驗證 → Privacy Guard → 公開回應。
 
-API key 只放伺服器環境變數。外部 API 逾時時改用 curated dataset 與預先建立的交通矩陣。
+API key 只放伺服器環境變數。展示使用 curated dataset 與預先建立的交通矩陣；不匯入 Google Maps／Places 衍生內容。場地事實與主觀標籤要有來源、日期、情境、權利與審核；未知必要事實不能由模型補猜成可執行方案。
 
 ## 14. 非功能規格
 
@@ -235,7 +237,7 @@ API key 只放伺服器環境變數。外部 API 逾時時改用 curated dataset
 
 ## 15. MVP 驗收
 
-AC-01 至 AC-13 的正式清單位於 PRD.md。至少涵蓋雙裝置加入、公開同步、私密隔離、形容詞解析、三套完整行程、硬限制零違反、雙人適配、局部重排、本次學習、無私密洩漏、合作透明、外部連結與約會後學習。
+AC-01 至 AC-19 的正式清單位於 PRD.md。至少涵蓋雙裝置加入、公開同步、私密隔離、形容詞解析、三套完整行程、硬限制零違反、雙人適配、局部重排、本次學習、無私密洩漏、合作透明、外部連結、約會後學習、離線分類器評测、來源證據與不接 Google 的資料邊界。
 
 驗收必須區分 schema／單元／整合／雙裝置／公開畫面／外部服務／Owner 各層證據；其中一層通過不可冒充其他層已完成。
 

@@ -2,7 +2,7 @@
 
 ## 1. 技術決策
 
-MVP 採模組化單體，不拆微服務。建議以 React、Next.js、TypeScript、Server Routes、PostgreSQL、匿名身分與 Realtime 實作；外部地點／路線服務透過可替換 adapter 接入。
+MVP 採模組化單體，不拆微服務。建議以 React、Next.js、TypeScript、Server Routes、PostgreSQL、匿名身分與 Realtime 實作；本次不接 Google API，地點／路線以核准資料與本地交通矩陣提供。
 
 核心展示以整理好的大臺北場地資料與本地交通矩陣為基線，不能因外部 API 暫時不可用就無法產生結果。
 
@@ -18,15 +18,17 @@ MVP 採模組化單體，不拆微服務。建議以 React、Next.js、TypeScrip
 
 ```text
 前端 → 應用後端（身分與權限）
-     → 自管生成模型解析每人需求 → schema 驗證
+     → 小型需求分類器＋明確數值規則 → 必要時釐清 → schema 驗證
      → 程式硬篩選 → 自管 Embedding＋場地索引檢索
      → 檢查候選限制 → A／B 適配計分
      → 程式組合行程與完整時間／成本驗證
-     → 自管生成模型依核准公開事實撰寫理由
+     → 自管生成模型依核准公開事實撰寫理由（尚待實作）
      → Privacy Guard → 雙方公開狀態
 ```
 
 硬篩選限制必須套用至檢索候選集合；不足時可擴大合格集合內的召回，不能放寬硬限制來湊數。全程不依賴模型自行判定最終合法性。
+
+此為待實作流程：小型分類器是黑客松先行解析路徑，自管生成模型可在有驗證證據後補充未涵蓋語意；未接入前直接要求釐清，不假裝大型模型已完成解析。索引未就緒不能把規則排序標示為 RAG 成功；說明文字的中性模板只適用已驗證的行程。
 
 ### 1.3 場地 RAG 資料契約
 
@@ -41,7 +43,7 @@ MVP 採模組化單體，不拆微服務。建議以 React、Next.js、TypeScrip
 
 - Next.js App Router＋TypeScript＋pg＋Zod；版本鎖定 package-lock.json。
 - 匿名 Bearer 憑證只存雜湊、七天到期；邀請碼 24 小時到期，A／B 固定兩個席位。
-- PostgreSQL 私有資料庫：anonymous_users、couples、couple_members、date_sessions、session_confirmations。其他下列資料表仍是後续規格。
+- PostgreSQL 私有資料庫：anonymous_users、couples、couple_members、date_sessions、session_confirmations。其他下列資料表仍是後續規格。
 - 共同條件採 optimistic version，交易鎖序列化修改／確認；編輯後清空兩方確認。
 - Phase 1B 以 SSE＋500ms 查庫提供公開快照，10 秒心跳、30 秒在線期限、60 秒重連。尚未接 Supabase Realtime／RLS。
 - 應用 API 是唯一資料入口；共同狀態固定欄位輸出，不對前端開放資料表。每房間暫定一個 Session，重送建立回原 Session。
@@ -59,7 +61,7 @@ MVP 採模組化單體，不拆微服務。建議以 React、Next.js、TypeScrip
 ### 決策層
 
 1. Natural Language Parser：將自然語言轉成 preference-query schema。
-   使用自管生成模型；RAG Retriever 以自管 Embedding 與場地索引提供可追溯候選，不能取代後續過濾與計分。
+   首批使用小型分類器＋規則，未涵蓋語意須釐清；自管生成模型是待評測的補充。RAG Retriever 以自管 Embedding 與場地索引提供可追溯候選，不能取代後續過濾與計分。
 2. Hard Constraint Filter：純程式驗證不可違反的條件。
 3. Adjective Sensitivity Engine：維護形容詞理想區間、重要性與信心值。
 4. Couple Scoring Engine：計算個人與雙人公平適配度。
@@ -143,7 +145,7 @@ Privacy Guard 必須在公開輸出前執行：
 
 ## 7. 外部服務與降級
 
-地點／路線 API 的即時資料是 optional。若逾時、無配額或回傳不完整，使用本地 curated data、營業快照與交通矩陣；介面必須標示資料時間或無法確認的狀態，不可把估算說成即時確認。
+本次不接 Google API，也不建 Google Places live adapter。展示使用核准的 curated data、營業快照與本地交通矩陣；其他資料服務仍須個別確認來源與權利，不能自動接入。介面必須標示資料時間或無法確認的狀態，不可把估算說成即時確認；必要事實未知時不能通過可執行驗證。
 
 外部訂位／購票只提供連結跳轉，不在 MVP 內代理付款、保證座位或處理退款。
 
@@ -203,3 +205,100 @@ Privacy Guard 必須在公開輸出前執行：
 ## 10. 未完成不代表通過
 
 Phase 1B 已有可執行 API、migration 與真實 PostgreSQL／HTTP 整合測試；完整 MVP 下列各層仍依各自證據驗收。真實雙裝置、私密輸入隔離、模型／RAG、推薦、外部連結及 Owner sign-off 尚未完成，不得以文件或房間測試代替。
+
+## 11. 黑客松小型需求分類器（已同意，待實作）
+
+### 11.1 目標與基準
+
+第一版採字元 TF-IDF＋Logistic Regression，在本機 CPU 執行；此處先記錄方法，尚未安裝 Python 訓練依賴或測出耗時。
+
+只訓練「原句 → 有限屬性的偏好方向」，不學商家知識、不訓練完整行程生成、不訓練大型語言模型。先建立固定關鍵字／否定規則基準，與分類器使用相同資料切分及評分程式。僅有訓練 loss 下降不能證明效果改善。
+
+首批核心屬性為 bright、quiet、cute、childish；資料足夠時增加 interactive、walking，總數先限制 4–6 個。每個屬性可標 prefer／avoid／indifferent／not_mentioned；需要釐清、矛盾與程度另存欄位。方向不能從「出現了安靜兩字」直接決定。
+
+### 11.2 需求表與人工標註
+
+以 CSV 或 JSONL 整理約 100–200 句作起步，實際是否足夠按各標籤支持數和保留題表現判斷。
+
+| 欄位 | 用途 |
+|---|---|
+| sample_id | 穩定案例識別碼 |
+| text | 去識別的原句，保留繁中口語及標點 |
+| group_id | 原句及其改寫的共同群組，防止跨組洩漏 |
+| source_type／source_ref | 自行撰寫、經同意訪談或 AI 候選；來源參照不放個資 |
+| annotations | 屬性、方向、程度（low／medium／high／unspecified）及對應原文片段 |
+| expected_constraints | 明確數值、單位、硬上限與範圍，沒有就留空 |
+| needs_clarification／reason | 模糊、矛盾、未支援語意及應釐清的點 |
+| reviewer／review_status | 標註者代號、待審／同意／爭議；爭議未解不進黃金答案 |
+| split | train／validation／test，分組後固定 |
+| taxonomy_version／dataset_version | 尺度及資料版本，避免改定義後仍沿用舊分數 |
+
+兩位標註者先各自標同一小批，對齊定義與爭議；主要資料至少逐筆人工核准，模糊／否定案例再交叉檢查。AI 可協助產生候選句，不自行核准標準答案。刻意保留「不強求」與「未提及」差別；不要以全部未提及大量灌水。
+
+同一原句、提示模板衍生改寫須同 group_id；若同一受訪者／來源有高度重複敘事，也共同分組。正式私密輸入不是預設訓練來源；資料採集／訓練同意與長期偏好記憶同意分開。
+
+### 11.3 切分、訓練與保存
+
+1. 凍結第一版標籤定義，依 group_id 分組約 60% 訓練、20% 驗證、20% 最終測試。兼顧各屬性正反向涵蓋；分組優先於精確比例。只有一個群組的類別不能宣稱有獨立測試能力。
+2. 規則基準固定後保存其版本與輸出。訓練流程以 scikit-learn Pipeline 串接字元 TfidfVectorizer 與每屬性 Logistic Regression 多類別分類器；首輪可用 char 2–5 grams、正則化與有限迭代，實際參數、套件版本及 random seed 須落盤記錄。
+3. 詞表、IDF、分類器只 fit 訓練組。每個 head 必須至少有兩個實際類別才能 fit；沒有足夠正向／排斥案例的屬性標記 unsupported，不以常數輸出宣稱訓練完成。類別不平衡可在驗證組比較 class_weight 設定，不做大範圍搜尋。
+4. 初版只訓練方向分類。程度、否定作用範圍、幣別／每人或合計／時間等採另行驗證的規則；含雙重否定、衝突或不支援語意時需要釐清。不能把分類機率當成 target_min、target_max 或已校準 confidence。
+5. 同義改寫失敗且仍有時間時，才用相同切分比較 SetFit＋中文相容預訓練模型；選定模型、授權、目標硬體、版本與訓練範圍後執行。這是可選的小型文字模型調整，非必要的大型生成模型微調；尚未選型或安裝。
+6. 模型選擇及機率／拒判門檻只使用驗證組。凍結版本後跑最終測試一次；看過測試錯誤後再調整，原測試集就不再是未見證據，下一輪需另留新測試。
+7. 保存資料／切分雜湊、標籤表、程式 commit、設定、訓練耗時、硬體、套件版本、模型產物與逐題結果。模型產物在專案 models/，私有資料／紀錄在 .local/，均不入 Git。只提交無私密內容的腳本、定義及彙總報告。
+
+### 11.4 與現有解析契約接合
+
+訓練表不是前端直接傳送的 preference-query schema。後端需有轉換及驗證步驟：方向／程度 → 版本化尺度 → preferences／avoid；明確數值規則 → hard_constraints；最後驗證 schemas/preference-query.schema.json。
+
+pending：解析服務結果預計分 parsed／needs_clarification／unavailable。只有 parsed 攜帶合法 preference-query；追問只對輸入者顯示，不把私密片段送進共同狀態。這是待實作契約，當前 API／schema 尚未新增此 envelope，不能呼叫不存在的路由並期待成功。
+
+bright 等初始程度對應的區間由人工錨點及設定定義；未校準前不宣稱「明亮必然等於 0.7」。indifferent 不轉成排斥，not_mentioned 不生成限制。模糊詞、未知類別及 conflicting 不能自動當作「完全沒限制」。若使用者未說步行分鐘，不可補出硬上限。模糊句即使分類分數高，也不能略過釐清規則。
+
+### 11.5 驗收與停止條件
+
+- 逐屬性及各方向報告 precision／recall／F1、support，另報 macro-F1、混淆案例與 group 數。未提及類別分開報告，不用總 accuracy 掩蓋否定失敗。
+- 分開報告程度規則、明確數字／單位解析、釐清案例成功率及可自動處理覆蓋率。全部拒判不能算「解析零錯誤」的成功產品。
+- 驗證組上分類器須比固定規則帶來可說明的收益，且關鍵否定／硬限制案例不退步；最終測試報實際差異，不預先保證準確率或顯著改善。
+- 已定義的硬限制違反案例要求 0 個放行；未知條件須拒絕／釐清。這只是該組測試門檻，不宣稱所有真實輸入永遠零錯誤。
+- 如訓練路徑無收益或超出時間，保留規則／人工選項並標示實際模式；保存失敗證據，不假稱已部署分類器。
+- 分類成功、RAG 命中、三套行程可執行、兩人接受度分開評測。需求表不包含某店實際採光資訊，不能拿它當場地資料。
+
+## 12. 非 Google 場地證據與資料可行性
+
+### 12.1 來源及更新
+
+- 不接 Google API，不將 Google Maps／Places／搜尋摘要／Takeout 衍生內容寫入場地資料、標籤、訓練或索引。貼上的 Google live adapter 建議未被採用。
+- 採集名單從有授權的開放資料、團隊自有觀察與商家直接提供資料開始；資料集授權、文字、照片、衍生分析及發布權利分開記錄，來源不明先隔離不用。
+- 商家官網可用來核對事實及保留出處，但不得因公開可見就批量轉存全文或照片。主觀宣傳描述只作有限證據，不能當現場體驗已驗證。
+- 核心欄位為 venue_id、名稱／類別、地點、營業／活動日期、費用範圍、資料來源、查核時間、授權／使用範圍、更新負責人；價格及時段不足以驗證時該候選不能通過必要限制。
+- 照片是選用展示資料。沒有可用照片時使用自製圖示與文字，不從其他網站補抓圖片。照片不可證明現場安靜、無排隊或全天採光。
+
+### 12.2 屬性紀錄（待實作資料結構）
+
+| 欄位 | 定義 |
+|---|---|
+| venue_id／attribute | 對應地點與版本化屬性名稱 |
+| value／scale_version | 有錨點的分級或數值；未知為 null，不能以 0 表示 |
+| evidence_kind／evidence_ref | 實訪、場館直接資料、開放資料或可用圖片及證據參照 |
+| evidence_summary | 僅保存有權使用的必要事實摘要 |
+| observed_at／checked_at | 實際觀察與來源查核時間分開 |
+| context | 白天／晚上、平日／週末、室內／戶外或指定區域 |
+| review_status／reviewer | proposed／approved／disputed／stale 及審核者代號 |
+| source_quality／uncertainty | 證據品質及分歧原因，不用模型自報機率冒充可靠度 |
+
+例：某場地「平日下午窗邊採光良好」只支持該情境的 bright；週末 quiet 未查就是未知。模型可先提出標籤及證據片段，人工核准後才成為候選依據。不同時段／觀察者分歧保留，不強行平均成虛假的精確值。
+
+### 12.3 試點與行程覆蓋
+
+建議先在大臺北單一小區域整理 12–20 個場地試點，涵蓋飲食與活動等必要類型；數量及地點尚待選。先驗證三套行程與差異規則，再決定是否需擴充；30–50 筆也不是必然充分的門檻。只有合成資料時只能稱結構展示，不宣稱真實推薦完成。
+
+用小範圍、明確日期與交通方式驗證完整鏈路。必要限制對應事實未知即不放行；軟屬性未知則不能宣稱符合，可顯示缺證或要求釐清。交通矩陣要記錄估算方法、時段與緩衝；直線距離不能當可步行路線或精準即時車程。
+
+### 12.4 官方查核來源（2026-09-04）
+
+- [Google Maps Platform Terms §3.2.3](https://cloud.google.com/maps-platform/terms)：禁止特定擷取／儲存、建立衍生內容及使用 Maps 內容改善 AI 模型。此處記錄本專案不採用的決定，不把各服務／區域例外整理成通用法律結論，也不據此新增 live adapter。
+- [新北市觀光旅遊景點中文](https://data.gov.tw/dataset/122908)：頁面列有地址、座標、介紹、時段、票價等欄位與 CSV、政府資料開放授權條款第 1 版。資源名稱含「106年更新」、詮釋資料更新時間為 2024-12-20；逐筆現況及完整性仍待查核。
+- [臺北旅遊網景點資料中文](https://data.gov.tw/dataset/128696)：頁面有 CSV／相同開放授權，但目前列示欄位偏分類與行政區，不能宣稱已取得完整商家 POI。尚需檢查實際檔案。
+- 本次只核對目錄與條款頁；兩個 CSV 在網頁工具的下載讀取失敗，沒有匯入、驗證筆數、座標或授權圖片，不能把上述入口說成已可直接推薦的資料集。
+- [scikit-learn 文字特徵](https://scikit-learn.org/stable/modules/feature_extraction.html)、[Logistic Regression](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html)、[SetFit 多標籤分類](https://huggingface.co/docs/setfit/main/en/how_to/multilabel)：作為方法參照，未在本專案安裝或測出訓練效能。
