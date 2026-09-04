@@ -4,6 +4,19 @@
 
 本 repository 是 Sideby AI 情侶約會共決策 App 的 MVP 文件與資料契約基線。它定義要做什麼、如何驗證，以及哪些事情刻意不做；目前不宣稱已完成可上線的 App。
 
+## 版本與提交紀錄
+
+- `main` 是目前唯一工作分支，後續修改以此分支的文件為基準。
+- [原始交付版 `archive/delivery-mvp-v1`](https://github.com/louis8791/sideby/tree/archive/delivery-mvp-v1) 以 Git tag 保留完整內容與原始 commit，僅供歷史比對。
+- 原始交付版與 `main` 是兩條獨立建立的歷史，內容並不相同。例如原始版指定模型與 Hybrid RAG，現行版改為模型責任與資料來源邊界；本次整理未合併或改寫這些產品／技術決策。
+- 最新修改可查看 [main 提交紀錄](https://github.com/louis8791/sideby/commits/main/)。
+
+| 既有 commit | 內容 | 所在版本 |
+|---|---|---|
+| [`4b297ed`](https://github.com/louis8791/sideby/commit/4b297ed3fb21953df6b1a9d986d91ef3e37e1595) | 建立 MVP 文件基線 | main 歷史 |
+| [`eea56cc`](https://github.com/louis8791/sideby/commit/eea56cc9f0832fa06c99da3970add20b0c1a4132) | 專案更名為 Sideby | main 歷史 |
+| [`96b7017`](https://github.com/louis8791/sideby/commit/96b70171355e431b5532f95e52946b2a8d234581) | 原始交付包的 MVP 文件 | 封存標籤 |
+
 ## 產品要解決的問題
 
 情侶通常不是找不到地點，而是難以在以下條件同時成立時快速做決定：
@@ -32,14 +45,14 @@ CRM、商家後台、App 內付款、訂閱、社群、即時聊天、遊戲化�
 
 | 文件 | 用途 |
 |---|---|
-| PRD.md | 使用者、問題、範圍、功能需求與產品驗收 |
-| TDD.md | 架構、資料、API、模型邊界與測試策略 |
-| ROADMAP.md | 從文件基線到可展示 MVP 的分階段交付 |
-| AGENTS.md | 本專案的執行規則與不可越過的契約 |
-| docs/MVP_SPEC.md | 完整 MVP 產品與系統規格 |
-| docs/MODEL_RAG.md | 模型、資料來源、隱私與 RAG 邊界 |
-| schemas/ | LLM 結構化輸出與行程輸出的 JSON Schema |
-| data/fixtures/ | 不含秘密的範例場地與評測案例 |
+| [PRD.md](PRD.md) | 使用者、問題、範圍、功能需求與產品驗收 |
+| [TDD.md](TDD.md) | 架構、資料、API、模型邊界與測試策略 |
+| [ROADMAP.md](ROADMAP.md) | 從文件基線到可展示 MVP 的分階段交付 |
+| [AGENTS.md](AGENTS.md) | 本專案的執行規則與不可越過的契約 |
+| [docs/MVP_SPEC.md](docs/MVP_SPEC.md) | 完整 MVP 產品與系統規格 |
+| [docs/MODEL_RAG.md](docs/MODEL_RAG.md) | 模型、資料來源、隱私與 RAG 邊界 |
+| [schemas/](schemas/) | LLM 結構化輸出與行程輸出的 JSON Schema |
+| [data/fixtures/](data/fixtures/) | 不含秘密的範例場地與評測案例 |
 
 ## 重要證據邊界
 
