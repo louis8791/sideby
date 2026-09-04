@@ -1,0 +1,259 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/louis8791/sideby/schemas/itinerary.schema.json",
+  "title": "AI Couple Date Planner Public Itinerary",
+  "description": "A validated, public-safe itinerary. It contains no private input or private explanation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "itinerary_id",
+    "session_id",
+    "title",
+    "stops",
+    "total_cost",
+    "total_duration_minutes",
+    "travel_minutes",
+    "couple_score",
+    "public_reason",
+    "sponsored_content",
+    "validation"
+  ],
+  "properties": {
+    "itinerary_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "session_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "stops": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 4,
+      "items": {
+        "$ref": "#/$defs/stop"
+      }
+    },
+    "total_cost": {
+      "type": "number",
+      "minimum": 0
+    },
+    "total_duration_minutes": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "travel_minutes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "couple_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "score_breakdown": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "min_fit": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "mean_fit": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "context_fit": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "novelty": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "route_efficiency": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "public_reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "sponsored_content": {
+      "type": "boolean"
+    },
+    "offers": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/offer"
+      }
+    },
+    "validation": {
+      "$ref": "#/$defs/validation"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    }
+  },
+  "$defs": {
+    "stop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stop_id",
+        "order_no",
+        "venue_id",
+        "venue_name",
+        "category",
+        "arrival_at",
+        "leave_at",
+        "travel_mode",
+        "travel_minutes",
+        "estimated_cost",
+        "locked",
+        "booking_status"
+      ],
+      "properties": {
+        "stop_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "order_no": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "venue_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "venue_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "category": {
+          "type": "string",
+          "minLength": 1
+        },
+        "arrival_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "leave_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "travel_mode": {
+          "type": "string",
+          "enum": [
+            "walk",
+            "metro",
+            "bus",
+            "scooter",
+            "car",
+            "taxi"
+          ]
+        },
+        "travel_minutes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "estimated_cost": {
+          "type": "number",
+          "minimum": 0
+        },
+        "locked": {
+          "type": "boolean"
+        },
+        "booking_status": {
+          "type": "string",
+          "enum": [
+            "not_required",
+            "available",
+            "required",
+            "unknown"
+          ]
+        },
+        "booking_url": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        }
+      }
+    },
+    "offer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "venue_id",
+        "title",
+        "sponsored",
+        "external_url"
+      ],
+      "properties": {
+        "venue_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string"
+        },
+        "sponsored": {
+          "type": "boolean"
+        },
+        "external_url": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hard_constraints_passed",
+        "privacy_guard_passed",
+        "source_ids_verified",
+        "checked_at"
+      ],
+      "properties": {
+        "hard_constraints_passed": {
+          "const": true
+        },
+        "privacy_guard_passed": {
+          "const": true
+        },
+        "source_ids_verified": {
+          "const": true
+        },
+        "checked_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "data_freshness_note": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

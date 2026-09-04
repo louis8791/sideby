@@ -1,0 +1,314 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/louis8791/sideby/schemas/preference-query.schema.json",
+  "title": "AI Couple Date Planner Preference Query",
+  "description": "Structured preference output for one partner in one date-planning session. Raw private text must not be returned to the other partner.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "session_id",
+    "mode",
+    "visibility",
+    "preferences",
+    "avoid",
+    "hard_constraints",
+    "parser_confidence"
+  ],
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "now",
+        "future"
+      ]
+    },
+    "visibility": {
+      "type": "string",
+      "enum": [
+        "shared",
+        "private_session",
+        "private_remembered"
+      ]
+    },
+    "preferences": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/preference"
+      }
+    },
+    "avoid": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/avoid"
+      }
+    },
+    "hard_constraints": {
+      "$ref": "#/$defs/hardConstraints"
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mood": {
+          "type": "string"
+        },
+        "energy": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "unknown"
+          ]
+        },
+        "remember": {
+          "type": "boolean"
+        }
+      }
+    },
+    "parser_confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    }
+  },
+  "$defs": {
+    "attribute": {
+      "type": "string",
+      "enum": [
+        "bright",
+        "cute",
+        "childish",
+        "quiet",
+        "romantic",
+        "formal",
+        "interactive",
+        "relaxing",
+        "freshness",
+        "walking",
+        "food_variety"
+      ]
+    },
+    "preference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "attribute",
+        "importance",
+        "confidence"
+      ],
+      "properties": {
+        "attribute": {
+          "$ref": "#/$defs/attribute"
+        },
+        "target_min": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "target_max": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "importance": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "scope": {
+          "type": "string",
+          "enum": [
+            "session",
+            "long_term"
+          ]
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "questionnaire",
+            "conversation",
+            "selection",
+            "feedback"
+          ]
+        }
+      }
+    },
+    "avoid": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "attribute",
+        "importance",
+        "hard"
+      ],
+      "properties": {
+        "attribute": {
+          "$ref": "#/$defs/attribute"
+        },
+        "target_max": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "importance": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "hard": {
+          "type": "boolean"
+        },
+        "scope": {
+          "type": "string",
+          "enum": [
+            "session",
+            "long_term"
+          ]
+        }
+      }
+    },
+    "hardConstraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hard_no",
+        "transport_modes"
+      ],
+      "properties": {
+        "date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "start_time": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "end_time": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "meeting_point": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "budget_scope": {
+          "type": "string",
+          "enum": [
+            "couple_total",
+            "per_person"
+          ]
+        },
+        "ideal_budget": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "absolute_budget": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "transport_modes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "walk",
+              "metro",
+              "bus",
+              "scooter",
+              "car",
+              "taxi"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "max_walk_minutes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "max_total_travel_minutes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "outdoor_allowed": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "booking_required": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "dietary_restrictions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "accessibility_needs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "hard_no": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "weather_required": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "clear",
+            "dry",
+            "any",
+            null
+          ]
+        }
+      }
+    }
+  }
+}

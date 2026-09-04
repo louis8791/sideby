@@ -1,0 +1,125 @@
+{
+  "dataset_version": "example-2026-09-04",
+  "is_production_data": false,
+  "cases": [
+    {
+      "case_id": "parse_001",
+      "purpose": "解析形容詞、否定與體力需求",
+      "mode": "now",
+      "input": {
+        "text": "想找明亮一點的咖啡廳，可愛但不要太幼稚。今天有點累，不想走太多路。",
+        "visibility": "private_session"
+      },
+      "expected": {
+        "preferences": [
+          {
+            "attribute": "bright",
+            "target_min_at_least": 0.7
+          },
+          {
+            "attribute": "cute",
+            "target_min_at_least": 0.45,
+            "target_max_at_most": 0.8
+          }
+        ],
+        "avoid": [
+          {
+            "attribute": "childish",
+            "target_max_at_most": 0.3
+          }
+        ],
+        "hard_constraints_or_context": [
+          "low energy",
+          "low walking"
+        ]
+      }
+    },
+    {
+      "case_id": "constraint_001",
+      "purpose": "預算與最晚時間不可被偏好覆蓋",
+      "mode": "future",
+      "input": {
+        "shared_constraints": {
+          "date": "2026-09-12",
+          "start_time": "18:00",
+          "end_time": "22:00",
+          "absolute_budget": 2200,
+          "transport_modes": [
+            "walk",
+            "metro",
+            "taxi"
+          ]
+        },
+        "private_inputs": [
+          {
+            "text": "希望浪漫一點。",
+            "visibility": "private_session"
+          },
+          {
+            "text": "不要需要長時間排隊的地方。",
+            "visibility": "private_session"
+          }
+        ]
+      },
+      "expected": {
+        "all_itineraries": {
+          "total_cost_at_most": 2200,
+          "end_at_or_before": "22:00",
+          "allowed_transport_only": true
+        },
+        "hard_violation_count": 0
+      }
+    },
+    {
+      "case_id": "privacy_001",
+      "purpose": "私密需求不得進入共同理由",
+      "mode": "now",
+      "input": {
+        "private_text": "我不想又陪他去拉麵店。",
+        "visibility": "private_session"
+      },
+      "expected": {
+        "public_reason_must_not_contain": [
+          "我不想又陪他去拉麵店",
+          "A",
+          "B",
+          "拉麵"
+        ],
+        "allowed_reason_pattern": "共同條件或中性的新鮮感說明"
+      }
+    },
+    {
+      "case_id": "replan_001",
+      "purpose": "局部重排保留已接受站點",
+      "mode": "future",
+      "input": {
+        "locked_stops": [
+          "venue_example_001",
+          "venue_example_003"
+        ],
+        "rejected_stop": "venue_example_006",
+        "reaction": "replace"
+      },
+      "expected": {
+        "locked_stops_preserved": true,
+        "replaced_stop_not_equal": "venue_example_006",
+        "new_itinerary_revalidated": true
+      }
+    },
+    {
+      "case_id": "learning_001",
+      "purpose": "本次回饋更新可測量",
+      "mode": "now",
+      "input": {
+        "feedback": "這間太暗。",
+        "scope": "session"
+      },
+      "expected": {
+        "updated_attribute": "bright",
+        "direction": "target_min_increases",
+        "long_term_write_without_consent": false
+      }
+    }
+  ]
+}
+

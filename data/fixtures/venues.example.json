@@ -1,0 +1,275 @@
+{
+  "dataset_version": "example-2026-09-04",
+  "is_production_data": false,
+  "notes": "Synthetic examples for schema and planning tests. Replace with a licensed, curated Greater Taipei dataset before real deployment.",
+  "venues": [
+    {
+      "venue_id": "venue_example_001",
+      "name": "中山明窗咖啡（示例）",
+      "category": "cafe",
+      "district": "中山區",
+      "lat": 25.0521,
+      "lng": 121.5204,
+      "price_min": 180,
+      "price_max": 320,
+      "duration_min": 80,
+      "opening_hours": [
+        {
+          "day": "weekday",
+          "opens": "10:00",
+          "closes": "21:30"
+        },
+        {
+          "day": "weekend",
+          "opens": "09:30",
+          "closes": "22:00"
+        }
+      ],
+      "transport_access": [
+        "walk",
+        "metro",
+        "taxi"
+      ],
+      "attributes": {
+        "bright": 0.88,
+        "cute": 0.58,
+        "childish": 0.18,
+        "quiet": 0.72,
+        "romantic": 0.55,
+        "formal": 0.25,
+        "interactive": 0.20,
+        "relaxing": 0.78,
+        "freshness": 0.45,
+        "walking": 0.15,
+        "food_variety": 0.30
+      },
+      "booking": {
+        "required": false,
+        "status": "not_required",
+        "url": null
+      },
+      "source": "curated_example",
+      "source_checked_at": "2026-09-04T00:00:00Z"
+    },
+    {
+      "venue_id": "venue_example_002",
+      "name": "松菸互動展（示例）",
+      "category": "exhibition",
+      "district": "信義區",
+      "lat": 25.0439,
+      "lng": 121.5603,
+      "price_min": 350,
+      "price_max": 450,
+      "duration_min": 100,
+      "opening_hours": [
+        {
+          "day": "daily",
+          "opens": "10:00",
+          "closes": "18:00"
+        }
+      ],
+      "transport_access": [
+        "walk",
+        "metro",
+        "bus",
+        "taxi"
+      ],
+      "attributes": {
+        "bright": 0.74,
+        "cute": 0.48,
+        "childish": 0.12,
+        "quiet": 0.38,
+        "romantic": 0.42,
+        "formal": 0.20,
+        "interactive": 0.92,
+        "relaxing": 0.32,
+        "freshness": 0.86,
+        "walking": 0.55,
+        "food_variety": 0.05
+      },
+      "booking": {
+        "required": true,
+        "status": "available",
+        "url": "https://example.com/sideby/venue_example_002"
+      },
+      "source": "curated_example",
+      "source_checked_at": "2026-09-04T00:00:00Z"
+    },
+    {
+      "venue_id": "venue_example_003",
+      "name": "大安慢步公園（示例）",
+      "category": "walk",
+      "district": "大安區",
+      "lat": 25.0267,
+      "lng": 121.5352,
+      "price_min": 0,
+      "price_max": 0,
+      "duration_min": 50,
+      "opening_hours": [
+        {
+          "day": "daily",
+          "opens": "00:00",
+          "closes": "23:59"
+        }
+      ],
+      "transport_access": [
+        "walk",
+        "metro",
+        "bus",
+        "taxi"
+      ],
+      "attributes": {
+        "bright": 0.62,
+        "cute": 0.10,
+        "childish": 0.05,
+        "quiet": 0.76,
+        "romantic": 0.68,
+        "formal": 0.02,
+        "interactive": 0.08,
+        "relaxing": 0.90,
+        "freshness": 0.60,
+        "walking": 0.95,
+        "food_variety": 0.00
+      },
+      "booking": {
+        "required": false,
+        "status": "not_required",
+        "url": null
+      },
+      "source": "curated_example",
+      "source_checked_at": "2026-09-04T00:00:00Z"
+    },
+    {
+      "venue_id": "venue_example_004",
+      "name": "古亭手作工作室（示例）",
+      "category": "workshop",
+      "district": "中正區",
+      "lat": 25.0255,
+      "lng": 121.5233,
+      "price_min": 650,
+      "price_max": 850,
+      "duration_min": 120,
+      "opening_hours": [
+        {
+          "day": "daily",
+          "opens": "12:00",
+          "closes": "20:30"
+        }
+      ],
+      "transport_access": [
+        "walk",
+        "metro",
+        "taxi"
+      ],
+      "attributes": {
+        "bright": 0.67,
+        "cute": 0.70,
+        "childish": 0.30,
+        "quiet": 0.44,
+        "romantic": 0.72,
+        "formal": 0.18,
+        "interactive": 0.96,
+        "relaxing": 0.52,
+        "freshness": 0.82,
+        "walking": 0.25,
+        "food_variety": 0.00
+      },
+      "booking": {
+        "required": true,
+        "status": "unknown",
+        "url": "https://example.com/sideby/venue_example_004"
+      },
+      "source": "curated_example",
+      "source_checked_at": "2026-09-04T00:00:00Z"
+    },
+    {
+      "venue_id": "venue_example_005",
+      "name": "河岸定食屋（示例）",
+      "category": "restaurant",
+      "district": "板橋區",
+      "lat": 25.0125,
+      "lng": 121.4618,
+      "price_min": 280,
+      "price_max": 520,
+      "duration_min": 70,
+      "opening_hours": [
+        {
+          "day": "daily",
+          "opens": "11:30",
+          "closes": "21:00"
+        }
+      ],
+      "transport_access": [
+        "walk",
+        "metro",
+        "bus",
+        "taxi"
+      ],
+      "attributes": {
+        "bright": 0.55,
+        "cute": 0.08,
+        "childish": 0.04,
+        "quiet": 0.40,
+        "romantic": 0.30,
+        "formal": 0.12,
+        "interactive": 0.05,
+        "relaxing": 0.44,
+        "freshness": 0.66,
+        "walking": 0.10,
+        "food_variety": 0.88
+      },
+      "booking": {
+        "required": false,
+        "status": "not_required",
+        "url": null
+      },
+      "source": "curated_example",
+      "source_checked_at": "2026-09-04T00:00:00Z"
+    },
+    {
+      "venue_id": "venue_example_006",
+      "name": "信義室內遊樂館（示例）",
+      "category": "entertainment",
+      "district": "信義區",
+      "lat": 25.0354,
+      "lng": 121.5651,
+      "price_min": 420,
+      "price_max": 680,
+      "duration_min": 90,
+      "opening_hours": [
+        {
+          "day": "daily",
+          "opens": "11:00",
+          "closes": "22:00"
+        }
+      ],
+      "transport_access": [
+        "walk",
+        "metro",
+        "bus",
+        "taxi"
+      ],
+      "attributes": {
+        "bright": 0.80,
+        "cute": 0.76,
+        "childish": 0.52,
+        "quiet": 0.12,
+        "romantic": 0.28,
+        "formal": 0.05,
+        "interactive": 0.88,
+        "relaxing": 0.20,
+        "freshness": 0.72,
+        "walking": 0.20,
+        "food_variety": 0.10
+      },
+      "booking": {
+        "required": false,
+        "status": "not_required",
+        "url": null
+      },
+      "source": "curated_example",
+      "source_checked_at": "2026-09-04T00:00:00Z"
+    }
+  ]
+}
+
