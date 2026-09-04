@@ -213,7 +213,9 @@ Partner A 不得透過任何 API 取得 Partner B 的 raw_text、structured_inpu
 
 ## 13. 系統架構
 
-前端是 React、Next.js、TypeScript 的 Responsive Web／PWA；後端是 Next.js Server Routes 的模組化單體；資料庫使用 PostgreSQL；匿名身分、Realtime 與 Row Level Security 可由 Supabase 提供；LLM 使用可輸出固定 JSON 的 API；地點／路線為 optional adapter。
+前端是 React、Next.js、TypeScript 的 Responsive Web／PWA；後端是 Next.js Server Routes 的模組化單體；資料庫使用 PostgreSQL；匿名身分、Realtime 與 Row Level Security 可由 Supabase 提供。生成與 Embedding 模型由團隊自行部署，結合核准場地資料的 RAG；不呼叫外部模型 API。前後端應用 API、自管推論內部介面與雙人同步保留；地點／路線為 optional adapter。
+
+RAG 文件保存 venue_id、來源、更新時間及索引版本，私密對話不進共用索引。候選經硬限制過濾、雙人計分與行程驗證後才產生公開結果；RAG 不取代這些程式規則。模型／索引失效不得偷偷切換雲端，模型型號與工具待目標硬體驗證後決定。
 
 資料流：雙方裝置 → Session／Auth／Validation → 解析器 → 硬限制過濾 → 偏好與雙人計分 → 行程組合 → 程式驗證 → Privacy Guard → 公開回應。
 
@@ -239,7 +241,7 @@ AC-01 至 AC-13 的正式清單位於 PRD.md。至少涵蓋雙裝置加入、公
 
 ## 16. 待定實作決策
 
-- LLM 供應商、模型、成本與降級。
+- 自管生成／Embedding 模型版本、量化、維度、授權、執行工具、索引工具、目標硬體與無雲端切換的失敗策略。
 - 場地資料筆數、來源授權、更新頻率與負責人。
 - 匿名身分與邀請碼的期限、撤銷、房間刪除。
 - 路線估算與即時資料的時間戳規則。
