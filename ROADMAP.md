@@ -4,7 +4,7 @@
 
 - 已完成：PR #4 合併 `main`（`16cfd04`）；Railway GitHub source、自動部署、PostgreSQL reference、migration、健康檢查與 8080 對外埠上線；Cloudflare Worker、兩個 production origin 與 Google server secret 上線。Railway 直接 API 與 Cloudflare 同源 `/api/runtime` 均回 200，匿名身分經公開前端代理回 201。
 - 已完成：`npm run check:all` 通過 47 根＋15 Maps／proxy 測試，GitHub checks 全綠；公開首頁與 `/maps-check` 回 200，兩把 Google key 均由頁面確認存在，秘密值未輸出或提交。
-- 已完成 Maps JavaScript 正式 referrer 與底圖目視；Places／Routes／Geocoding 的 Worker server calls 仍待修正 server key 限制。前端三套既有地點已轉為後端版本化展示資料並保存 Google Place ID；Owner 決定本輪不主打 Gemini。兩支手機與 Owner gate 等功能穩定後再做。
+- 已完成 Maps JavaScript 正式 referrer、底圖目視及 Places／Routes／Geocoding 的 Cloudflare Worker 真實呼叫；Google 四項 production 檢查通過。前端三套既有地點已轉為後端版本化展示資料並保存 Google Place ID；Owner 決定本輪不主打 Gemini。下一個主要 gate 是兩支手機與 Owner 驗收。
 - 公開基礎 Runtime 已完成，不得回退至舊 main，也不得把部署綠燈升格成 Accepted MVP。
 
 ## 2026-09-05 追加：把可發展性做成可驗證功能
@@ -20,13 +20,13 @@
 | 產品採用驗證 | PLANNED | 探索性 30–50 對大臺北伴侶；定案時間、雙方完成率、限制漏接、實際出門、30 日再用；不是統計代表性承諾 |
 | RAG／訓練／跨城市／商家平台 | DEFERRED | 先驗本地資料、權利、使用需求與成本；不得列成現成能力 |
 
-Railway＋PostgreSQL 後端與 Cloudflare 前端已完成公開部署及基本 HTTPS／同源代理驗證。下一步只處理 Google server API 限制、展示資料部署與完整單瀏覽器流程；功能穩定後才做兩支實機與 Owner 驗收。Gemini 不屬本輪阻斷。
+Railway＋PostgreSQL 後端、Cloudflare 前端、正式 Google 四項及展示資料生成／保存已完成公開 Runtime 驗證。下一步是完整單瀏覽器流程，再做兩支實機與 Owner 驗收。Gemini 不屬本輪阻斷。
 
 ## 2026-09-05 本輪最新路徑
 
 跨對話唯一接續入口為 `docs/NEXT_SESSION_HANDOFF.md`。目前施工點固定在公開部署與雙手機驗收；不得回頭把已延後的訓練／RAG 誤設為部署前置，也不得把本機 synthetic Runtime 當公開 PASS。
 
-本輪新增 Google 接線子項（不新增 Phase）：官方 Maps JavaScript／Places (New)／Routes／Geocoding、私密設定範本與 `/maps-check` 已實作，2026-09-05 已在本機單次真實驗收四項 PASS。production 已加 `SIDEBY_PUBLIC_ORIGIN` 同來源 HTTPS 閘門，但尚未部署或驗收公開網域。操作與證據見 `docs/GOOGLE_MAPS_LOCAL_SETUP.md`、`docs/GOOGLE_MAPS_VERIFICATION.md`。
+本輪新增 Google 接線子項（不新增 Phase）：官方 Maps JavaScript／Places (New)／Routes／Geocoding、私密設定範本與 `/maps-check` 已實作，2026-09-05 已在本機及 production 單次真實驗收四項 PASS。production 已加 `SIDEBY_PUBLIC_ORIGIN` 同來源 HTTPS 閘門。操作與證據見 `docs/GOOGLE_MAPS_LOCAL_SETUP.md`、`docs/GOOGLE_MAPS_VERIFICATION.md`。
 
 使用者指定主 Repo `louis8791/sideby`。`frontend/` 已匯入隊友的 Lovable 前端，根目錄保留既有後端；兩者仍是獨立執行元件。最新分工為使用者主責後端、一人支援後端、一人持續前端細修。黑客松可保留固定邀請碼與範例行程，只要清楚標示 demo／synthetic 且不掩蓋真實失敗；Manus 只增指定元件。
 
@@ -55,7 +55,7 @@ Gemini 三接點契約保留為未來選項，但 Owner 已決定本輪不主打
 - `部分完成`：已有可執行交付或相應測試，但仍缺必要功能或較高層驗收。
 - `未開始`：只有需求、schema、fixture 或測試計畫，沒有對應可執行功能。
 
-2026-09-05 功能由 PR #4 合併到 `main` `16cfd04`。根後端已有匿名房間、私密輸入、合成三套推薦、reaction／locked／局部重排／定案與本人 `too_dark` 偏好更新；最新主畫面以同一匿名身分串接這些 API。`npm run check:all` 通過 47 根測試、15 Maps／代理測試、前端 typecheck 與 client／SSR／Cloudflare build；GitHub checks 與公開 Railway／Cloudflare 基礎 Runtime PASS。Google 四項本機真實檢查曾通過，但 production 因 key 歸屬／限制未通過；真實 Gemini、真實場地、兩支實體手機及 Owner 驗收仍未完成。
+2026-09-05 功能由 PR #4 合併到 `main` `16cfd04`。根後端已有匿名房間、私密輸入、合成三套推薦、reaction／locked／局部重排／定案與本人 `too_dark` 偏好更新；最新主畫面以同一匿名身分串接這些 API。`npm run check:all` 通過 47 根測試、15 Maps／代理測試、前端 typecheck 與 client／SSR／Cloudflare build；GitHub checks 與公開 Railway／Cloudflare 基礎 Runtime PASS。Google 四項本機與 production 真實檢查均通過；真實 Gemini、真實核准場地、兩支實體手機及 Owner 驗收仍未完成。
 
 舊 `phase3-itineraries` 的 19 檔候選已以遠端 `archive/phase3-itineraries-checkpoint-20260905`／`63cfe6c` 保存，狀態為 `PRESERVED_NOT_ADOPTED`。它不能直接刪除，也不能因被保存就視為 main 已完成；後端支援者若要取用，須逐項比對後另開採用 commit。
 
@@ -64,8 +64,8 @@ Gemini 三接點契約保留為未來選項，但 Owner 已決定本輪不主打
 | 1 | 契約、資料治理與驗收基線 | 完成（文件／契約層） | 無 | Phase 2～4 可依契約並行 |
 | 2 | 匿名雙人房間與共享狀態 | 部分完成（公開 API／代理已通；雙手機待驗） | Phase 1 | 前端串接可與 Phase 3、4 並行 |
 | 3 | 條款、私密輸入與需求解析 | 本輪完成（結構化選項＋規則；Gemini DEFERRED） | Phase 1、2 | Gemini 可日後另驗 |
-| 4 | 場地資料與 Google Maps 整合基礎 | 部分完成（展示資料已接；Maps JS production PASS，三項 server API 待修） | Phase 1 | 資料政策與外部服務接線可分工 |
-| 5 | 雙人推薦與三套可執行行程 | 部分完成（前端三套地點已接後端生成／保存；部署 Runtime 待驗） | Phase 2～4 | 公開理由使用確定性安全模板 |
+| 4 | 場地資料與 Google Maps 整合基礎 | 部分完成（展示資料已接；Google 四項 production PASS；真實核准資料待補） | Phase 1 | 資料政策與外部服務接線可分工 |
+| 5 | 雙人推薦與三套可執行行程 | 部分完成（前端三套地點已接後端生成／保存；公開 Runtime 已驗） | Phase 2～4 | 公開理由使用確定性安全模板 |
 | 6 | 局部重排、私人清單與回饋治理 | 部分完成（重排已接；進階評論治理延後） | Phase 1、2；重排依 Phase 5 | 私人清單／內容治理可先行 |
 | 7 | 手機整合、外部跳轉與誠實降級 | 部分完成（公開 Worker／同源 API 已通；手機待驗） | Phase 2～6 | 前端負責串接，後端提供契約與修正 |
 | 8 | 端到端、效能、隱私與 Owner 驗收 | 部分完成（自動＋本機 Runtime 證據） | Phase 7 | 底層證據不能取代完整驗收 |

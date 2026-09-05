@@ -4,7 +4,7 @@
 
 PR #4 已合併至 `main`（`16cfd04`）。Railway PostgreSQL 與根 Next.js 已公開，`/api/runtime` 回 200／`standard`；Cloudflare Worker `https://louis8791-sideby-frontend.louis8791.workers.dev` 已設定正式 API／public origins 與 Google server secret，首頁、地圖檢查頁、同源 API 與匿名身分建立已通過公開 HTTPS 驗證。47 根＋15 Maps／proxy 測試及 GitHub checks 全綠。
 
-正式 Maps JavaScript referrer 已修正並目視載入底圖；Places／Routes／Geocoding 的 Worker server calls 仍被拒絕，須再核對 server key 的應用限制／API restriction、帳務與配額。前端三套既有地點已整理為後端可保存的版本化展示資料，Google 只長存 Place ID，其餘詳情即時載入。Owner 決定本輪不主打 Gemini；兩支實機與 Owner 驗收仍未完成，公開部署不得被寫成 Accepted MVP。
+正式 Maps JavaScript referrer 已修正並目視載入底圖；Places／Routes／Geocoding 也已由 Cloudflare Worker 真實取得結果，Google 四項 production 檢查通過。前端三套既有地點已整理為後端可保存的版本化展示資料，Google 只長存 Place ID，其餘詳情即時載入。Owner 決定本輪不主打 Gemini；兩支實機與 Owner 驗收仍未完成，公開部署不得被寫成 Accepted MVP。
 
 ## 2026-09-05 補充：34 選項與持續發展
 
@@ -42,7 +42,7 @@ PR #4 已合併至 `main`（`16cfd04`）。Railway PostgreSQL 與根 Next.js 已
 
 跨對話接續以 `docs/NEXT_SESSION_HANDOFF.md` 為操作入口；本 PRD 定義產品需求，交接檔只整理已驗證狀態、未完成項與下一步，不得用它降低本文件的隱私、資料權利與 Owner 驗收門檻。
 
-Google 地圖入口為 `/maps-check`：不依賴 Supabase／Gemini，可填自己的兩把金鑰再人工啟動查詢；Maps JavaScript、Places (New)、Routes 與獨立 Geocoding 直接連 Google。2026-09-05 已在本機完成四項單次真實服務驗收；正式環境新增 `SIDEBY_PUBLIC_ORIGIN` 同來源 HTTPS 閘門，但尚未部署或驗收公開網域。空值、配額／授權失敗、未知交通仍不得假裝成功；細節見 `docs/GOOGLE_MAPS_LOCAL_SETUP.md`。
+Google 地圖入口為 `/maps-check`：不依賴 Supabase／Gemini，可填自己的兩把金鑰再人工啟動查詢；Maps JavaScript、Places (New)、Routes 與獨立 Geocoding 直接連 Google。2026-09-05 已在本機與正式 Cloudflare 網域完成四項單次真實服務驗收；production 由 `SIDEBY_PUBLIC_ORIGIN` 同來源 HTTPS 閘門限制呼叫。空值、配額／授權失敗、未知交通仍不得假裝成功；細節見 `docs/GOOGLE_MAPS_LOCAL_SETUP.md`。
 
 使用者已指定 `louis8791/sideby` 為三人唯一共同 Repo：Lovable 前端在 `frontend/`，現有後端／資料庫維持根目錄路徑。本輪主線採 Google Maps＋確定性規則，不主打 Gemini；訓練、自管模型、Gemini 擴充與 RAG 都保留為未來選項。需求句作人工核准後的回歸驗收，下方舊模型章節保留為歷史／未來參考。
 
@@ -50,7 +50,7 @@ Google 地圖入口為 `/maps-check`：不依賴 Supabase／Gemini，可填自�
 
 舊 `phase3-itineraries` 的 19 檔推薦候選已在遠端 archive branch／commit `63cfe6c` 保存。尚未決定採用，也不構成目前產品完成證據；正式納入前須依本 PRD 的現行 Gemini＋Google API cut、隱私與資料邊界逐項審查。
 
-正式網址已完成 Railway／PostgreSQL／Cloudflare 基礎部署與 runtime／匿名身分驗證。前端三套既有路線已轉成版本化展示資料，可由根後端生成、保存、重排與定案；Google Place ID 用於即時詳情、地圖與導航，時間、價格、屬性與分數仍標示為展示設定。私密原文互不可見，硬限制、權限與定案由後端驗證；Google 三項 server API、雙裝置及 Owner 仍待驗。
+正式網址已完成 Railway／PostgreSQL／Cloudflare 基礎部署與 runtime／匿名身分驗證。前端三套既有路線已轉成版本化展示資料，可由根後端生成、保存、重排與定案；Google Place ID 用於即時詳情、地圖與導航，時間、價格、屬性與分數仍標示為展示設定。私密原文互不可見，硬限制、權限與定案由後端驗證；Google 四項 production 檢查已通過，雙裝置及 Owner 仍待驗。
 
 ### Gemini 延後接點（本輪不主打）
 

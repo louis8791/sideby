@@ -1,13 +1,13 @@
 # Google 本機接線驗證紀錄
 
-日期：2026-09-05；本機基底 `2b961f0`；狀態 **LOCAL_LIVE_PASS / PRODUCTION_LIVE_FAIL**。
+日期：2026-09-05；本機基底 `2b961f0`；狀態 **LOCAL_LIVE_PASS / PRODUCTION_LIVE_PASS**。
 
 ## 正式 Worker 驗證
 
 - 網址：`https://louis8791-sideby-frontend.louis8791.workers.dev/maps-check`；頁面 200，browser／server key 均顯示已填入，secret 值未顯示。
-- 按下四項檢查後，Maps JavaScript 程式載入，但底圖顯示「這個網頁並未正確載入 Google 地圖」；Places API (New)、Routes API、Geocoding API 均回未通過。
-- Google Cloud 目前登入帳號只可見 `Xuanji Search Monitor` 與 `Essence Flow`，兩個專案的 API 金鑰清單皆為空，因此無法在此帳號替實際 key 修改網站來源或 API 限制。
-- 待 key 擁有者加入 `https://pairpath-date.dynamic-portfolio-analyzer-worker.workers.dev/*` 與 `https://louis8791-sideby-frontend.louis8791.workers.dev/*`，核對 server key 的三項 API、帳務與配額，再由正式網址重跑。完成前不得把下方本機 PASS 延伸成 production PASS。
+- Google Cloud 專案 `sideby-507707` 已核對：browser key 僅限 Maps JavaScript API 與核准網站來源；server key 無應用程式限制，API 僅限 Places API (New)、Routes API、Geocoding API。未讀出或記錄 key 值。
+- 初次 production 失敗不是金鑰限制：Cloudflare Worker 對 `redirect: "error"` 的外連拋出 `TypeError`。改用 `redirect: "manual"` 並在任何 3xx 回應時 fail closed，避免 server key 隨重新導向送出；離線測試鎖住此行為。
+- 正式頁按下四項檢查後，Maps JavaScript 底圖與 Google 歸屬可見；Places 回傳臺北車站，Routes 回傳步行 36 分鐘／大眾運輸 14 分鐘，Geocoding 回傳 ROOFTOP 座標。這是單次 production live PASS，不代表配額、長時間穩定、雙手機或 Owner 驗收。
 
 - Windows Node 24.16.0，前端 Bun 1.4.2 frozen-lockfile 乾淨安裝通過，沒有新增依賴。
 - `npm run test:maps`：10 個離線子案例＋1 個總測試，11 passed、0 failed。所有 HTTP 由 mock 攔截，真實 Google 呼叫為 0；驗缺 key、同來源本機限制、三項 web service 官方 URL／header、無全域快取、精度／查無資料、錯誤去敏、照片歸屬與 browser/server key 分離。
@@ -16,7 +16,7 @@
 - Places API (New) 回傳臺北車站；Routes 回傳步行 36 分鐘與大眾運輸 14 分鐘；Geocoding 回傳 rooftop 精度座標。四項均由真實 Google 服務完成，不是 mock。
 - 第一次 runtime 曾被全域 Supabase token 附加器阻擋；改為只在瀏覽器 Supabase 配置存在時附加。伺服器 `requireSupabaseAuth`、根 API 的權限與 DB 未更動。修正後重載 Chrome 確認待填狀態。
 - `npm run maps:config` 僅確認兩把不同金鑰存在，不輸出內容；`frontend/.env.local` 受 Git 忽略，憑證未提交。
-- 本次只證明這台電腦、這組限制與這次查詢可用；帳務剩餘額度、配額告警、正式網域來源限制、正式伺服器 IP 限制與長時間穩定性均 **未驗收**。
+- 本次證明這台電腦與正式 Worker 在這組限制、這次查詢可用；帳務剩餘額度、配額告警、長時間穩定性均 **未驗收**。server key 不設 IP 限制是 Cloudflare Worker 無固定出口 IP 的部署選擇，不應誤寫成已完成固定 IP 防護。
 - 檢查頁只驗 Google 接線，不能代替首頁完整操作、Supabase 登入、Gemini、雙人房間／推薦、兩支手機、正式部署或 Owner 驗收。Geocoding 只是獨立地址定位，未自動取代推薦資料。
 - Google 回傳內容只用於即時畫面，不因此取得評論、照片或其他內容的永久保存、重新發布或 RAG／訓練權利。
 

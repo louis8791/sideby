@@ -7,7 +7,7 @@
 - PR #4 已合併至 `main`（merge `16cfd04`）。Railway `chic-bravery` 的 PostgreSQL 與根 Next.js 服務已上線；`DATABASE_URL` 使用資料庫 reference，健康路徑為 `/api/runtime`，公開網域指向實際 `PORT=8080`。`https://sideby-production.up.railway.app/api/runtime` 已回 200／`standard`。
 - Cloudflare Worker `https://louis8791-sideby-frontend.louis8791.workers.dev` 已部署；`SIDEBY_API_ORIGIN`、`SIDEBY_PUBLIC_ORIGIN` 與 Google server secret 已設，首頁、`/maps-check`、同源 `/api/runtime` 回 200，經代理建立匿名身分回 201。秘密值未輸出或提交。
 - `npm run check:all` 通過 47 根測試＋15 Maps／proxy 測試，GitHub PR checks 全綠。這證明公開基礎 Runtime，不等於真實場地、Gemini、Google 正式金鑰限制、雙手機或 Owner 驗收。
-- 正式 `/maps-check` 已目視載入 Maps JavaScript 底圖，browser referrer 修正完成；Places／Routes／Geocoding 的 Worker server calls 仍未通過。`GOOGLE_MAPS_SERVER_API_KEY` 已用本機可成功呼叫三項服務的同一值重新上傳，故下一步只查 server key 的應用限制／API restriction、帳務與配額；三項未綠前不得冒稱 production Google 全通過。
+- 正式 `/maps-check` 已目視載入 Maps JavaScript 底圖，並由 Cloudflare Worker 真實取得 Places／Routes／Geocoding 結果；Google 四項 production 檢查通過。Worker 對 `redirect: "error"` 會以 `TypeError` 中止，故 server adapter 改用 `redirect: "manual"` 並拒絕任何 3xx，不自動跟隨可能攜帶 server key 的重新導向。此證據不取代兩支手機與 Owner 驗收。
 
 ## 2026-09-05 環境選項、持續發展與需求證據
 
@@ -22,7 +22,7 @@
 
 - 跨對話唯一接續入口為 `docs/NEXT_SESSION_HANDOFF.md`；下一個 Agent 先核對該檔記載的 main hash、未完成部署、秘密設定與驗收邊界，不從舊 Run Note 猜現在狀態。
 
-- Google 接線改走官方服務，不依賴 Lovable gateway；操作見 `docs/GOOGLE_MAPS_LOCAL_SETUP.md`。2026-09-05 已在本機 `/maps-check` 驗收 Maps JavaScript、Places (New)、Routes、Geocoding 四項成功。正式環境只允許 `SIDEBY_PUBLIC_ORIGIN` 指定的同來源 HTTPS 網域；帳務餘額、公開部署與手機仍須另驗，不能沿用本機 PASS。
+- Google 接線改走官方服務，不依賴 Lovable gateway；操作見 `docs/GOOGLE_MAPS_LOCAL_SETUP.md`。2026-09-05 已在本機與 Cloudflare production `/maps-check` 分別驗收 Maps JavaScript、Places (New)、Routes、Geocoding 四項成功。正式環境只允許 `SIDEBY_PUBLIC_ORIGIN` 指定的同來源 HTTPS 網域；手機與 Owner 驗收仍須另做，不能由 production 單頁 PASS 取代。
 - 金鑰例外澄清：受網站來源限制的 `VITE_GOOGLE_MAPS_API_KEY` 必須交給 Maps JavaScript，屬瀏覽器可見設定；不同的 `GOOGLE_MAPS_SERVER_API_KEY` 僅放伺服器，用 Places／Routes／Geocoding，禁止 VITE_、Git、日誌及回應。此項優先於下方「所有 API key 不下放瀏覽器」舊概括句。
 
 - 使用者指定 `louis8791/sideby` 為唯一主 Repo；Lovable 程式已匯入 `frontend/`，根後端保留 `app/api/`、`src/`、`db/`。共同操作入口為 `docs/TEAM_INTEGRATION.md`，部署依 `docs/DEPLOYMENT.md`。

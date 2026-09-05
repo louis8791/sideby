@@ -27,7 +27,7 @@ function MapsCheck() {
     setResults({});
     const run = async (name: string, task: () => Promise<string>) => {
       try { const message = await task(); setResults(prev => ({ ...prev, [name]: message })); }
-      catch { setResults(prev => ({ ...prev, [name]: "未通過：請檢查 API 啟用、金鑰限制、帳務、配額或網路。" })); }
+      catch (error) { setResults(prev => ({ ...prev, [name]: error instanceof Error ? error.message : "未通過：請檢查 API 啟用、金鑰限制、帳務、配額或網路。" })); }
     };
     // Deliberately public landmarks. No device geolocation, partner data or private preferences.
     await run("Maps JavaScript API", async () => {

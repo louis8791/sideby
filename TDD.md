@@ -6,7 +6,7 @@
 - 帶 body 的 API 請求在 Origin／設定檢查早退時，`rejectRequest` 以 `pipeTo(new WritableStream())` 完整消耗串流，不轉送／記錄內容；cancel-only 在本機 workerd 仍會造成下一請求 500 與 ProxyWorker 結束，不可當修復。
 - `google-maps.test.mjs` 驗 403／503 早退讀到 EOF 且零 outbound fetch；`check-frontend-proxy.mjs` 真正驗重複拒絕後仍可 API／Bearer／SSE，最後首頁與建置資源仍可讀。2026-09-05：47 根＋15 Maps／proxy 測試、前端 typecheck／build、本機 workerd 與 GitHub PR checks 通過。
 - Railway 根服務連 PostgreSQL，啟動 migration 完成後由 Next 使用平台 `PORT=8080`；Railway public domain 的 target port 必須同為 8080，不能沿用本機 3000。健康路徑 `/api/runtime`、直接匿名建立與 Cloudflare 同源代理均已公開回應成功。
-- Cloudflare Worker 為 `louis8791-sideby-frontend`，正式 `SIDEBY_API_ORIGIN` 指向 Railway、`SIDEBY_PUBLIC_ORIGIN` 指向 Worker 本身；Google server key 只以 secret 上傳。公開 `/maps-check` 已目視通過 Maps JavaScript 底圖，Places／Routes／Geocoding 的 Worker server calls 仍失敗，正式 Google 維持部分通過。
+- Cloudflare Worker 為 `louis8791-sideby-frontend`，正式 `SIDEBY_API_ORIGIN` 指向 Railway、`SIDEBY_PUBLIC_ORIGIN` 指向 Worker 本身；Google server key 只以 secret 上傳。公開 `/maps-check` 已目視通過 Maps JavaScript 底圖，Places／Routes／Geocoding 也由 Worker 真實取得結果。Cloudflare 對 `redirect: "error"` 的外連會拋 `TypeError`；adapter 使用 `redirect: "manual"` 並拒絕所有 3xx，避免 server key 隨重新導向送出。測試需鎖住 manual mode、3xx fail-closed 與錯誤不含 secret。
 
 ## 2026-09-05 環境契約與可延續架構
 
