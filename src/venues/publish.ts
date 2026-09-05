@@ -30,7 +30,10 @@ export async function publishVenueRelease(client: PoolClient, input: unknown) {
   for (const record of release.records) {
     if (record.datasetVersion !== release.version) throw new Error('DATASET_VERSION_MISMATCH');
     const slots = release.slots.filter(slot => slot.venueId === record.venueId);
-    if (qualifyVenue(record, slots.length).status !== 'eligible') throw new Error(`VENUE_EVIDENCE_INCOMPLETE:${record.venueId}`);
+    const qualification = qualifyVenue(record, slots.length).status;
+    if (qualification !== 'eligible' && qualification !== 'eligible_with_unknowns') {
+      throw new Error(`VENUE_EVIDENCE_INCOMPLETE:${record.venueId}`);
+    }
     if (slots.some(slot => Date.parse(slot.closesAt) <= Date.parse(slot.opensAt)
       || Date.parse(slot.closesAt) - Date.parse(slot.opensAt) < slot.durationMinutes * 60000)) throw new Error('INVALID_EXECUTION_WINDOW');
   }
@@ -41,10 +44,13 @@ export async function publishVenueRelease(client: PoolClient, input: unknown) {
   await client.query("UPDATE travel_matrix_versions SET status='stale' WHERE status='active'");
   await client.query(`INSERT INTO venue_datasets(version,status,approved_at,data_mode) VALUES ($1,'active',now(),'approved_dataset')`, [release.version]);
   await client.query(`INSERT INTO travel_matrix_versions(version,status,checked_at,data_mode) VALUES ($1,'active',now(),'approved_dataset')`, [matrixVersion]);
-  for (const record of release.records) await client.query(
-    'INSERT INTO venue_records(venue_id,dataset_version,record) VALUES ($1,$2,$3)', [record.venueId, release.version, record]);
-  for (const slot of release.slots) await client.query(
-    'INSERT INTO venue_execution_slots(id,dataset_version,venue_id,execution) VALUES ($1,$2,$3,$4)', [slot.slotId, release.version, slot.venueId, slot]);
+  await client.query(`INSERT INTO venue_records(venue_id,dataset_version,record)
+    SELECT item->>'venueId',$1,item->'record' FROM jsonb_array_elements($2::jsonb) item`,
+  [release.version, JSON.stringify(release.records.map(record => ({ venueId: record.venueId, record })))]);
+  await client.query(`INSERT INTO venue_execution_slots(id,dataset_version,venue_id,execution)
+    SELECT (item->>'slotId')::uuid,$1,item->>'venueId',item->'execution'
+    FROM jsonb_array_elements($2::jsonb) item`,
+  [release.version, JSON.stringify(release.slots.map(slot => ({ slotId: slot.slotId, venueId: slot.venueId, execution: slot })))]);
   // Large releases retain 32 nearest neighbors per venue. Missing legs stay unavailable.
   const legs = estimatedDatasetLegs(release.records, matrixVersion, ids.size > 200 ? 32 : undefined);
   await client.query(`INSERT INTO travel_matrix(matrix_version,from_key,to_key,mode,minutes)

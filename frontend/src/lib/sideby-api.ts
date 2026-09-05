@@ -27,7 +27,9 @@ export type SidebyStop = {
   leave_at: string;
   travel_minutes: number;
   travel_mode: string;
-  estimated_cost: number;
+  estimated_cost: number | null;
+  verification_status: "verified" | "needs_confirmation";
+  unknown_fields: string[];
   locked: boolean;
   google_maps_url: string;
   google_place_id?: string;
@@ -37,12 +39,17 @@ export type SidebyItinerary = {
   itinerary_id: string;
   title: string;
   stops: SidebyStop[];
-  total_cost: number;
+  total_cost: number | null;
   total_duration_minutes: number;
   travel_minutes: number;
   couple_score: number;
   public_reason: string;
   data_mode: "approved_dataset" | "synthetic_demo";
+  validation: {
+    hard_constraints_passed: boolean;
+    confirmation_required: boolean;
+    data_freshness_note: string;
+  };
 };
 
 export class SidebyApiError extends Error {

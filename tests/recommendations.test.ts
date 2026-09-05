@@ -30,6 +30,28 @@ test('personal venue feedback changes ranking even when venue attributes are unk
   assert.doesNotMatch(JSON.stringify(after), /personalVenuePenalties|participantKey/);
 });
 
+test('published government candidates with missing operations remain recommendable with explicit confirmation warnings', () => {
+  const provisional = venues.map(item => ({
+    record: { ...item.record, facts: { ...item.record.facts,
+      price: { status: 'unknown' as const, minTwd: null, maxTwd: null, basis: 'unknown' as const, evidenceRefs: [] },
+      openingHours: { status: 'source_reported' as const, rawText: item.record.facts.openingHours.rawText,
+        evidenceRefs: item.record.facts.openingHours.evidenceRefs },
+    } },
+    execution: { ...item.execution, outdoor: null, bookingStatus: 'unknown' as const, status: 'provisional' as const },
+  }));
+  const plans = composeItineraries({
+    sessionId, version: 3,
+    shared: { ...shared, dietaryRequirements: [], allergensToAvoid: [], accessibilityRequirements: [] },
+    parserOutputs, venues: provisional, legs,
+    dataMode: 'approved_dataset', datasetVersion: 'sideby-release-pool-test', routeMatrixVersion: 'routes-test',
+  });
+  assert.equal(plans.length, 3);
+  assert.ok(plans.every(plan => plan.total_cost === null && plan.validation.confirmation_required
+    && !plan.validation.hard_constraints_passed));
+  assert.ok(plans.every(plan => plan.stops.every(stop => stop.estimated_cost === null
+    && stop.verification_status === 'needs_confirmation' && stop.unknown_fields.includes('price'))));
+});
+
 test('a contextual observation does not silently become a general venue attribute', () => {
   const unknown = venues.map(row => ({ ...row, record: { ...row.record, attributes: [] } }));
   const contextual = venues.map(row => ({ ...row, record: { ...row.record,
@@ -109,7 +131,7 @@ test('composer returns three schema-valid, diverse and hard-valid itineraries', 
   for (const itinerary of result) {
     assert.equal(publicItinerarySchema.safeParse(itinerary).success, true);
     assert.equal(itinerary.stops.length, 2);
-    assert.ok(itinerary.total_cost <= shared.budgetTwdTotal);
+    assert.ok(itinerary.total_cost !== null && itinerary.total_cost <= shared.budgetTwdTotal);
     assert.ok(itinerary.travel_minutes <= shared.maxTotalTravelMinutes!);
     assert.ok(!itinerary.stops.some(stop => stop.venue_id === 'venue_test_8'));
     assert.match(itinerary.public_reason, /^符合共同時間與預算/);
@@ -235,7 +257,7 @@ test('replan preserves locked stops, excludes rejected venues and fails closed w
     && stop.venue_id === locked.venue_id && stop.order_no === locked.order_no && stop.locked));
   assert.ok(!replanned[0].stops.some(stop => stop.venue_id === rejected.venue_id));
   assert.equal(replanned[0].validation.hard_constraints_passed, true);
-  assert.ok(replanned[0].total_cost <= shared.budgetTwdTotal);
+  assert.ok(replanned[0].total_cost !== null && replanned[0].total_cost <= shared.budgetTwdTotal);
   assert.ok(replanned[0].travel_minutes <= shared.maxTotalTravelMinutes!);
 
   const otherVenues = venues.map(item => item.record.venueId).filter(id => id !== locked.venue_id);

@@ -1,5 +1,13 @@
 # Sideby 專案規則
 
+## 2026-09-06 全候選正式發布政策（待部署）
+
+- Owner 明確要求將最新 1,121 筆通過 schema／來源政策的政府候選全部納入正式推薦池，不再以「每筆先具完整價格、營業、實際區域、室內外與冷氣證據」作為發布前置。
+- 發布不等於補齊事實：原 13 筆維持 `verified_current`；其餘候選以 `needs_confirmation`／`eligible_with_unknowns` 進池，未知價格、營業、實際使用區域、室內外、冷氣及訂位必須保持 `null` 或 unknown，不得由名稱、描述或 Google 評論補成核准事實。
+- 一般推薦可使用待確認候選，但方案須回傳 `total_cost: null`、`confirmation_required: true`、`hard_constraints_passed: false`，並逐站列出 `unknown_fields`。若雙方明確要求室內／戶外、冷氣／無冷氣、飲食、過敏、無障礙等硬條件，未知資料仍 fail closed。
+- Google 評論只在當次請求內產生最多 12 個粗略情境線索；可提示室內、冷氣、營業等可能性，但不得進 PostgreSQL、核准欄位、排序、索引、RAG、訓練或評測。唯一可長期保存的 Google 欄位仍是 Place ID。
+- `venues:publish-candidates` 負責建立可重現的全候選 release；`venues:refresh-all` 每日更新政府快照、Place ID、全候選 release 與學習索引。Migration 012 允許推薦索引保留未知價格。此節目前是本機已測通、正式部署待驗狀態，未實查 production 前不得宣稱正式數已由 13 變成 1,121。
+
 ## 2026-09-06 Google 評論即時模擬分類
 
 - `feat/live-review-signals` 將每個已核准行程地點的 Google 即時文字評論由最多 3 則提高為最多 5 則，並在單次請求記憶體中以固定規則產生最多 10 個正向／提醒情境線索及提及次數。

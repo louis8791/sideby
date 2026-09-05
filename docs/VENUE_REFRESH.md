@@ -6,15 +6,16 @@
 
 | 層級 | 數量 | 意義 |
 |---|---:|---|
-| 首批正式核准場地 | 13 | Owner 核准的政府來源室內／服務型場地；具票價、營業與 Place ID |
+| 目前 production 正式推薦 | 13 | 部署前現況；全候選 release 尚未切換 |
+| 目標正式推薦池 | 1,121 | 13 筆完整驗證＋1,108 筆出發前待確認；待 production 實查 |
 | 合成展示場地 | 9 | 只保留於明示的本機 `synthetic_demo` 模式 |
-| Production draft staging | 1,121 | 已寫入 Railway PostgreSQL，尚未核准、不參與推薦 |
+| Production staging | 1,121 | 已寫入 Railway PostgreSQL；是全候選 release 的來源 |
 | 已對應 Google Place ID | 1,120 | 只長期保存 Place ID；仍是待審 draft |
 | Place ID 查無結果 | 1 | 30 日後可再查，不影響其政府候選記錄 |
 | 首批審查隊列 | 100 | 依政府欄位完整度與 Place ID 狀態排序；非已核准 |
 | 官方來源全臺資料 | 9,818 | 景點 6,190＋餐飲 3,628；不是 Sideby 可推薦場地數 |
 | 臺北／新北來源記錄 | 1,138 | 符合 MVP 城市範圍的候選 |
-| 通過 schema／政策並可進 staging | 1,121 | 全部仍為 `draft`，不會自動進推薦 |
+| 通過 schema／政策並可進 staging | 1,121 | 可按 Owner 新 gate 發布；未知事實須保持待確認 |
 | 拒絕 | 17 | 座標、schema 或政策檢查未通過 |
 
 上述數字來自來源 `UpdateTime=2026-09-05` 的單次 dry-run；來源每日變動，後續以 `venue_import_runs` 記錄為準。
@@ -27,12 +28,12 @@
 → 正規化成 VenueRecord
 → schema、授權與共用政策守門
 → venue_import_runs + venue_staging_records
-→ Owner 從審查池列名核准，補價格／營業／環境區域／審核
-→ 另行建立 approved_dataset、execution slots 與合法交通資料
+→ Owner 以全候選 release 核准發布資格，不等於核准未知事實
+→ 13 筆建立 verified slots；其餘建立 provisional slot 並列待確認欄位
 → 驗證完成後才可切換 active
 ```
 
-每日匯入管線刻意不自動切換 `venue_datasets.active`。政府來源只能建立客觀資料 draft；只有 Owner 列名核准的 13 筆會由標準啟動載入獨立 `approved_dataset`。明亮、安靜、浪漫等主觀屬性不得由名稱或描述自動推論，冷氣未知也不得補成 true／false。
+每日匯入先建立客觀 staging，再由 `venues:publish-candidates` 建立不可變的全候選 release 並切換 active。Owner 核准的是「可進推薦池並以缺件警示呈現」，不是把缺件改成已驗證。明亮、安靜、浪漫等主觀屬性不得由名稱或描述自動推論，冷氣未知也不得補成 true／false。
 
 ## 執行
 
@@ -80,6 +81,20 @@ npm run venues:match-google-place-ids -- --apply
 
 每日來源更新與缺漏 Place ID 補齊可合併執行 `npm run venues:refresh-all`；失敗項目隔日重試、查無結果項目 30 日後重試。首批人工查核清單以 `npm run venues:review-queue -- --limit=100` 依政府欄位完整度及 Place ID 狀態排序。
 
+只建立或預覽最新全候選 release：
+
+```powershell
+npm run venues:publish-candidates
+```
+
+在既有 PostgreSQL 連線套用並切換 active：
+
+```powershell
+npm run venues:publish-candidates -- --apply
+```
+
+`venues:refresh-all` 已包含此步驟。一般推薦可以使用待確認候選；若使用者指定室內／戶外、冷氣／無冷氣或其他安全硬限制，缺值候選仍會被拒絕。評論分類不會回填這些欄位。
+
 ## 首批啟用 Gate
 
 1. 已完成：從 1,121 筆候選列名選定 13 筆，Owner 明確核准。
@@ -87,4 +102,4 @@ npm run venues:match-google-place-ids -- --apply
 3. 已完成：建立同版本 execution slots、政府座標估算矩陣及 Google 即時顯示分界。
 4. 自動行為測試已用 13 筆生成三套三站正式資料行程；待合併部署後補公開 API 三案例與雙手機驗收。
 
-1,121 仍只能稱為「可追溯候選庫」；正式核准數固定為 13，不能把 Place ID 對應數冒充核准數。
+本節首批 13 筆 gate 保留為完整驗證子集的歷史。新 gate 的正式推薦池目標為 1,121 筆，但其中 1,108 筆須清楚標為待確認；只有 production migration、release 與索引實查後，才能把正式數由 13 更新為 1,121。

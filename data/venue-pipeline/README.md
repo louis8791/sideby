@@ -18,8 +18,8 @@
 3. 以商家第一方頁面核對價格、營業時間與設施，只記錄結構化事實及引用位置；網站公開可讀不等於全文可放入 RAG。
 4. 團隊實地觀察時記錄日期、時段、平假日、座位區與證據。主觀屬性先標為 `proposed`，人工核准後才設為 `approved`。
 5. 使用者回饋設為 `scope: personal` 且 `allowInRag: false`；可調整該使用者偏好，不加入共用場地標準。
-6. 只有場地整體 `review.status: approved` 且來源允許重用，才可建立 RAG 文件；只有價格與營業時間均為 `verified_current`，才可列為可執行行程候選。
+6. 只有場地整體 `review.status: approved` 且來源允許重用，才可進正式推薦池；價格與營業時間均為 `verified_current` 時可標成已驗證，缺值則必須以 `needs_confirmation`／nullable cost 呈現。明確室內外、冷氣、飲食、過敏或無障礙硬條件不接受未知值。RAG 仍只接受具可重用權利與完整證據的內容。
 
 政府資料開放授權條款第 1 版要求顯名；資料中要保留提供機關、資料集名稱、版本與授權網址，對外顯示或發布衍生資料時也要履行顯名。`licenseVerified` 只能在團隊實際核對該資料集授權後設為 `true`。
 
-`schemas/venue-record.schema.json` 是交換契約，`src/venues/policy.ts` 是所有發布、排序與索引共用的單一守門。範例全為合成資料，不代表真實場地已整理完成。
+`schemas/venue-record.schema.json` 是交換契約，`src/venues/policy.ts` 是所有發布、排序與索引共用的單一守門。`npm run venues:publish-candidates -- --apply` 會把最新政府 staging 建立為全候選 release；它核准發布資格，不會替未知事實補值。範例全為合成資料，不代表真實場地已整理完成。

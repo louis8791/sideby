@@ -1,5 +1,14 @@
 # Sideby — MVP TDD
 
+## 2026-09-06 全候選正式發布契約（待部署）
+
+- `buildCandidatePoolRelease` 從單一最新政府 staging run 建立版本化 release：保留 13 筆既有 `verified_current` 記錄與時段，其餘有效候選發布為 `eligible_with_unknowns`，每筆只建立一個未來 90 天的 `provisional` slot，避免用每日假時段膨脹資料。
+- `venue_records`／`venue_recommendation_index` 的未知價格維持 SQL `NULL`；索引 `price_basis` 可為 `unknown`。未知價格不可回填為 0，未知室內外或冷氣不可回填 false。
+- 推薦輸出允許 nullable `total_cost`／`estimated_cost`，每站帶 `verification_status` 與 `unknown_fields`。含待確認候選的方案必須是 `confirmation_required=true`、`hard_constraints_passed=false`；前端須清楚警示。
+- 一般無衝突需求可使用 provisional 候選；任何明確室內外、冷氣、飲食、過敏、無障礙等硬條件仍以精確值過濾，未知不得通過。此分支的 `npm run check:all` 已通過 84 項測試及兩端 build；正式 migration、release、索引數量與公開 Runtime 尚待部署實查。
+- 發布與索引寫入改為 JSON 批次 SQL，避免 1,121 筆逐列 round trip。每日 `venues:refresh-all` 依序更新政府資料、Place ID、全候選 release 與學習索引；同日同來源版本冪等。
+- Google 評論分類最多 12 個即時線索，新增室內、冷氣、冷氣可能不足與營業提醒；測試必須鎖住不持久化、不參與硬條件或排名的邊界。
+
 ## 2026-09-06 Google 評論即時線索測試
 
 - 分類器只接單次 Place Details 回應中的最多五則文字評論，固定輸出最多十個 allowlist 線索，區分正向與提醒類並計算被幾則評論提及；無文字或無命中即不顯示。

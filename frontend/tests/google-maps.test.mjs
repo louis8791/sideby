@@ -14,12 +14,14 @@ test('review signals are request-local, bounded and distinguish positive hints f
   const signals = classifyReviewSignals([
     { author, text: '環境安靜不吵，很適合聊天，交通方便又好拍照。' },
     { author, text: '景色很美，但是假日人很多而且需要排隊。' },
-    { author, text: '店員親切，甜點好吃，價格合理。' },
+    { author, text: '店員親切，甜點好吃，價格合理，室內有冷氣。' },
   ]);
   assert.ok(signals.some(signal => signal.label === '安靜好聊' && signal.tone === 'positive'));
   assert.ok(signals.some(signal => signal.label === '可能擁擠' && signal.tone === 'caution'));
   assert.ok(signals.some(signal => signal.label === '可能排隊' && signal.tone === 'caution'));
-  assert.ok(signals.length <= 10);
+  assert.ok(signals.some(signal => signal.label === '室內空間線索' && signal.tone === 'positive'));
+  assert.ok(signals.some(signal => signal.label === '冷氣線索' && signal.tone === 'positive'));
+  assert.ok(signals.length <= 12);
 });
 
 test('venue enrichment ignores names and accepts only explicit Place IDs', () => {

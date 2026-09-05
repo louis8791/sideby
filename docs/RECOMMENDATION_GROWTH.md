@@ -1,5 +1,13 @@
 # 偏好、地點發布與持續改進
 
+## 全候選正式推薦（待部署）
+
+Owner 已決定不以每筆完整價格、時段、區域、室內外與冷氣證據作發布前置。最新 1,121 筆合格政府候選全部進版本化推薦池：原 13 筆維持完整驗證，其餘 1,108 筆標為 `needs_confirmation`，未知值保持 unknown／null。一般需求可從全池產生三套不同路線；含未知站點時總價顯示「部分價格待確認」並列出缺件。明確室內外、冷氣、飲食、過敏與無障礙硬條件仍 fail closed。
+
+`npm run venues:publish-candidates -- --apply` 會從最新 staging 建立 release、provisional slots、估計交通矩陣與推薦索引；Migration 012 讓索引保留未知價格，發布與索引採批次 SQL。每日 `venues:refresh-all` 已串接同一流程。本機 `npm run check:all` 共 84 項測試及兩端 build 通過；正式 production 尚未切換前仍是 13 筆。
+
+Google 評論最多五則、最多 12 個即時線索，可粗略顯示室內、冷氣或營業提醒，但不持久化、不影響核准、CoupleScore、硬篩選、索引或學習。這樣能增加展示資訊，不會把評論猜測冒充場地事實。
+
 ## Google 評論即時模擬線索
 
 已核准行程地點的最多五則 Google 文字評論會在該次請求內粗略歸類為最多十個約會情境線索，顯示正向／提醒類別與提及次數。此功能只增加黑客松展示資訊，不保存評論或衍生線索，也不改寫場地事實、CoupleScore、硬篩選、個人偏好、推薦索引或學習候選。PR #25 已合併，Cloudflare Worker version `4a13b1cc-6930-4c85-ad64-9059ebc8f914` 已部署；公開 bundle 與 Google 四項連線通過，線索實際出現數量仍由當次評論文字決定。
