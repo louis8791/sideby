@@ -2,17 +2,21 @@
 
 > 一款把兩個人的喜好、限制與不方便直說的需求，整理成三套可直接出發的完整約會行程的雙人共決策產品。
 
-本 repository 包含 Sideby MVP 規格與可執行後端：匿名雙人房間、公開條件、版本確認、SSE、私密輸入、版本化同意與有限規則解析。前端 UI、自管模型／RAG 與完整推薦尚未整合。
+本 repository 包含 Sideby MVP 規格、可執行後端與正式手機優先頁面：匿名雙人房間、公開條件、版本確認、私密輸入、版本化同意、有限規則解析、三套行程、反應／鎖定／局部重排／雙人定案，以及「太暗」的本人偏好更新。自管模型／RAG 與真實場地資料仍未整合。
+
+## 三人協作入口
+
+先讀 [現場分工與前後端整合](docs/TEAM_INTEGRATION.md)。正式根目錄為 `E:\sideby`；Lovable／Manus 原版隔離在 `.local/frontends/`，不整包覆蓋目前專案。每個 checkout 同時只有一位寫入者。
 
 ## 啟動後端
 
-需要 Node.js 22.13+。在 repo 根目錄執行 `npm ci`、`npm run dev:local`，即會啟動本機 PostgreSQL 與 Next.js API（http://127.0.0.1:3000）。目前首頁沒有 UI。完整欄位、同步、錯誤及環境說明見 [後端串接契約](docs/BACKEND_API.md)。
+需要 Node.js 22.13+。在 repo 根目錄執行 `npm ci`、`npm run dev:local`，即會啟動本機 PostgreSQL 與 Next.js（http://127.0.0.1:3000）。若要跑不含真實推薦的完整雙人展示，使用 `npm run demo:local`；首頁與行程卡會清楚標示合成資料及版本。完整欄位、同步、錯誤及環境說明見 [後端串接契約](docs/BACKEND_API.md)。
 
-驗證：執行 `npm test`，它會先正式建置，再以獨立 PostgreSQL 與正式 HTTP 服務測試後端、場地資料、需求資料契約、parser 與 Privacy Guard。2026-09-05 共 27 tests passed；真實需求表、自管模型／RAG、兩個獨立瀏覽器與公開部署仍待驗收。
+驗證：執行 `npm test`，它會先正式建置，再以獨立 PostgreSQL 與正式 HTTP 服務測試後端、場地資料、需求資料契約、parser、Privacy Guard、推薦／重排與偏好更新。2026-09-05 共 36 tests passed；另有 Chrome＋Edge 單一合成案例的完整主流程證據。真實需求表、自管模型／RAG、至少 12 筆核准真實場地、正式交通矩陣、兩支實體手機、公開部署與 Owner 驗收仍待完成。
 
 ## 版本與提交紀錄
 
-- `main` 是目前唯一工作分支，後續修改以此分支的文件為基準。
+- `main` 是穩定整合分支；成員以各自 feature 分支／獨立工作目錄交付，後續修改以整合版的文件與 API 契約為基準。
 - [原始交付版 `archive/delivery-mvp-v1`](https://github.com/louis8791/sideby/tree/archive/delivery-mvp-v1) 以 Git tag 保留完整內容與原始 commit，僅供歷史比對。
 - 原始交付版與 `main` 是兩條獨立建立的歷史，內容並不相同。原始版的雲端模型設定只供歷史比對；目前採下述自行部署模型＋場地 RAG 的決策，以 main 四份權威文件為準。
 - 最新修改可查看 [main 提交紀錄](https://github.com/louis8791/sideby/commits/main/)。
@@ -69,6 +73,7 @@ CRM、商家後台、App 內付款、訂閱、社群、即時聊天、遊戲化�
 | [docs/MODEL_RAG.md](docs/MODEL_RAG.md) | 模型、資料來源、隱私與 RAG 邊界 |
 | [docs/PHASE1_ACCEPTANCE.md](docs/PHASE1_ACCEPTANCE.md) | 給 CC 的 Phase 1 可重跑驗收步驟與證據格式 |
 | [docs/PHASE2_ACCEPTANCE.md](docs/PHASE2_ACCEPTANCE.md) | 給 CC 的 Phase 2 私密輸入、RAG 與兩瀏覽器驗收規則 |
+| [docs/PHASE6_ACCEPTANCE.md](docs/PHASE6_ACCEPTANCE.md) | Phase 6 反應、局部重排與雙人定案驗收規則 |
 | [schemas/](schemas/) | LLM 結構化輸出與行程輸出的 JSON Schema |
 | [data/training/requirements.example.jsonl](data/training/requirements.example.jsonl) | 需求資料契約的 synthetic 格式範例 |
 | [data/fixtures/](data/fixtures/) | 不含秘密的範例場地與評測案例 |

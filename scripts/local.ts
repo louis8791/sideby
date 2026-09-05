@@ -2,12 +2,20 @@ import { execFile, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
 import { resolve } from 'node:path';
 import { localPostgres } from './postgres';
+import { seedSyntheticDemo } from './seed-demo';
+import { assertWorkspaceRoot, localOptions, assertPortAvailable } from './workspace';
 
 async function main() {
-  const { postgres, url } = await localPostgres('.local/dev-postgres');
-  console.log('Sideby API: http://127.0.0.1:3000/api (local development)');
-  const app = spawn(process.execPath, [resolve('node_modules/next/dist/bin/next'), 'dev', '--hostname', '127.0.0.1'], {
-    env: { ...process.env, DATABASE_URL: url, NEXT_TELEMETRY_DISABLED: '1' },
+  await assertWorkspaceRoot();
+  const { demo, port } = localOptions(process.argv.slice(2));
+  await assertPortAvailable(port);
+  const { postgres, url } = await localPostgres(demo ? '.local/demo-postgres' : '.local/dev-postgres');
+  try { if (demo) await seedSyntheticDemo(url); }
+  catch (error) { await postgres.stop(); throw error; }
+  console.log(`Sideby: http://127.0.0.1:${port} (${demo ? 'synthetic demo; not real recommendations' : 'local development'})`);
+  const app = spawn(process.execPath, [resolve('node_modules/next/dist/bin/next'), 'dev', '--hostname', '127.0.0.1', '--port', String(port)], {
+    env: { ...process.env, DATABASE_URL: url, NEXT_TELEMETRY_DISABLED: '1',
+      SIDEBY_DATA_MODE: demo ? 'synthetic_demo' : 'standard' },
     stdio: 'inherit', windowsHide: true,
   });
   let closing = false;
@@ -29,4 +37,9 @@ async function main() {
   app.once('error', () => { process.exitCode = 1; void close(); });
   app.once('exit', code => { process.exitCode = code ?? 0; void close(); });
 }
-main().catch(() => { console.error('Local backend failed to start. Check .local database and installed dependencies.'); process.exitCode = 1; });
+main().catch(error => {
+  const message = error instanceof Error ? error.message : '';
+  console.error(/^(WRONG_WORKSPACE|INVALID_LOCAL_|LOCAL_PORT_UNAVAILABLE)/u.test(message)
+    ? message : 'Local Sideby failed to start. Check .local database and installed dependencies.');
+  process.exitCode = 1;
+});

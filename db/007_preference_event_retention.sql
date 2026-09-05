@@ -1,0 +1,2 @@
+ALTER TABLE preference_feedback_events
+  DROP CONSTRAINT IF EXISTS preference_feedback_events_itinerary_id_fkey;

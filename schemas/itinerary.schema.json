@@ -9,28 +9,50 @@
     "itinerary_id",
     "session_id",
     "title",
+    "data_mode",
+    "dataset_version",
+    "route_matrix_version",
     "stops",
     "total_cost",
     "total_duration_minutes",
     "travel_minutes",
     "couple_score",
+    "score_breakdown",
     "public_reason",
     "sponsored_content",
-    "validation"
+    "offers",
+    "validation",
+    "version"
   ],
   "properties": {
     "itinerary_id": {
       "type": "string",
+      "format": "uuid",
       "minLength": 1
     },
     "session_id": {
       "type": "string",
+      "format": "uuid",
       "minLength": 1
     },
     "title": {
       "type": "string",
       "minLength": 1,
       "maxLength": 120
+    },
+    "data_mode": {
+      "type": "string",
+      "enum": ["approved_dataset", "synthetic_demo"]
+    },
+    "dataset_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "route_matrix_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
     },
     "stops": {
       "type": "array",
@@ -60,6 +82,7 @@
     "score_breakdown": {
       "type": "object",
       "additionalProperties": false,
+      "required": ["min_fit", "mean_fit", "context_fit", "novelty", "route_efficiency"],
       "properties": {
         "min_fit": {
           "type": "number",
@@ -98,6 +121,7 @@
     },
     "offers": {
       "type": "array",
+      "maxItems": 0,
       "items": {
         "$ref": "#/$defs/offer"
       }
@@ -120,17 +144,21 @@
         "venue_id",
         "venue_name",
         "category",
+        "district",
         "arrival_at",
         "leave_at",
         "travel_mode",
         "travel_minutes",
         "estimated_cost",
         "locked",
-        "booking_status"
+        "booking_status",
+        "booking_url",
+        "google_maps_url"
       ],
       "properties": {
         "stop_id": {
           "type": "string",
+          "format": "uuid",
           "minLength": 1
         },
         "order_no": {
@@ -139,6 +167,7 @@
         },
         "venue_id": {
           "type": "string",
+          "pattern": "^venue_[a-z0-9_-]{1,120}$",
           "minLength": 1
         },
         "venue_name": {
@@ -146,6 +175,10 @@
           "minLength": 1
         },
         "category": {
+          "type": "string",
+          "minLength": 1
+        },
+        "district": {
           "type": "string",
           "minLength": 1
         },
@@ -194,6 +227,10 @@
             "null"
           ],
           "format": "uri"
+        },
+        "google_maps_url": {
+          "type": "string",
+          "format": "uri"
         }
       }
     },
@@ -234,7 +271,8 @@
         "hard_constraints_passed",
         "privacy_guard_passed",
         "source_ids_verified",
-        "checked_at"
+        "checked_at",
+        "data_freshness_note"
       ],
       "properties": {
         "hard_constraints_passed": {

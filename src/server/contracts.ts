@@ -11,6 +11,7 @@ export const sharedConditions = z.strictObject({
     label: z.string().trim().min(1).max(120),
     latitude: z.number().min(24.6).max(25.4),
     longitude: z.number().min(121.2).max(122.1),
+    matrixKey: z.string().regex(/^[a-z0-9._-]{1,80}$/).optional(),
   }),
   budgetTwdTotal: z.number().int().min(0).max(100000),
   transport: z.array(z.enum(['walk', 'transit', 'car', 'bike'])).min(1).max(4)
@@ -18,6 +19,16 @@ export const sharedConditions = z.strictObject({
   stops: z.number().int().min(2).max(4),
   outdoorAllowed: z.boolean(),
   bookingAllowed: z.boolean(),
+  maxLegTravelMinutes: z.number().int().min(0).max(240).optional(),
+  maxTotalTravelMinutes: z.number().int().min(0).max(600).optional(),
+  dietaryRequirements: z.array(z.string().trim().min(1).max(40)).max(12).optional(),
+  allergensToAvoid: z.array(z.string().trim().min(1).max(40)).max(12).optional(),
+  accessibilityRequirements: z.array(z.string().trim().min(1).max(40)).max(12).optional(),
+  participantMinAge: z.number().int().min(0).max(120).optional(),
+  hardNoCategories: z.array(z.enum([
+    'cafe', 'restaurant', 'exhibition', 'workshop', 'park', 'walk',
+    'entertainment', 'cultural', 'market', 'other',
+  ])).max(10).optional(),
 }).superRefine((value, context) => {
   const start = Date.parse(value.startsAt), end = Date.parse(value.endsAt);
   const taipeiDate = (time: number) => new Date(time + 8 * 3600000).toISOString().slice(0, 10);
@@ -66,10 +77,29 @@ export const privateInput = z.strictObject({
   visibility: z.enum(['private_session', 'private_remembered']).default('private_session'),
 });
 
+export const itineraryReaction = z.strictObject({
+  version,
+  stopId: id.nullable().optional(),
+  reaction: z.enum(['like', 'dislike', 'replace']),
+}).superRefine((value, context) => {
+  if (value.reaction === 'replace' && !value.stopId) {
+    context.addIssue({ code: 'custom', message: 'replace requires stopId', path: ['stopId'] });
+  }
+});
+
+export const finalizeChoice = z.strictObject({ version, itineraryId: id });
+export const preferenceFeedback = z.strictObject({
+  version,
+  stopId: id,
+  signal: z.literal('too_dark'),
+});
+
 export { venueId };
 export type FeedbackInput = z.infer<typeof feedbackInput>;
 export type FeedbackPatch = z.infer<typeof feedbackPatch>;
 export type PrivateInput = z.infer<typeof privateInput>;
+export type ItineraryReaction = z.infer<typeof itineraryReaction>;
+export type PreferenceFeedback = z.infer<typeof preferenceFeedback>;
 
 export interface PublicState {
   sessionId: string;

@@ -2,7 +2,9 @@
 
 ## 1. 技術決策
 
-實作狀態依 ROADMAP 的 Phase 1～5 五個頂層階段回報；1A／1B 與 4A～4E 是工作包，不能作為額外 Phase 或整階段通過證據。
+2026-09-05 工作區隔離：主 repo 保留 Next.js／PostgreSQL，外部 TanStack／Vite 或 Manus 專案放 `.local/frontends/`，各有依賴、Git 與建置目錄。TypeScript 僅掃描正式來源目錄並排除 `.local`，Next root 固定為本 repo。`dev:local`／`demo:local` 驗證 cwd、明確埠與占用狀態後才啟動資料庫；不允許啟動時自動換埠。跨前端接線使用受控同源 `/api` 代理；詳見 `docs/TEAM_INTEGRATION.md`。
+
+實作狀態依 ROADMAP 的 Phase 1～8 八個頂層階段回報；舊 1A／1B 與 4A～4E 僅保留為歷史工作包與證據入口，不能作為現行額外 Phase 或整階段通過證據。
 
 MVP 採模組化單體，不拆微服務。建議以 React、Next.js、TypeScript、Server Routes、PostgreSQL、匿名身分與 Realtime 實作；本次不接 Google API，地點／路線以核准資料與本地交通矩陣提供。
 
@@ -42,16 +44,16 @@ MVP 採模組化單體，不拆微服務。建議以 React、Next.js、TypeScrip
 - 模型檔、索引、快取位於專案根目錄下的明確子目錄；路徑、版本、來源、授權與重建方式需在實作時記錄，內容不進 Git。
 - 場地可有 optional `google_place_id`，它是唯一可長期保存的 Google 識別欄位，不是場地事實、排名特徵或 RAG 文件內容。名稱、地址、評論、照片、搜尋結果與衍生標籤若來源是 Google，政策守門必須拒絕持久化與索引。
 
-### 1.4 Phase 1B 已實作選擇（2026-09-04）
+### 1.4 雙人房間後端已實作選擇（原 Phase 1B，現 Roadmap Phase 2；2026-09-04）
 
 - Next.js App Router＋TypeScript＋pg＋Zod；版本鎖定 package-lock.json。
 - 匿名 Bearer 憑證只存雜湊、七天到期；邀請碼 24 小時到期，A／B 固定兩個席位。
 - PostgreSQL 私有資料庫：anonymous_users、couples、couple_members、date_sessions、session_confirmations。其他下列資料表仍是後續規格。
 - 共同條件採 optimistic version，交易鎖序列化修改／確認；編輯後清空兩方確認。
-- Phase 1B 以 SSE＋500ms 查庫提供公開快照，10 秒心跳、30 秒在線期限、60 秒重連。尚未接 Supabase Realtime／RLS。
+- Roadmap Phase 2 以 SSE＋500ms 查庫提供公開快照，10 秒心跳、30 秒在線期限、60 秒重連。尚未接 Supabase Realtime／RLS。
 - 應用 API 是唯一資料入口；共同狀態固定欄位輸出，不對前端開放資料表。每房間暫定一個 Session，重送建立回原 Session。
 - db/001_rooms.sql 為實際 migration；本機開發／測試使用可攜 PostgreSQL，資料、密碼與紀錄留在 .local/ 並排除 Git。
-- 已實作路由、公開狀態、輸入範圍與錯誤以 [BACKEND_API](docs/BACKEND_API.md) 為 Phase 1B 串接契約；下文完整 MVP API 不代表已全部可用。
+- 已實作路由、公開狀態、輸入範圍與錯誤以 [BACKEND_API](docs/BACKEND_API.md) 為雙人房間串接契約；下文完整 MVP API 不代表已全部可用。
 
 ## 2. 邏輯分層
 
@@ -83,7 +85,7 @@ MVP 採模組化單體，不拆微服務。建議以 React、Next.js、TypeScrip
 
 - users：匿名或正式使用者顯示資料。
 - couples、couple_members：雙人關係與角色。
-- preference_profiles、adjective_preferences：長期偏好與形容詞模型。
+- user_preference_versions、preference_feedback_events：只記本人可追蹤的偏好版本與不可變事件；當次 Session 事件與經有效個人化同意的長期投影分開。
 - date_sessions、session_inputs：本次規劃與原始／結構化輸入；`session_inputs` 以 `(session_id,user_id)` 唯一，保存 visibility、parse_status 與已驗證 parser envelope。
 - venues、venue_attributes、offers：場地、人工屬性與合作內容。
 - venues 的 `google_place_id` 為 optional 外部識別；其他可推薦欄位仍須有自有／授權／合規開放來源與權利紀錄。
@@ -123,7 +125,7 @@ MVP 採模組化單體，不拆微服務。建議以 React、Next.js、TypeScrip
 
 私密輸入 endpoint 只能由輸入者與受信任的伺服器決策流程使用；對方的讀取 API 不得回傳 raw_text、structured_input 或可辨識來源的錯誤訊息。
 
-### 4.2 Phase 2 私密輸入與 parser envelope
+### 4.2 私密輸入與 parser envelope（原 Phase 2，現 Roadmap Phase 3）
 
 `POST /api/sessions/:id/private-inputs` body 為 `rawText`、`tags` 與 `visibility`；伺服器從 Bearer token 決定 user_id，資料庫以 `(session_id,user_id)` upsert。GET 只取得本人輸入，DELETE 刪除本人輸入；非成員及另一人的不存在投影都回 404。POST／DELETE／remembered 撤回會增加 Session 公開 revision 並清除既有 confirmations，使並行的舊版確認以 VERSION_CONFLICT 失敗；公開 revision 只表示決策輸入已改變，不暴露內容。
 
@@ -165,6 +167,10 @@ Sponsored 或合作費用不進入任何適配分數。硬限制在計分前排�
 - 過敏、飲食、健康、體力、年齡／場域與 Hard No。
 - 三套方案的差異門檻。
 
+2026-09-05 已實作 Phase 5 後端第一刀：`db/004_itineraries.sql` 以 `(dataset_version, venue_id)` 保存可並存的版本化場地與執行時段，並保存交通矩陣及 Session 行程；`src/recommendations/engine.ts` 先 fail-closed 過濾共同與私人日期／時間／戶外／訂位／交通／飲食／過敏／無障礙等硬限制，再按上述公式計分並選出三套差異方案；未知價格基準不得推薦。`src/server/itineraries.ts` 只接受同房成員與目前版本，兩人確認、兩筆已解析私密輸入、作用中資料集與矩陣缺一即明確失敗。`POST /api/sessions/:id/generate` 與 `GET /api/sessions/:id/itineraries` 已通過合成 PostgreSQL／HTTP 測試；GET 對 JSONB 重新套用嚴格 public itinerary schema，不直接外送任意欄位，Session 版本改變後舊行程不再回傳。合作欄位不進分數，公開輸出通過 allowlist、itinerary schema 與 Privacy Guard。fairness 最低門檻尚未定義；這不代表 Phase 4 真實場地／RAG、三案例 Runtime、前端或 Owner 已驗收；細節見 `docs/PHASE5_ACCEPTANCE.md`。
+
+2026-09-05 已開始 Phase 6 後端第一刀。`db/005_replan_finalize.sql` 分開保存單一使用者擁有的 reaction、雙人 finalize choice 與 Session finalization；公開 itinerary ID 與資料表主鍵一致。Reaction 以目前 itinerary 的 stop_id 驗證目標並 upsert，雙方 stop-like 才推導 locked；reaction row 不進共同輸出。Replan 從伺服器 payload 取得 locked stops，使用同一 `composeItineraries` 排除衝突候選，保留 `stop_id／venue_id／order_no／locked`，整條路線重驗失敗就 rollback。Finalize 只有兩位成員選同一 itinerary 才成立，且定案後拒絕重新生成、反應、重排與改選。合成整合測試不能替代兩瀏覽器、真實資料或 Owner 驗收；細節見 `docs/PHASE6_ACCEPTANCE.md`。
+
 ## 6. 隱私實作
 
 Privacy Guard 必須在公開輸出前執行：
@@ -177,7 +183,7 @@ Privacy Guard 必須在公開輸出前執行：
 
 不要只依賴 LLM 的自我約束；要有程式層的欄位隔離、輸出 allowlist、日誌過濾與對抗性測試。
 
-目前 PublicState／SSE 與公開評論出口已接 `publicProjection` 欄位守門，遇到 rawText、structuredInput、parserOutput、clarification、userId、token 或 inviteCode 等私密欄位會拒絕輸出；`safePublicReason` 會拒絕私密原句及 A／B／「其中一方」來源線索。Phase 3 生成公開理由時仍須把所有私密原文傳入同一守門並做兩瀏覽器對抗測試，現階段不能宣稱完整 Privacy Guard 已驗收。
+目前 PublicState／SSE 與公開評論出口已接 `publicProjection` 欄位守門，遇到 rawText、structuredInput、parserOutput、clarification、userId、token 或 inviteCode 等私密欄位會拒絕輸出；`safePublicReason` 會拒絕私密原句及 A／B／「其中一方」來源線索。Roadmap Phase 5 生成公開理由時仍須把所有私密原文傳入同一守門並做兩瀏覽器對抗測試，現階段不能宣稱完整 Privacy Guard 已驗收。
 
 ## 7. 外部服務與降級
 
@@ -226,6 +232,7 @@ Google 詳細資訊同樣只做外部跳轉。按鈕文字固定為「在 Google
 
 ### 整合與真實操作
 
+- Windows 測試中的 `next start` 由共用 start／stop 管理：每次啟動重新配置空閒連接埠，stop 關閉整個程序樹並等待退出，啟動失敗保留實際日誌；migration restart 行為測試必須確認重啟後資料仍在且不沿用舊連接埠。
 - 兩個獨立瀏覽器／裝置完成邀請、共同條件、私密輸入、生成、投票、重排與 finalize。
 - 驗證同步延遲、失聯重連與重複提交。
 - 驗證外部 API 失效時仍可完成核心 Demo。
@@ -249,7 +256,7 @@ Google 詳細資訊同樣只做外部跳轉。按鈕文字固定為「在 Google
 
 ## 10. 未完成不代表通過
 
-Phase 1B 已有可執行 API、migration 與真實 PostgreSQL／HTTP 整合測試；完整 MVP 下列各層仍依各自證據驗收。真實雙裝置、私密輸入隔離、模型／RAG、推薦、外部連結及 Owner sign-off 尚未完成，不得以文件或房間測試代替。
+Roadmap Phase 2、5、6 已有可執行 API、migration 與真實 PostgreSQL／HTTP 整合測試，Phase 7 已有正式手機優先頁面、本人私人清單與誠實 click-out 降級。Chrome 雙分頁已跑完一個合成主流程，IAB 已驗 390／1280 無水平 overflow 與可見鍵盤焦點；推薦場地仍是合成資料。這不代表兩支實體手機、三案例效能、真實場地／RAG、公開部署或 Owner sign-off。各層仍須分開驗收。
 
 ## 11. 黑客松小型需求分類器（需求資料契約已實作，訓練待執行）
 
@@ -282,14 +289,15 @@ Phase 1B 已有可執行 API、migration 與真實 PostgreSQL／HTTP 整合測�
 
 同一原句、提示模板衍生改寫須同 group_id；若同一受訪者／來源有高度重複敘事，也共同分組。正式私密輸入不是預設訓練來源；資料採集／訓練同意與長期偏好記憶同意分開。
 
-Phase 1 已實作以下資料層入口：
+需求分類器已實作以下資料層入口（現列入 Roadmap Phase 3）：
 
 - `src/model/requirements.ts`：Zod 契約、逐筆驗證、重複 sample_id、group split 與資料／taxonomy 版本檢查。
 - `scripts/validate-requirements.ts`：JSONL 命令列驗證器，輸出 VALID／INVALID 與錯誤清單。
-- `data/training/requirements.example.jsonl`：六筆明確標為 synthetic 的格式範例，不是真實需求表或模型品質證據。
+- `data/training/requirements.example.jsonl`：六筆明確標為 synthetic 的格式範例。
+- `data/training/requirements.hackathon.jsonl`：Owner 從合成草稿核准的 15 筆基本展示資料，5 個改寫群組按 60%／20%／20% 切分；不是真實使用者研究或模型品質證據。
 - `tests/model-requirements.test.ts`：驗證合法範例、group 跨切分及未審核／虛構原文證據的拒絕行為。
 
-真實需求表放在 `.local/phase1/requirements.jsonl` 並排除 Git；只有人工核准案例可進 train／validation／test。資料驗證通過仍不代表分類器已訓練或達到品質門檻。
+本輪 Phase 1／2 預設驗證 committed 的合成展示資料；未來若恢復真實資料評測，真實需求表仍放在 `.local/phase1/requirements.jsonl` 並排除 Git，且須另以 `PHASE1_REQUIREMENTS_PATH` 指定。只有人工核准案例可進切分，資料驗證通過仍不代表分類器已訓練或達到品質門檻。
 
 ### 11.3 切分、訓練與保存
 
@@ -311,7 +319,7 @@ bright 等初始程度對應的區間由人工錨點及設定定義；未校準�
 
 ### 11.5 驗收與停止條件
 
-可重跑入口為 `npm run requirements:validate -- <requirements.jsonl>` 與 `npm run phase1:check`；完整 CC 交接見 `docs/PHASE1_ACCEPTANCE.md`。後者缺少模型、評測、RAG 或兩瀏覽器 Runtime 證據時必須 fail closed。
+可重跑入口為 `npm run requirements:validate -- <requirements.jsonl>` 與 `npm run phase1:check`；完整 CC 交接見 `docs/PHASE1_ACCEPTANCE.md`。2026-09-05 Owner 將模型評測與 RAG 延後，因此本輪顯示 `DEFERRED` 且不阻擋；兩瀏覽器 Runtime 仍缺時必須 fail closed。
 
 - 逐屬性及各方向報告 precision／recall／F1、support，另報 macro-F1、混淆案例與 group 數。未提及類別分開報告，不用總 accuracy 掩蓋否定失敗。
 - 分開報告程度規則、明確數字／單位解析、釐清案例成功率及可自動處理覆蓋率。全部拒判不能算「解析零錯誤」的成功產品。

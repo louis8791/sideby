@@ -1,10 +1,11 @@
 import { setTimeout as delay } from 'node:timers/promises';
 import { z } from 'zod';
 import {
-  ApiError, consentUpdate, feedbackInput, feedbackPatch, id, sharedConditions, venueId, version,
-  privateInput, type PublicState,
+  ApiError, consentUpdate, feedbackInput, feedbackPatch, finalizeChoice, id, itineraryReaction, preferenceFeedback,
+  sharedConditions, venueId, version, privateInput, type PublicState,
 } from './contracts';
 import * as feedback from './feedback';
+import * as itineraries from './itineraries';
 import * as privateInputs from './private-inputs';
 import * as rooms from './rooms';
 
@@ -87,6 +88,9 @@ export async function handle(request: Request): Promise<Response> {
       if (!host || originHost !== host) throw new ApiError(403, 'ORIGIN_DENIED');
     }
     const path = url.pathname;
+    if (path === '/api/runtime' && request.method === 'GET') {
+      return json({ mode: process.env.SIDEBY_DATA_MODE === 'synthetic_demo' ? 'synthetic_demo' : 'standard' });
+    }
     if (path === '/api/auth/anonymous' && request.method === 'POST') {
       await body(request, empty);
       return json(await rooms.anonymous(), 201);
@@ -98,6 +102,10 @@ export async function handle(request: Request): Promise<Response> {
         const input = await body(request, consentUpdate);
         return json(await feedback.updateConsents(userId, input));
       }
+      throw new ApiError(405, 'METHOD_NOT_ALLOWED');
+    }
+    if (path === '/api/me/venue-feedback') {
+      if (request.method === 'GET') return json({ items: await feedback.listOwnFeedback(userId) });
       throw new ApiError(405, 'METHOD_NOT_ALLOWED');
     }
     const ownVenueFeedback = path.match(/^\/api\/me\/venues\/([^/]+)\/feedback$/);
@@ -143,7 +151,20 @@ export async function handle(request: Request): Promise<Response> {
       const input = await body(request, z.strictObject({ coupleId: id }));
       return json(await rooms.createSession(userId, input.coupleId));
     }
-    const match = path.match(/^\/api\/sessions\/([^/]+)(?:\/(shared|confirm|events|private-inputs))?$/);
+    const itineraryAction = path.match(/^\/api\/itineraries\/([^/]+)\/(reactions|replan|preference-feedback)$/);
+    if (itineraryAction) {
+      if (request.method !== 'POST') throw new ApiError(405, 'METHOD_NOT_ALLOWED');
+      const itineraryId = id.parse(itineraryAction[1]);
+      if (itineraryAction[2] === 'reactions') {
+        return json(await itineraries.react(userId, itineraryId, await body(request, itineraryReaction)));
+      }
+      if (itineraryAction[2] === 'preference-feedback') {
+        return json(await itineraries.recordPreferenceFeedback(userId, itineraryId, await body(request, preferenceFeedback)));
+      }
+      const input = await body(request, z.strictObject({ version }));
+      return json(await itineraries.replan(userId, itineraryId, input.version));
+    }
+    const match = path.match(/^\/api\/sessions\/([^/]+)(?:\/(shared|confirm|events|private-inputs|generate|itineraries|finalize))?$/);
     if (match) {
       const sessionId = id.parse(match[1]), action = match[2];
       if (request.method === 'GET' && !action) return json(await rooms.publicState(userId, sessionId));
@@ -160,6 +181,17 @@ export async function handle(request: Request): Promise<Response> {
         const input = await body(request, z.strictObject({ version }));
         await rooms.confirm(userId, sessionId, input.version);
         return json(await rooms.publicState(userId, sessionId));
+      }
+      if (request.method === 'POST' && action === 'generate') {
+        const input = await body(request, z.strictObject({ version }));
+        return json(await itineraries.generate(userId, sessionId, input.version));
+      }
+      if (request.method === 'GET' && action === 'itineraries') {
+        return json(await itineraries.list(userId, sessionId));
+      }
+      if (request.method === 'POST' && action === 'finalize') {
+        const input = await body(request, finalizeChoice);
+        return json(await itineraries.finalize(userId, sessionId, input.version, input.itineraryId));
       }
       if (action === 'private-inputs') {
         if (request.method === 'GET') return json(await privateInputs.getOwnPrivateInput(userId, sessionId));

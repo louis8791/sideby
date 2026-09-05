@@ -9,3 +9,5 @@ models/
 indexes/
 runtime/
 cache/
+/sideby_phase1_synthetic_requirements*.xlsx
+/sideby_phase1_synthetic_requirements*.csv
