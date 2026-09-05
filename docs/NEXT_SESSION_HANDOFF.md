@@ -2,7 +2,7 @@
 
 ## 最新部署接續（優先於下方歷史基線）
 
-- `feature/government-venue-refresh` 新增交通部觀光署每日景點／餐飲更新管線：來源全臺 9,818 筆，臺北／新北 1,138 筆，1,121 筆通過 schema／政策可進 draft staging，17 筆拒絕。PostgreSQL migration 009、來源／run／staging 表、SHA-256 冪等、transaction rollback 與 active dataset 保留已有本機真資料＋PostgreSQL驗證；尚未 commit／push／部署或套用 production DB。production 仍為 9 個 `synthetic_demo`，不得把候選庫冒充已核准場地。操作見 `docs/VENUE_REFRESH.md`。
+- PR #11 已合併 `main`（`0452445`）：交通部觀光署每日景點／餐飲更新管線讀到全臺 9,818、臺北／新北 1,138，Railway PostgreSQL 已寫入 1,121 筆 draft、拒絕 17，migration 009 與相同內容冪等回用已在 production 驗證。獨立 `venue-refresh-daily` 每日 00:00 UTC 執行；公開 runtime 維持 200。active 推薦仍是 9 個 `synthetic_demo`，下一刀是人工核准首批真實場地、補 execution slots／交通資料並跑三案例 Runtime；不得把候選庫冒充已核准場地。操作見 `docs/VENUE_REFRESH.md`。
 - PR #9 已合併 `main`，merge commit `94ab10583738b8ac4b48bf4f882d63bb1e0c1e13`：本人偏好回饋由單一「太暗」擴充為太暗、太吵、太幼稚、太正式、走太多五種伺服器固定映射。Railway deployment `93b584c5-d3df-40b4-9cf4-6a409a019bab` 成功，migration 008 已隨 `prestart` 執行；公開 API 實測雙人確認、三套生成、「太吵」寫入與三套重生均通過。Cloudflare Worker version `999b5641-7d0c-4dbb-b957-d0383f949418` 已部署，首頁 200 且公開 bundle 含五種回饋。GitHub backend／frontend checks 與本機 `npm run check:all` 全綠（49 根＋15 Maps／proxy）。
 - PR #6 已合併 `main`，merge commit `21b28f333f7cc0f70921ce3a60320183995b2817`：九個既有前端站點、十一個環境 slot、二十四條展示 travel matrix 已由 Railway `prestart` 冪等寫入 PostgreSQL；正式 API 實測生成三套、每套三站，partner 可讀回三套保存結果，共含九個 Google Place ID。展示價格、時長、屬性仍明示 `synthetic_demo`，不保存 Google 地址、照片、評分、評論或路線回應。
 - Google Maps JavaScript 正式底圖已通過；Places API (New)／Routes API／Geocoding 也已由 Cloudflare Worker 真實取得結果。Google Cloud 的 browser／server key 限制已核對正確；根因是 Worker 對 `redirect: "error"` 拋出 `TypeError`，已改為 `redirect: "manual"` 並拒絕所有 3xx，production 四項現均通過。

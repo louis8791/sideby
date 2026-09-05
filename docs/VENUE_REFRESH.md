@@ -7,6 +7,7 @@
 | 層級 | 數量 | 意義 |
 |---|---:|---|
 | 正式展示場地 | 9 | 目前 production 推薦仍使用的 `synthetic_demo` |
+| Production draft staging | 1,121 | 已寫入 Railway PostgreSQL，尚未核准、不參與推薦 |
 | 官方來源全臺資料 | 9,818 | 景點 6,190＋餐飲 3,628；不是 Sideby 可推薦場地數 |
 | 臺北／新北來源記錄 | 1,138 | 符合 MVP 城市範圍的候選 |
 | 通過 schema／政策並可進 staging | 1,121 | 全部仍為 `draft`，不會自動進推薦 |
@@ -44,6 +45,10 @@ npm run venues:refresh-government -- --apply
 ```
 
 `--apply` 需要部署環境既有的 `DATABASE_URL`。相同來源內容以 SHA-256 冪等辨識，重跑會沿用同一 import run，不重複插入。寫入採單一 transaction 與 advisory lock；任何錯誤整批 rollback，既有 active dataset 不變。
+
+## 正式部署狀態
+
+PR #11 已合併 `main`（`0452445`），Railway deployment 成功，migration 009 已套用。production 首次匯入寫入 1,121 筆 draft；再次執行回用同一 run，沒有重複資料。獨立 `venue-refresh-daily` 服務已設定每日 00:00 UTC 執行更新命令，並使用 Railway PostgreSQL reference；正式 API `/api/runtime` 仍回 200／`standard`。
 
 ## 正式來源
 

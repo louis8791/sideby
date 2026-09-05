@@ -7,6 +7,7 @@
 - `venue_sources`、`venue_import_runs`、`venue_staging_records` 保存來源、授權、內容雜湊、版本、範圍、數量與 draft。相同來源重跑冪等，transaction 失敗整批 rollback，既有 active dataset 不變。
 - 政府資料只建立客觀 draft，不推論主觀偏好、價格、營業、室內外或冷氣。1,121 是候選庫，不是核准可推薦數；目前 production 仍保留 9 個 `synthetic_demo`，待人工核准、execution slots、合法交通資料及三案例 Runtime 通過後才可切換。
 - Google Places 只作即時顯示與 optional Place ID 對應，不作千筆永久建庫。操作與數量證據見 `docs/VENUE_REFRESH.md`。
+- PR #11 已合併 `main`（`0452445`），Railway migration 009 與 production staging 已套用：1,121 筆 draft、17 筆拒絕，相同來源第二次執行沿用同一 run。`venue-refresh-daily` 已設每日 00:00 UTC 執行，production API 維持 200；active 推薦資料仍是 9 筆 `synthetic_demo`。
 
 ## 2026-09-05 公開部署 Runtime 狀態
 
