@@ -1,10 +1,10 @@
 {
   "folders": [
-    { "name": "Sideby 後端與整合", "path": "." },
-    { "name": "Lovable 候選前端", "path": ".local/frontends/lovable" }
+    { "name": "Sideby 主專案", "path": "." },
+    { "name": "Sideby 前端（同一 Repo）", "path": "frontend" }
   ],
   "settings": {
-    "search.exclude": { "**/.local/**": true, "**/.next/**": true, "**/node_modules/**": true },
-    "files.watcherExclude": { "**/.local/**": true, "**/.next/**": true, "**/node_modules/**": true }
+    "search.exclude": { "**/.local/**": true, "**/.next/**": true, "**/.output/**": true, "**/node_modules/**": true },
+    "files.watcherExclude": { "**/.local/**": true, "**/.next/**": true, "**/.output/**": true, "**/node_modules/**": true }
   }
 }
