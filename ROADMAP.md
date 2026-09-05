@@ -1,5 +1,11 @@
 # Sideby — MVP ROADMAP
 
+## 2026-09-06 Gemini 免費層展示驗收
+
+- 已建立零付費 Free tier 專案並將專用 key 更新至 Cloudflare encrypted secret；未設定預付或付款。Gemini 維持選用、非主打能力。
+- 已用兩個獨立瀏覽器完成「建立房間 → 32 碼加入 → 共同條件 → 雙方非敏感偏好 → 雙方最新版確認 → 三套 `approved_dataset` 路線」；Server Function 200 且沒有 provider error。這是合成／非敏感展示 Runtime，不是實體手機或真實私密資料驗收。
+- 免費層告知文案與回歸測試已補強；真實私密 Gemini、評論候選標籤、安全理由改寫及完整供應商失敗矩陣仍為 `DEFERRED`。下一個主要 gate 仍是兩支真實手機與 Owner 驗收。
+
 ## 2026-09-06 雙人入口阻斷修復
 
 - 已完成程式修正與局部測試：加入欄位接受後端完整 32 碼、保留大小寫並關閉手機自動校正；登入入口延後到瀏覽器 hydration 確認設定，登入網路例外不再讓按鈕永久卡住。
@@ -36,7 +42,7 @@
 | 產品採用驗證 | PLANNED | 探索性 30–50 對大臺北伴侶；定案時間、雙方完成率、限制漏接、實際出門、30 日再用；不是統計代表性承諾 |
 | RAG／訓練／跨城市／商家平台 | DEFERRED | 先驗本地資料、權利、使用需求與成本；不得列成現成能力 |
 
-Railway＋PostgreSQL 後端、Cloudflare 前端、正式 Google 四項及展示資料生成／保存已完成公開 Runtime 驗證。下一步是完整單瀏覽器流程，再做兩支實機與 Owner 驗收。Gemini 不屬本輪阻斷。
+Railway＋PostgreSQL 後端、Cloudflare 前端、正式 Google 四項及展示資料生成／保存已完成公開 Runtime 驗證；Gemini 免費層的雙瀏覽器非敏感展示也已通過。下一步是兩支實機與 Owner 驗收，Gemini 不屬本輪阻斷。
 
 ## 2026-09-05 本輪最新路徑
 
@@ -46,9 +52,9 @@ Railway＋PostgreSQL 後端、Cloudflare 前端、正式 Google 四項及展示�
 
 使用者指定主 Repo `louis8791/sideby`。`frontend/` 已匯入隊友的 Lovable 前端，根目錄保留既有後端；兩者仍是獨立執行元件。最新分工為使用者主責後端、一人支援後端、一人持續前端細修。黑客松可保留固定邀請碼與範例行程，只要清楚標示 demo／synthetic 且不掩蓋真實失敗；Manus 只增指定元件。
 
-本輪採 Google Maps＋確定性規則 MVP；Gemini、訓練、自管生成、Embedding 與 RAG 均為 `DEFERRED`。前端三套既有路線改由後端版本化展示資料生成與保存，Google 僅保存 Place ID 並即時載入詳情；兩支手機與公開完整流程仍待驗。
+本輪採 Google Maps＋確定性規則 MVP；Gemini 只增加已驗證的免費層非敏感展示，訓練、自管生成、Embedding、RAG 與其餘 Gemini 接點均為 `DEFERRED`。前端三套既有路線改由後端版本化展示資料生成與保存，Google 僅保存 Place ID 並即時載入詳情；兩支手機與公開完整流程仍待驗。
 
-Gemini 三接點契約保留為未來選項，但 Owner 已決定本輪不主打、不配置、不列入完成條件；前端未勾選時使用本機規則，不能宣稱 Gemini 已完成。
+Gemini 三接點契約保留為未來選項；Owner 決定本輪不主打，只配置 `private_preference_parse` 的免費層非敏感展示且不列入提交阻斷。前端未勾選時使用本機規則，不能把其餘兩個接點或真實私密處理宣稱為已完成。
 
 現場協作入口：`docs/TEAM_INTEGRATION.md`。所有人從同一主 Repo 的最新 `main` 開自己的 feature 分支；前端負責 `frontend/` 與應用 API 串接，後端負責根 API、資料、權限及決策規則。本輪不增加新的頂層 Phase，維持下列八階段。
 
@@ -166,7 +172,7 @@ Gemini 三接點契約保留為未來選項，但 Owner 已決定本輪不主打
 
 ### 目前狀態
 
-`部分完成（主流程已接；真實 Gemini 未驗）`。根後端已有私密輸入 migration／本人 API、同意與撤回降級、三態 envelope、有限規則解析及 Privacy Guard。前端需求 adapter 已接根身分／Session，Gemini 正規化文字只進後端 allowlist 解析器，不保存或公開；缺金鑰時畫面明示規則 fallback。尚未用有效 Gemini 憑證驗成功、逾時、額度與非法輸出。15 筆／5 群組合成句只作回歸資料，不是模型訓練或真實需求研究證據。
+`部分完成（主流程已接；免費層非敏感 Runtime 已驗）`。根後端已有私密輸入 migration／本人 API、同意與撤回降級、三態 envelope、有限規則解析及 Privacy Guard。前端需求 adapter 已接根身分／Session，Gemini 正規化文字只進後端 allowlist 解析器，不保存或公開；缺金鑰時畫面明示規則 fallback。已用有效免費層憑證完成雙瀏覽器非敏感成功路徑；逾時、額度、非法輸出與真實私密資料仍未驗收。15 筆／5 群組合成句只作回歸資料，不是模型訓練或真實需求研究證據。
 
 ### 相依／可平行
 
