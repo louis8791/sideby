@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import { Pool } from 'pg';
 import { localPostgres } from '../scripts/postgres';
 import { buildTourismVenueBatch, stageTourismVenueBatch } from '../src/venues/tourism-open-data';
+import { findGooglePlaceId, listMatchCandidates, saveGooglePlaceMatch } from '../src/venues/google-place-matcher';
 
 const payloads = {
   attraction: {
@@ -66,5 +67,52 @@ test('staging is transactional and idempotent without replacing the active datas
     const staged = await db.query("SELECT record FROM venue_staging_records ORDER BY source_record_id");
     assert.ok(staged.rows.every(row => row.record.review.status === 'draft'));
     assert.ok(staged.rows.every(row => !('google_place_id' in row.record)));
+  } finally { await db.end(); await postgres.stop(); }
+});
+
+test('Google matching stores only the reusable Place ID and carries it into later government snapshots', { timeout: 60_000 }, async () => {
+  const { postgres, url } = await localPostgres(`.local/tests/venue-place-match-${Date.now()}`);
+  const db = new Pool({ connectionString: url });
+  try {
+    const first = buildTourismVenueBatch(payloads);
+    const client = await db.connect();
+    try { await stageTourismVenueBatch(client, first); }
+    finally { client.release(); }
+    const read = await db.connect();
+    let candidates;
+    try { candidates = await listMatchCandidates(read, 10); }
+    finally { read.release(); }
+    assert.equal(candidates.length, 3);
+    let requestBody = '';
+    const placeId = await findGooglePlaceId(candidates[0]!, 'synthetic-key', async (_url, init) => {
+      requestBody = String(init?.body);
+      assert.equal(new Headers(init?.headers).get('X-Goog-FieldMask'), 'places.id');
+      return Response.json({ places: [{ id: 'ChIJ_synthetic_place' }] });
+    });
+    assert.equal(placeId, 'ChIJ_synthetic_place');
+    assert.match(requestBody, /臺北測試景點/);
+    const write = await db.connect();
+    try { await saveGooglePlaceMatch(write, candidates[0]!, placeId); }
+    finally { write.release(); }
+    const saved = await db.query(`SELECT google_place_id,status FROM venue_google_place_matches WHERE venue_id=$1`, [candidates[0]!.venueId]);
+    assert.deepEqual(saved.rows[0], { google_place_id: placeId, status: 'matched' });
+    const queue = await db.query(`SELECT venue_id,google_place_id,completeness_score
+      FROM venue_candidate_review_queue WHERE venue_id=$1`, [candidates[0]!.venueId]);
+    assert.equal(queue.rows[0].google_place_id, placeId);
+    assert.ok(queue.rows[0].completeness_score >= 1);
+    const staged = await db.query(`SELECT record->>'google_place_id' place_id FROM venue_staging_records WHERE venue_id=$1`, [candidates[0]!.venueId]);
+    assert.ok(staged.rows.every(row => row.place_id === placeId));
+
+    const secondPayloads = structuredClone(payloads);
+    secondPayloads.attraction.UpdateTime = '2026-09-07T01:00:00+08:00';
+    secondPayloads.restaurant.UpdateTime = '2026-09-07T01:05:00+08:00';
+    const second = buildTourismVenueBatch(secondPayloads);
+    const next = await db.connect();
+    let nextRun;
+    try { nextRun = await stageTourismVenueBatch(next, second); }
+    finally { next.release(); }
+    const carried = await db.query(`SELECT record->>'google_place_id' place_id FROM venue_staging_records
+      WHERE run_id=$1 AND venue_id=$2`, [nextRun.runId, candidates[0]!.venueId]);
+    assert.equal(carried.rows[0].place_id, placeId);
   } finally { await db.end(); await postgres.stop(); }
 });

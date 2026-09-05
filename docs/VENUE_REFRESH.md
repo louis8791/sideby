@@ -56,7 +56,21 @@ PR #11 已合併 `main`（`0452445`），Railway deployment 成功，migration 0
 - 餐飲：`https://media.taiwan.net.tw/XMLReleaseAll_public/v2.0/Zh_tw/RestaurantList.json`
 - 授權：`https://data.gov.tw/license`
 
-Google Places 不作大量建庫來源。Google Text Search 單次查詢總結果有限，且 Places 內容不得預抓或長期保存；Sideby 只長存可重用的 `google_place_id`，其餘名稱、地址、照片、評論、評分與搜尋結果維持即時顯示。
+Google Places 不作場地母表來源。Sideby 可針對既有政府候選，以名稱、政府地址與座標偏置執行 ID-only Text Search；只把 `google_place_id` 長期寫入 `venue_google_place_matches`，並在後續政府快照沿用。名稱、地址、營業、照片、評論、評分與路線仍只在行程頁即時查詢，不寫入資料庫。
+
+批次對應（只讀候選數）：
+
+```powershell
+npm run venues:match-google-place-ids
+```
+
+批次對應並保存 Place ID：
+
+```powershell
+npm run venues:match-google-place-ids -- --apply
+```
+
+每日來源更新與缺漏 Place ID 補齊可合併執行 `npm run venues:refresh-all`；失敗項目隔日重試、查無結果項目 30 日後重試。首批人工查核清單以 `npm run venues:review-queue -- --limit=100` 依政府欄位完整度及 Place ID 狀態排序。
 
 ## 尚未完成的啟用 Gate
 

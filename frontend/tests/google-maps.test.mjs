@@ -158,9 +158,16 @@ test('Google direct integration (offline; no real Google calls)', async t => {
     response = { suggestions: [{ placePrediction: { placeId: 'id', text: { text: 'Synthetic' } } }] };
     assert.equal((await autocomplete('x')).suggestions[0].name, 'Synthetic');
     assert.equal(calls.at(-1).url.pathname, '/v1/places:autocomplete');
-    response = place;
-    assert.equal((await placeDetails('x/y')).venue.placeId, place.id);
+    response = { ...place, regularOpeningHours: { weekdayDescriptions: ['星期一: 10:00–18:00'] }, reviews: [{
+      authorAttribution: { displayName: 'Synthetic reviewer', uri: 'https://example.com/reviewer' },
+      rating: 5, relativePublishTimeDescription: '1 天前', text: { text: 'Synthetic review' },
+    }] };
+    const details = await placeDetails('x/y');
+    assert.equal(details.venue.placeId, place.id);
+    assert.deepEqual(details.venue.openingHours, ['星期一: 10:00–18:00']);
+    assert.equal(details.venue.reviews[0].author.displayName, 'Synthetic reviewer');
     assert.equal(calls.at(-1).url.pathname, '/v1/places/x%2Fy');
+    assert.ok(calls.at(-1).init.headers.get('X-Goog-FieldMask').includes('reviews.authorAttribution'));
   });
   await t.test('Routes WALK and TRANSIT request and duration conversion', async () => {
     response = { routes: [{ duration: '120.5s', distanceMeters: 420 }] };

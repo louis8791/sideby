@@ -453,6 +453,28 @@ function VenueDetails({ venue }: { venue: Venue }) {
         )}
       </div>
       {venue.address && <p className="venue-address">{venue.address}</p>}
+      {venue.openingHours?.length && (
+        <details className="venue-live-details">
+          <summary>查看本週營業時間</summary>
+          <ul>{venue.openingHours.map(line => <li key={line}>{line}</li>)}</ul>
+        </details>
+      )}
+      {venue.reviews?.length && (
+        <div className="venue-reviews">
+          <strong>Google 最新評論</strong>
+          {venue.reviews.map((review, index) => (
+            <blockquote key={`${review.author.displayName}-${index}`}>
+              <p>{review.text ?? "此評論沒有文字內容"}</p>
+              <footer>
+                {review.author.uri ? <a href={review.author.uri} target="_blank" rel="noreferrer">{review.author.displayName}</a>
+                  : review.author.displayName}
+                {typeof review.rating === "number" ? ` · ${review.rating.toFixed(1)} 分` : ""}
+                {review.relativeTime ? ` · ${review.relativeTime}` : ""}
+              </footer>
+            </blockquote>
+          ))}
+        </div>
+      )}
       <GoogleAttribution />
       <div className="venue-actions">
         <a className="venue-btn" href={mapsUrl} target="_blank" rel="noreferrer">

@@ -1859,6 +1859,38 @@ label small,
   overflow-wrap: anywhere;
   opacity: 0.8;
 }
+.venue-live-details,
+.venue-reviews {
+  margin-top: 10px;
+  font-size: 11px;
+  line-height: 1.55;
+}
+.venue-live-details summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+.venue-live-details ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+.venue-reviews > strong {
+  display: block;
+  margin-bottom: 6px;
+}
+.venue-reviews blockquote {
+  margin: 6px 0;
+  padding: 8px 10px;
+  border-left: 3px solid #ffd75e;
+  background: #fff;
+}
+.venue-reviews blockquote p,
+.venue-reviews blockquote footer {
+  margin: 0;
+}
+.venue-reviews blockquote footer {
+  margin-top: 4px;
+  opacity: 0.72;
+}
 .venue-actions {
   display: flex;
   flex-wrap: wrap;
