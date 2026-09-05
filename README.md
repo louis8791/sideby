@@ -8,10 +8,10 @@ Sideby 是雙人私密需求共決策的約會行程 MVP。唯一 source of trut
 |---|---|---|
 | 前端 | [Cloudflare Worker](https://louis8791-sideby-frontend.louis8791.workers.dev/) | 已公開；TanStack Start／Nitro |
 | 後端 | [Railway runtime](https://sideby-production.up.railway.app/api/runtime) | 已公開；Next.js API／PostgreSQL |
-| 正式推薦資料 | Railway PostgreSQL | 13 筆核准場地、950 個時段、468 條交通矩陣 |
-| 候選更新池 | Railway PostgreSQL | 1,121 筆政府候選；1,120 筆已有 Google Place ID |
+| 正式推薦資料 | Railway PostgreSQL | 1,121 筆正式比較候選；13 筆完整驗證、1,108 筆待確認 |
+| 場地與路線索引 | Railway PostgreSQL | 2,058 個時段、107,616 條估計路段、1,121 筆推薦索引；1,120 筆已有 Google Place ID |
 
-目前公開主流程已完成房間建立／加入、雙方條件、私密偏好、三套 `approved_dataset` 路線、Google 即時地點與導航、重排及定案。Gemini 免費層只處理使用者明確同意的合成／非敏感展示內容；未勾選時改用本機規則。最後仍需兩支實體手機與 Owner 驗收，技術綠燈不等於 Accepted MVP。
+目前公開主流程已完成房間建立／加入、雙方條件、私密偏好、三套版本化路線、Google 即時地點與導航、重排及定案。30 個軟偏好均有映射，另有 4 個環境硬條件；待確認場地可能沒有可靠價格、營業或實際區域，正式畫面會保留警示。Gemini 免費層只處理使用者明確同意的合成／非敏感展示內容；未勾選時改用本機規則。最後仍需兩支實體手機與 Owner 驗收，技術綠燈不等於 Accepted MVP。現行宣稱與舊產品介紹的差異見 [產品介紹宣稱稽核](docs/PRODUCT_INTRO_CLAIM_AUDIT.md)。
 
 ## 專案結構
 

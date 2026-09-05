@@ -1,14 +1,16 @@
 # Sideby 部署與交付
 
-## 2026-09-05 已部署環境
+## 2026-09-06 已部署環境（最新）
 
-- GitHub：`louis8791/sideby` `main`，產品變更由 PR #4 合併，merge commit `16cfd04`。
-- Railway：專案 `chic-bravery`；根 Next.js 服務連 Railway PostgreSQL，`DATABASE_URL` 使用 reference，自動部署已開啟，健康檢查 `/api/runtime`，public target port 8080。後端：`https://sideby-production.up.railway.app`。
-- Cloudflare：Worker `louis8791-sideby-frontend`；前端：`https://louis8791-sideby-frontend.louis8791.workers.dev`。`SIDEBY_API_ORIGIN` 與 `SIDEBY_PUBLIC_ORIGIN` 已設定，`GOOGLE_MAPS_SERVER_API_KEY` 由 Worker secret 保存；瀏覽器 key 僅在前端 build 中使用。
-- 公開驗證：Railway 與 Cloudflare `/api/runtime` 均回 200／`standard`；Cloudflare 首頁與 `/maps-check` 回 200；匿名身分經同源代理回 201 且具有 token／expiry。未 seed production synthetic 資料。
-- Google production 驗證未通過：Maps JavaScript 程式載入，但底圖顯示授權錯誤，Places／Routes／Geocoding 失敗。實際兩把 key 不在目前登入帳號可見專案的憑證清單；需由 key 擁有者加入 `https://pairpath-date.dynamic-portfolio-analyzer-worker.workers.dev/*` 與 `https://louis8791-sideby-frontend.louis8791.workers.dev/*`，並確認 server key 只允許三項 server API 後重跑 `/maps-check`。
+- GitHub：`louis8791/sideby` `main`；全候選功能由 PR #27 合併，後續文件基線為 `635e3a9`。
+- Railway：專案 `chic-bravery`；根 Next.js 服務連 Railway PostgreSQL，後端為 `https://sideby-production.up.railway.app`。Production active release `sideby-release-pool-20260906-a8f936dc01` 有 1,121 records、2,058 slots（1,108 provisional）、107,616 estimated legs；active recommendation index 1,121 筆。
+- Cloudflare：Worker `louis8791-sideby-frontend`，正式前端為 `https://louis8791-sideby-frontend.louis8791.workers.dev`；全候選 UI 版本 `c0aace76-df4f-4914-b373-db9e956564a3` 已保留既有 origins、Supabase browser 公開設定與 encrypted secrets。
+- 公開驗證：Cloudflare 首頁、同源 `/api/runtime` 與 Railway `/api/runtime` 均回 200。兩個匿名身分已完成同房、共享條件、雙私密輸入、雙確認並取得三套三站；全部使用上述 release，共 7／9 站標為待確認。
+- Google production：Maps JavaScript、Places (New)、Routes、Geocoding 四項均已由正式 Worker 通過真實呼叫與底圖目視。Google 名稱、地址、營業、評分、照片、評論與路線只即時顯示；永久保存僅 Place ID。
+- Gemini production：免費層只驗證合成／非敏感展示，未勾選則使用本機規則；不得處理真實私密資料或宣稱另外兩個 Gemini 接點完成。
+- `www.sideby.dev`／`sideby.dev` 於 2026-09-06 尚無可用 DNS／HTTPS，正式入口仍是 Workers 網址。
 
-以上是公開基礎 Runtime 證據，不含真實 Gemini、真實場地、兩支手機或 Owner sign-off。
+以上證明公開 MVP Runtime 與目前資料 release，不取代兩支實體手機、成功帳號跨裝置恢復、跨網路完整流程或 Owner sign-off。
 
 下方保留重建步驟；不能因已有部署而省略秘密、資料與驗收邊界。
 

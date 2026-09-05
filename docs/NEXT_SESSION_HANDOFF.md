@@ -1,5 +1,11 @@
 # Sideby 跨對話交接（2026-09-05）
 
+## 2026-09-06 產品介紹稽核與最後收尾（最新）
+
+`output/pdf/Sideby_窗口產品介紹.pdf` 已完整讀取及逐頁渲染；它是 2026-09-05 的本機快照，不是最新正式提交版。`docs/PRODUCT_INTRO_CLAIM_AUDIT.md` 已列出所有差異：30 個軟偏好現已全數映射至 21 屬性、五種個人回饋、1,121 筆正式比較池（13 verified／1,108 needs confirmation）、正式 Cloudflare／Railway 上線，以及 Gemini 免費層非敏感展示 Runtime。舊 PDF 的「非已上線」、「11／19 映射」、「只有太暗」、「真實場地完全待補」與「Gemini 尚未驗證」均不可再作現行宣稱。
+
+最後必要工作只有證據與提交收斂：重製最新 PDF；兩支實體手機走完整主流程及 Google 降級；公開登入若保留則驗成功登入／恢復或標示 Beta；Owner 正式網址走查與 sign-off；固定 main、部署、release、測試及比賽要求的簡報／影片／連結。1,108 筆逐筆補證、新模型訓練、自訂 `sideby.dev` 網域與商業驗證可延後。2026-09-06 查核 `www.sideby.dev`／`sideby.dev` 尚無可用 DNS／HTTPS，正式入口仍是 Workers 網址。
+
 ## 2026-09-06 全候選發布完成狀態（最新，優先於下文）
 
 Owner 已改變發布 gate：最新 1,121 筆通過 schema／來源政策的政府候選都要進正式推薦池，不要求每筆先補齊價格、時段、實際區域、室內外及冷氣。這不是批量補證；13 筆維持 fully verified，其餘以 `eligible_with_unknowns`／`needs_confirmation` 發布，未知欄位維持 null。一般路線可使用，明確環境／安全硬條件仍 fail closed；含未知站點的方案必須顯示待確認、nullable 總價、`confirmation_required=true` 與 `hard_constraints_passed=false`。
@@ -28,7 +34,7 @@ PR #22／#23 已合併，功能 commit `85e5ccd` 已部署；日常回到 `main`
 - 2026-09-06 首批正式推薦已上線：PR #15 merge `4e39cf307d4a3a15bf3e13b1fbecb2f11b7b09de`；公開實測發現前端集合點無內部 `matrixKey` 會無解，治本修正 PR #16 merge `84e5d3a12aa6db583c7ee11bd63f79a705baa1f7`。Railway backend deployment `60042a23-4865-4411-9aa9-088a5136e307`、cron deployment `7663da99-782f-4eab-9e4d-5f75b95fc19d`與 Cloudflare Worker version `ddb20462-0bcb-4276-b8b5-0dd358e9523d` 成功。Production DB 為 13 records、950 slots、468 legs。13 staging approvals；Cloudflare 同源公開 API 三個日間案例都回 3 套三站、`approved_dataset`與每站 Place ID。標準模式已不再使用九筆 `synthetic_demo`；冷氣與主觀屬性未知仍 fail closed。兩支真實手機與 Google 詳情目視是尚未完成的 Owner gate。
 - 2026-09-06 PR #13 已合併 `main` `e3e6336cb9403614b829a331f6efa5bba5c8fdc1`：migration 010、政府候選 ID-only Google Text Search 批次對應、Place ID 跨快照沿用、100 筆審查隊列，以及行程頁即時名稱／地址／營業時間／評分／照片／最多三則評論／路線顯示均已上線；後續 `feat/live-review-signals` 將評論上限與即時模擬分類列於本檔開頭，尚未部署。Railway 正式 DB 實際為 1,121 筆候選、1,120 筆 matched、1 筆 not_found、0 筆 retry；Cron deployment `71aa7dff-06a5-4b63-a12b-78f753f88af6` 已改用 `npm run venues:refresh-all`。根後端 deployment `ab075dba-e37d-4ebf-bad4-ad93ba9250f7` 成功，Cloudflare Worker version `772bd542-38f9-478a-96b1-5b7698454cc4` 已部署；後端與前端首頁均回 200。此證據不等於 1,120 筆已人工核准。
 
-- PR #11 已合併 `main`（`0452445`）：交通部觀光署每日景點／餐飲更新管線讀到全臺 9,818、臺北／新北 1,138，Railway PostgreSQL 已寫入 1,121 筆 draft、拒絕 17，migration 009 與相同內容冪等回用已在 production 驗證。獨立 `venue-refresh-daily` 每日 00:00 UTC 執行；公開 runtime 維持 200。active 推薦仍是 9 個 `synthetic_demo`，下一刀是人工核准首批真實場地、補 execution slots／交通資料並跑三案例 Runtime；不得把候選庫冒充已核准場地。操作見 `docs/VENUE_REFRESH.md`。
+- PR #11 已合併 `main`（`0452445`）：交通部觀光署每日景點／餐飲更新管線讀到全臺 9,818、臺北／新北 1,138，Railway PostgreSQL 已寫入 1,121 筆 draft、拒絕 17，migration 009 與相同內容冪等回用已在 production 驗證。獨立 `venue-refresh-daily` 每日 00:00 UTC 執行；公開 runtime 維持 200。這是當時 active 仍為 9 個 `synthetic_demo` 的歷史里程碑，現況已由本檔開頭的 1,121 筆全候選 release 取代。操作見 `docs/VENUE_REFRESH.md`。
 - PR #9 已合併 `main`，merge commit `94ab10583738b8ac4b48bf4f882d63bb1e0c1e13`：本人偏好回饋由單一「太暗」擴充為太暗、太吵、太幼稚、太正式、走太多五種伺服器固定映射。Railway deployment `93b584c5-d3df-40b4-9cf4-6a409a019bab` 成功，migration 008 已隨 `prestart` 執行；公開 API 實測雙人確認、三套生成、「太吵」寫入與三套重生均通過。Cloudflare Worker version `999b5641-7d0c-4dbb-b957-d0383f949418` 已部署，首頁 200 且公開 bundle 含五種回饋。GitHub backend／frontend checks 與本機 `npm run check:all` 全綠（49 根＋15 Maps／proxy）。
 - PR #6 已合併 `main`，merge commit `21b28f333f7cc0f70921ce3a60320183995b2817`：九個既有前端站點、十一個環境 slot、二十四條展示 travel matrix 已由 Railway `prestart` 冪等寫入 PostgreSQL；正式 API 實測生成三套、每套三站，partner 可讀回三套保存結果，共含九個 Google Place ID。展示價格、時長、屬性仍明示 `synthetic_demo`，不保存 Google 地址、照片、評分、評論或路線回應。
 - Google Maps JavaScript 正式底圖已通過；Places API (New)／Routes API／Geocoding 也已由 Cloudflare Worker 真實取得結果。Google Cloud 的 browser／server key 限制已核對正確；根因是 Worker 對 `redirect: "error"` 拋出 `TypeError`，已改為 `redirect: "manual"` 並拒絕所有 3xx，production 四項現均通過。
