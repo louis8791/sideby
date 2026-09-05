@@ -6,7 +6,8 @@
 
 | 層級 | 數量 | 意義 |
 |---|---:|---|
-| 正式展示場地 | 9 | 目前 production 推薦仍使用的 `synthetic_demo` |
+| 首批正式核准場地 | 13 | Owner 核准的政府來源室內／服務型場地；具票價、營業與 Place ID |
+| 合成展示場地 | 9 | 只保留於明示的本機 `synthetic_demo` 模式 |
 | Production draft staging | 1,121 | 已寫入 Railway PostgreSQL，尚未核准、不參與推薦 |
 | 已對應 Google Place ID | 1,120 | 只長期保存 Place ID；仍是待審 draft |
 | Place ID 查無結果 | 1 | 30 日後可再查，不影響其政府候選記錄 |
@@ -26,12 +27,12 @@
 → 正規化成 VenueRecord
 → schema、授權與共用政策守門
 → venue_import_runs + venue_staging_records
-→ 人工補價格／營業／環境區域／審核
+→ Owner 從審查池列名核准，補價格／營業／環境區域／審核
 → 另行建立 approved_dataset、execution slots 與合法交通資料
 → 驗證完成後才可切換 active
 ```
 
-管線刻意不自動切換 `venue_datasets.active`。政府來源只能建立客觀資料 draft；明亮、安靜、浪漫等主觀屬性不得由名稱或描述自動推論，價格、營業時間與實際室內外／冷氣區域也必須另行驗證。
+每日匯入管線刻意不自動切換 `venue_datasets.active`。政府來源只能建立客觀資料 draft；只有 Owner 列名核准的 13 筆會由標準啟動載入獨立 `approved_dataset`。明亮、安靜、浪漫等主觀屬性不得由名稱或描述自動推論，冷氣未知也不得補成 true／false。
 
 ## 執行
 
@@ -55,6 +56,8 @@ PR #13 已合併 `main`（`e3e6336`），Railway migration 010 已套用。Produ
 
 獨立 `venue-refresh-daily` 服務已改為每日 00:00 UTC 執行 `npm run venues:refresh-all`，先更新政府候選，再補齊缺漏 Place ID；deployment `71aa7dff-06a5-4b63-a12b-78f753f88af6` 成功。正式 API `/api/runtime` 回 200／`standard`，Cloudflare Worker 首頁回 200。
 
+2026-09-06 Owner 已核准 13 筆首批正式資料。標準 seed 會啟用 `sideby-approved-2026-09-06-v1` 與 `sideby-approved-routes-2026-09-06-v1`，建立未來 90 天可證明的室內參觀時段；場地間及使用者集合點交通先以政府座標作可重算估算，Google Routes 只在行程頁即時顯示。正式部署與公開三案例證據須在合併後另記。
+
 ## 正式來源
 
 - 景點：`https://media.taiwan.net.tw/XMLReleaseAll_public/v2.0/Zh_tw/AttractionList.json`
@@ -77,11 +80,11 @@ npm run venues:match-google-place-ids -- --apply
 
 每日來源更新與缺漏 Place ID 補齊可合併執行 `npm run venues:refresh-all`；失敗項目隔日重試、查無結果項目 30 日後重試。首批人工查核清單以 `npm run venues:review-queue -- --limit=100` 依政府欄位完整度及 Place ID 狀態排序。
 
-## 尚未完成的啟用 Gate
+## 首批啟用 Gate
 
-1. 從 1,121 筆 draft 中選定首批大臺北約會場地。
-2. 人工核對價格、營業、停留時間、室內外區域及冷氣狀態。
-3. 建立同版本 execution slots 與非 Google 持久交通資料，或採合規即時路線顯示。
-4. 以至少 12 筆核准真實場地跑三案例 Runtime，再由 Owner 決定是否切換 production active dataset。
+1. 已完成：從 1,121 筆候選列名選定 13 筆，Owner 明確核准。
+2. 已完成：保存政府當期快照可核對的票價、營業、停留時間與室內參觀區；冷氣及主觀屬性維持未知。
+3. 已完成：建立同版本 execution slots、政府座標估算矩陣及 Google 即時顯示分界。
+4. 自動行為測試已用 13 筆生成三套三站正式資料行程；待合併部署後補公開 API 三案例與雙手機驗收。
 
-未通過以上 Gate 前，1,121 只能稱為「可追溯候選庫」，不能稱為 1,121 個已核准可約會地點。
+1,121 仍只能稱為「可追溯候選庫」；正式核准數固定為 13，不能把 Place ID 對應數冒充核准數。

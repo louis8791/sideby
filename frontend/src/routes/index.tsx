@@ -547,8 +547,8 @@ function Home() {
     ).padStart(2, "0")}`;
   }, []);
   const [dateISO, setDateISO] = useState(todayISO);
-  const [startTime, setStartTime] = useState("18:00");
-  const [endTime, setEndTime] = useState("22:00");
+  const [startTime, setStartTime] = useState("10:30");
+  const [endTime, setEndTime] = useState("18:00");
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [timePicker, setTimePicker] = useState<"start" | "end" | null>(null);
   const [leaveAsk, setLeaveAsk] = useState(false);

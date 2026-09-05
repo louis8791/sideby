@@ -2,10 +2,12 @@
 
 ## 2026-09-06 政府地點更新管線
 
+- Owner 已明確要求首批正式推薦上線。首批固定核准 13 筆政府候選，全部已有 Google Place ID，官方當期快照有可結構化票價／營業資料；主觀屬性與冷氣未知仍不得補猜。標準啟動改為 `approved_dataset`，`synthetic_demo` 只在明示的本機 demo 模式使用。
+- 首批 execution slots 只建立可證明的室內參觀區，按官方週期營業規則產生未來 90 天；冷氣、飲食、過敏與無障礙未知時維持 fail closed。內部篩選交通時間以政府座標作可重算估算，行程頁名稱、地址、營業、評分、照片、評論與實際路線仍由 Google 即時取得，不回存。
 - 目前雙方 UI 共 34 個可選項：氛圍 12、狀態 8、互動 10、環境硬限制 4；其中原 30 項只有 11 項已有明確排序映射，19 項仍只是選擇記錄。場地可計分屬性目前為 11 個，兩者不可混稱。
 - 新增交通部觀光署景點／餐飲每日 JSON 更新入口。2026-09-06 dry-run 讀到全臺 9,818 筆、臺北／新北 1,138 筆，其中 1,121 筆通過 schema／政策可進 PostgreSQL staging，17 筆拒絕；來源更新時間為 2026-09-05。
 - `venue_sources`、`venue_import_runs`、`venue_staging_records` 保存來源、授權、內容雜湊、版本、範圍、數量與 draft。相同來源重跑冪等，transaction 失敗整批 rollback，既有 active dataset 不變。
-- 政府資料只建立客觀 draft，不推論主觀偏好、價格、營業、室內外或冷氣。1,121 是候選庫，不是核准可推薦數；目前 production 仍保留 9 個 `synthetic_demo`，待人工核准、execution slots、合法交通資料及三案例 Runtime 通過後才可切換。
+- 政府匯入仍只建立客觀 draft，不推論主觀偏好、價格、營業、室內外或冷氣；只有 Owner 明確列入的 13 筆會進獨立核准版本。1,121 是候選庫，不是核准可推薦數。
 - Google Places 只作 Place ID 對應與即時顯示。允許針對既有政府候選以 ID-only Text Search 批次對應；永久層只能保存 `google_place_id` 與執行狀態，不得保存 Google 名稱、地址、營業、評分、照片、評論或路線回應。操作與數量證據見 `docs/VENUE_REFRESH.md`。
 - PR #11 已合併 `main`（`0452445`），Railway migration 009 與 production staging 已套用：1,121 筆 draft、17 筆拒絕，相同來源第二次執行沿用同一 run。`venue-refresh-daily` 已設每日 00:00 UTC 執行，production API 維持 200；active 推薦資料仍是 9 筆 `synthetic_demo`。
 - PR #13 已合併 `main`（`e3e6336`），migration 010 與批次 Place ID 對應已在 Railway production 執行：1,121 筆政府候選中 1,120 筆為 `matched`、1 筆 `not_found`，無待重試列；100 筆高完整度審查隊列已產生。`venue-refresh-daily` 已改用 `npm run venues:refresh-all`，每日先更新政府候選再補 Place ID。這不等於人工核准，active 推薦仍保留 9 筆 `synthetic_demo`。

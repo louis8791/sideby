@@ -6,6 +6,10 @@ import { applyPreferenceFeedback, preferenceAdjustmentBySignal } from '../src/mo
 import { composeItineraries, materiallyDifferent, publicItinerarySchema } from '../src/recommendations/engine';
 import { showcaseDatasetVersion, showcaseExecutionSlots, showcaseMatrixVersion, showcaseRecords, showcaseTravelLegs } from '../src/recommendations/showcase-data';
 import {
+  approvedDatasetVersion, approvedExecutionSlots, approvedMatrixVersion, approvedMeetingLegs,
+  approvedRecords, approvedTravelLegs,
+} from '../src/recommendations/approved-real-data';
+import {
   recommendationLegs, recommendationParserOutputs, recommendationSessionId as sessionId,
   recommendationShared as shared, recommendationSlot, recommendationVenues,
 } from './recommendation-fixtures';
@@ -110,6 +114,30 @@ test('frontend showcase places flow through backend generation with Google Place
   assert.ok(result.every(plan => plan.stops.length === 3));
   assert.ok(result.every(plan => plan.stops.every(stop => stop.google_place_id && stop.google_maps_url.includes('query_place_id='))));
   assert.ok(result.every(plan => plan.dataset_version === showcaseDatasetVersion));
+});
+
+test('Owner-approved government venues produce three real-data daytime itineraries', () => {
+  const date = '2026-09-06';
+  const records = approvedRecords();
+  const byVenue = new Map(records.map(record => [record.venueId, record]));
+  const realShared = {
+    ...shared, startsAt: `${date}T10:30:00+08:00`, endsAt: `${date}T18:00:00+08:00`,
+    meetingPoint: { label: '板橋車站', latitude: 25.0143, longitude: 121.4638, matrixKey: 'meeting_user' },
+    budgetTwdTotal: 2200, stops: 3, outdoorAllowed: false,
+    dietaryRequirements: [], allergensToAvoid: [], accessibilityRequirements: [],
+    maxLegTravelMinutes: 120, maxTotalTravelMinutes: 240,
+  };
+  const result = composeItineraries({
+    sessionId, version: 3, shared: realShared, parserOutputs,
+    venues: approvedExecutionSlots(date).map(execution => ({ record: byVenue.get(execution.venueId), execution })),
+    legs: [...approvedTravelLegs(), ...approvedMeetingLegs('meeting_user', realShared.meetingPoint)],
+    dataMode: 'approved_dataset', datasetVersion: approvedDatasetVersion, routeMatrixVersion: approvedMatrixVersion,
+    now: new Date('2026-09-06T02:30:00Z'),
+  });
+  assert.equal(records.length, 13);
+  assert.equal(result.length, 3);
+  assert.ok(result.every(plan => plan.data_mode === 'approved_dataset' && plan.stops.length === 3));
+  assert.ok(result.every(plan => plan.stops.every(stop => stop.google_place_id && stop.google_maps_url.includes('query_place_id='))));
 });
 
 test('sponsorship never changes CoupleScore', () => {

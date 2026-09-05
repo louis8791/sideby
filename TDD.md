@@ -2,6 +2,11 @@
 
 ## 2026-09-06 Venue refresh staging
 
+- `src/recommendations/approved-real-data.ts` 固定首批 13 筆 Owner 核准記錄、Google Place ID、政府來源證據、週期營業規則與票價。`assessVenue` 必須讓 13 筆全部 `itineraryEligible=true`；attributes 保持空陣列，不用政府敘述冒充主觀體驗。
+- 標準 `prestart` 啟用 `approved_dataset` 與對應交通矩陣；只有 `SIDEBY_DATA_MODE=synthetic_demo` 才載入九筆展示資料。核准版按臺北日期產生未來 90 天 slots，查詢時只載入與 Session 時段相交的列，避免不同日期重複候選。
+- 場地間及集合點到首站使用政府座標的確定性時間估算做硬限制前置值；Google Routes 仍只在前端即時顯示，不把回應寫入 PostgreSQL。這不是即時路況，Google 顯示值不得回寫覆蓋矩陣。
+- 核准 slots 目前只證明室內參觀區；`airConditioned=null`、過敏／飲食／無障礙未知。相應硬限制必須回無可行方案，不可因正式資料模式而放寬。
+- 行為測試須證明：標準 seed 的 active dataset／matrix 均為 `approved_dataset`、13 筆通過政策、90 天 slots 與 468 條矩陣存在；日間案例可由核准資料生成三套三站行程且每站有 Place ID。
 - Migration 009 新增 `venue_sources`、`venue_import_runs`、`venue_staging_records`。來源 metadata、SHA-256、城市範圍、來源／範圍／staged／rejected 數量及 rejection summary 可追溯。
 - `src/venues/tourism-open-data.ts` 下載交通部景點與餐飲 JSON，移除 BOM、只保留臺北／新北，正規化為既有 `VenueRecord`，再走 `assessVenue` 唯一政策出口。政府來源不建立 attributes，缺街道地址時明示「開放資料未提供街道地址」，非法座標或 schema／policy 失敗即拒絕。
 - `npm run venues:refresh-government` 為 dry-run；加 `-- --apply` 才以既有 `DATABASE_URL` 寫入 staging。資料庫使用 advisory transaction lock；內容 hash 相同時回用既有 run，批次失敗 rollback，不修改 `venue_datasets.active`。
@@ -39,7 +44,7 @@ Google 接線：`frontend/src/lib/google-maps.server.ts` 使用官方 Places／R
 
 開發 `/api/*` 經前端 Vite 代理轉至根後端；正式 TanStack Worker 入口也以 `SIDEBY_API_ORIGIN` 轉送同來源 `/api/*`，保留 Authorization／SSE、驗瀏覽器 Origin，並把 Origin 改為根 API 自身 Origin 供後端守門。未設定或非 HTTPS 目標即回 503。最新主畫面以根 API 的匿名 Bearer 身分完成房間、共享、私密、確認、生成、反應／重排、定案與回饋；Supabase 只是可選帳號功能，不是根 API 身分來源。
 
-根後端正式啟動入口為 `npm start`：`prestart` 先以 advisory lock 冪等執行 PostgreSQL migrations，再載入版本化 `sideby-showcase-*` 黑客松展示資料，Next 才綁 `0.0.0.0` 並使用平台 `PORT`。展示資料必須維持 `synthetic_demo`，不得冒充即時價格、營業狀態或正式商家核准資料；未來切換真實資料集時須先移除此 seed。
+根後端正式啟動入口為 `npm start`：`prestart` 先以 advisory lock 冪等執行 PostgreSQL migrations，再依資料模式載入版本化資料。標準模式啟用 `sideby-approved-2026-09-06-v1`；`synthetic_demo` 只保留於明示本機 demo。Next 最後綁 `0.0.0.0` 並使用平台 `PORT`。
 
 本輪主線選 Google Maps＋確定性規則；Owner 不主打 Gemini。Gemini、自行訓練／自管模型／RAG 均延後，既有 adapter 與資料守門保留但不列入提交 gate。
 
