@@ -1,5 +1,11 @@
 # Sideby — MVP ROADMAP
 
+## 2026-09-06 Repository hygiene baseline
+
+- 日常工作只保留 `E:\sideby` 的 `main` checkout；已合併的 sprint、integration、docs、fix 與 review worktrees／branches 均不再作現行入口。功能分支採短生命週期，合併後刪除。
+- GitHub 只長期保留 `main` 與 `archive/phase3-itineraries-checkpoint-20260905`；原始文件交付另由 tag `archive/delivery-mvp-v1` 保存。archive 只供追溯，不參與部署。
+- `output/` 為 repo 外發布產物的本機保存區並已忽略；正式 source、CI 與部署仍只認 `main`。Obsidian 以 Sideby 專用乾淨同步 worktree 維護，日常 Vault 其他專案的未解衝突不得混入本 Repo。
+
 ## 2026-09-06 Gemini 免費層展示驗收
 
 - 已建立零付費 Free tier 專案並將專用 key 更新至 Cloudflare encrypted secret；未設定預付或付款。Gemini 維持選用、非主打能力。

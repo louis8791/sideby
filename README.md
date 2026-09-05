@@ -1,68 +1,62 @@
 # Sideby
 
-雙人私密需求共決策的約會行程 MVP。唯一共同開發 Repo：[louis8791/sideby](https://github.com/louis8791/sideby)。
+Sideby 是雙人私密需求共決策的約會行程 MVP。唯一 source of truth 是 [louis8791/sideby](https://github.com/louis8791/sideby) 的 `main`；新協作者先讀 [最新交接](docs/NEXT_SESSION_HANDOFF.md)，不要從舊分支或舊 Run Note 接續。
 
-下一個對話或新協作者請先讀 [跨對話交接](docs/NEXT_SESSION_HANDOFF.md)，再核對目前 `main`；不要從舊 Run Note 或未合併分支接續。
+## 正式環境
 
-## 三人從這裡開始
+| 元件 | 入口 | 現況 |
+|---|---|---|
+| 前端 | [Cloudflare Worker](https://louis8791-sideby-frontend.louis8791.workers.dev/) | 已公開；TanStack Start／Nitro |
+| 後端 | [Railway runtime](https://sideby-production.up.railway.app/api/runtime) | 已公開；Next.js API／PostgreSQL |
+| 正式推薦資料 | Railway PostgreSQL | 13 筆核准場地、950 個時段、468 條交通矩陣 |
+| 候選更新池 | Railway PostgreSQL | 1,121 筆政府候選；1,120 筆已有 Google Place ID |
 
-1. clone 本 Repo，從最新 main 開自己的 feature 分支。
-2. 前端改 frontend/；後端改 app/api/、src/、db/；共同欄位先對齊 [API 契約](docs/BACKEND_API.md)。
-3. PR 都回到本 Repo 的 main，整合後其餘人更新基底。每個 checkout 只有一位 writer。
-
-完整分工與來源見 [TEAM_INTEGRATION](docs/TEAM_INTEGRATION.md)。原 Lovable 仍連著隊友 Repo，不會自動同步到此處的 frontend 子目錄。
+目前公開主流程已完成房間建立／加入、雙方條件、私密偏好、三套 `approved_dataset` 路線、Google 即時地點與導航、重排及定案。Gemini 免費層只處理使用者明確同意的合成／非敏感展示內容；未勾選時改用本機規則。最後仍需兩支實體手機與 Owner 驗收，技術綠燈不等於 Accepted MVP。
 
 ## 專案結構
 
 | 路徑 | 用途 |
 |---|---|
-| frontend/ | Lovable 的 React／TanStack Start 前端與伺服器函式 |
-| app/api/、src/ | Next.js API、房間、私密資料、推薦、重排與定案 |
-| db/ | 根後端 PostgreSQL migrations |
-| app/page.tsx | 已接根 API 的合成整合展示入口 |
-| docs/、tests/ | 共同規格、部署、驗收與後端測試 |
-| .env.example、frontend/.env.example | 兩個執行元件各自的設定範本 |
+| `frontend/` | Cloudflare 前端、Google／Gemini server functions、可選 Supabase 帳號 |
+| `app/api/`、`src/server/` | Railway API、房間身分、私密資料、同步與定案 |
+| `src/model/`、`src/recommendations/`、`src/venues/` | 需求解析、硬限制、CoupleScore、路線與場地守門 |
+| `db/`、`schemas/` | PostgreSQL migrations 與資料契約 |
+| `tests/`、`frontend/tests/` | 後端、隱私、推薦、Google 與前端回歸測試 |
+| `docs/` | 部署、API、地點更新與交接文件 |
+| `.local/`、`output/` | Git ignored 的本機工作資料與交付產物 |
 
-一個 Repo 保留兩個現有執行元件與各自 lockfile，避免框架與依賴互相覆蓋。
+根目錄與 `frontend/` 是兩個既有執行元件，各自保留 lockfile；不要把兩套框架、資料庫或環境變數合併成單一 package。
 
-## 安裝及執行
+## 開發與驗證
 
-需要 Node.js 22.13+、npm。前端安裝使用固定 Bun 1.4.2 與既有 bun.lock，不需全域安裝 Bun。
+需要 Node.js 22.13+、npm；前端安裝由專案固定的 Bun 版本處理。
 
 ```powershell
 npm ci
 npm run frontend:install
-```
-
-兩個終端都從 Repo 根目錄操作：
-
-```powershell
-# 終端 1：後端及明示的合成展示，http://127.0.0.1:3000
-npm run demo:local
-
-# 終端 2：Lovable 來源前端，http://127.0.0.1:5173
-npm run frontend:dev
-```
-
-後端建立專案內獨立 PostgreSQL；無合成種子模式用 npm run dev:local。前端雲端功能須自行設定 frontend/.env；未配置時登入、Gemini、地圖可能不可用，見 [部署說明](docs/DEPLOYMENT.md)。
-
-正式後端使用平台提供的 `DATABASE_URL` 執行 `npm start`；啟動前會冪等套用 migration，並綁定平台可連線的 `0.0.0.0`。本機仍使用上述 `dev:local`／`demo:local`，不要把正式資料庫拿來跑合成種子。
-
-前端開發及正式 Worker 的 `/api/*` 都可代理到根後端。主畫面已接匿名房間、共享／私密需求、確認、合成三套行程、反應／重排、定案與本人偏好回饋；正式環境仍須填部署值並另做雙手機驗收。
-
-## 驗證
-
-```powershell
 npm run check:all
 ```
 
-執行後端 build／HTTP 與資料測試，以及前端型別檢查與 build；GitHub PR 有兩個獨立檢查工作。舊 Phase 閘門保留，缺真實資料／實機證據時仍應回 NOT_READY。
+本機啟動：
 
-## 能力與未完成項
+```powershell
+# 後端；標準模式不載入 synthetic seed
+npm run dev:local
 
-- 既有後端包含匿名雙人房間、公開同步、本人私密輸入、同意設定、有限規則解析、合成三套行程、反應／鎖定／重排／定案與本人偏好更新。
-- 新前端保留 Lovable 畫面、可選 Supabase 帳號、Gemini 與 Google Maps 接法；核心黑客松流程在未配置 Supabase 時仍可用根後端匿名身分執行。
-- 本機 synthetic 雙人流程已接合；真實 Gemini、真實場地、兩支手機、公開部署及 Owner 驗收仍未完成。
-- 私密原文不得進對方 API、SSE、公開理由、共用歷史或一般日誌。雲端解析須告知與同意；Google 展示資料不自動進自有訓練／RAG。
+# 明示 synthetic_demo 的本機展示
+npm run demo:local
 
-權威文件：[AGENTS](AGENTS.md)、[PRD](PRD.md)、[TDD](TDD.md)、[ROADMAP](ROADMAP.md)。舊模型／RAG 章節保留為歷史與未來參考，最新決策以各文件開頭及 TEAM_INTEGRATION 為準。
+# 前端，預設 http://127.0.0.1:5173
+npm run frontend:dev
+```
+
+正式設定只放 Railway／Cloudflare secrets 或本機 ignored env；不得提交 API key、資料庫密碼或真實私密內容。
+
+## Git 與協作
+
+1. 從最新 `origin/main` 建立短生命週期 feature branch。
+2. 每個 checkout 同時只有一位 writer；臨時 worktree 只放 `.local/worktrees/`。
+3. PR 的 backend／frontend checks 全綠後才能合併；合併後刪除功能分支與 worktree。
+4. 長期只保留 `main` 及明示 archive ref；archive 不參與部署。
+
+分工與跨前後端契約見 [TEAM_INTEGRATION](docs/TEAM_INTEGRATION.md) 與 [BACKEND_API](docs/BACKEND_API.md)。權威文件為 [AGENTS](AGENTS.md)、[PRD](PRD.md)、[TDD](TDD.md)、[ROADMAP](ROADMAP.md)。

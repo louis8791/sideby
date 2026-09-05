@@ -1,5 +1,11 @@
 # Sideby 專案規則
 
+## Repository hygiene
+
+- `E:\sideby` 是唯一正式根目錄，日常只保留 `main` checkout；臨時 worktree 必須放在 `.local/worktrees/`，合併或放棄後立即移除。GitHub 功能分支合併後刪除，只長期保留 `main` 與明示的 archive ref。
+- `.local/`、建置輸出與 `output/` 都是本機資料，不提交 Git。`output/` 可保存交付 PDF，但不得讓主 worktree 長期顯示未追蹤髒狀態。
+- 目前有效入口是 `README.md`、本檔與 `docs/NEXT_SESSION_HANDOFF.md` 開頭的最新狀態；舊 commit、舊 sprint 分支名稱及文件下方的日期化段落只供追溯，不得當成現行部署或待辦。
+
 ## 2026-09-06 Gemini 免費層展示界線
 
 - Owner 明確選擇零付費方案。Gemini 只作黑客松的合成／非敏感展示，不主打、不處理真實私密偏好；未勾選時維持本機規則解析，且不得啟用預付或付款來掩蓋免費額度限制。
