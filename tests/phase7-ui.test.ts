@@ -37,3 +37,23 @@ test('Google Maps remains keyless click-out using the shared URL builder', async
   assert.match(maps, /url\.searchParams\.set\('query', venueName\)/);
   assert.match(maps, /if \(placeId\) url\.searchParams\.set\('query_place_id', placeId\)/);
 });
+
+test('partner join accepts the complete case-sensitive invitation code', async () => {
+  const page = await read('frontend/src/routes/index.tsx');
+  assert.match(page, /autoCapitalize="none"/);
+  assert.match(page, /autoCorrect="off"/);
+  assert.match(page, /spellCheck=\{false\}/);
+  assert.match(page, /maxLength=\{32\}/);
+  assert.doesNotMatch(page, /maxLength=\{12\}/);
+});
+
+test('account entry hydrates before it is shown and auth requests always leave the busy state', async () => {
+  const [page, auth] = await Promise.all([
+    read('frontend/src/routes/index.tsx'),
+    read('frontend/src/components/AuthSheet.tsx'),
+  ]);
+  assert.match(page, /const \[authAvailable, setAuthAvailable\] = useState\(false\)/);
+  assert.match(page, /setAuthAvailable\(isSupabaseConfigured\(\)\)/);
+  assert.match(auth, /finally \{\s*setBusy\(false\);\s*\}/);
+  assert.match(auth, /catch \(error\) \{\s*toast\.error\(authErrorMessage/);
+});

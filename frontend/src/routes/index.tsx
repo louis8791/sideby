@@ -514,7 +514,7 @@ function TravelChips({ leg }: { leg: TravelLeg | undefined }) {
 function Home() {
 
   const { user } = useSession();
-  const authAvailable = isSupabaseConfigured();
+  const [authAvailable, setAuthAvailable] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [screen, setScreen] = useState<Screen>("room");
   const [identity, setIdentity] = useState<SidebyIdentity | null>(null);
@@ -527,7 +527,10 @@ function Home() {
   const [savingShared, setSavingShared] = useState(false);
   const [runtimeMode, setRuntimeMode] = useState<"standard" | "synthetic_demo" | "unavailable">("unavailable");
 
-  useEffect(() => setIdentity(loadSidebyIdentity()), []);
+  useEffect(() => {
+    setIdentity(loadSidebyIdentity());
+    setAuthAvailable(isSupabaseConfigured());
+  }, []);
   useEffect(() => {
     void sidebyApi<{ mode: "standard" | "synthetic_demo" }>(null, "GET", "/api/runtime")
       .then((value) => setRuntimeMode(value.mode))
@@ -1186,8 +1189,10 @@ function Home() {
                     value={joinCode}
                     onChange={(e) => setJoinCode(e.target.value)}
                     placeholder="輸入邀請碼"
-                    autoCapitalize="characters"
-                    maxLength={12}
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    maxLength={32}
                   />
                   <button
                     className="btn btn-lilac"

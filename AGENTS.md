@@ -1,5 +1,11 @@
 # Sideby 專案規則
 
+## 2026-09-06 邀請與登入阻斷修復
+
+- 正式邀請碼由根後端產生，現行為 32 碼且區分大小寫。前端不得截短、自動大寫、自動校正或以較短展示碼假代；雙瀏覽器加入成功前不得宣稱雙人主流程可用。
+- 帳號功能是可選的 Supabase 介面，不得由 SSR 平台變數單方面畫出瀏覽器端無法接管的登入按鈕。登入入口只在 client hydration 確認公開設定後顯示；所有登入請求不論成功、服務錯誤或網路例外都必須解除 busy 並給明確訊息。
+- Cloudflare production build 若要啟用帳號入口，必須在建置階段提供 `VITE_SUPABASE_URL` 與 `VITE_SUPABASE_PUBLISHABLE_KEY`；兩者是瀏覽器公開設定，不得混用 service role。根 API 的匿名雙人房間仍是推薦主流程權威。
+
 ## 2026-09-06 政府地點更新管線
 
 - PR #15（`4e39cf3`）與集合點修正 PR #16（`84e5d3a`）已合併 `main`。Railway deployment `60042a23-4865-4411-9aa9-088a5136e307` 已將 active 切為 13 筆 `approved_dataset`、950 個未來 90 天 slots 與 468 條矩陣；Cloudflare Worker version `ddb20462-0bcb-4276-b8b5-0dd358e9523d` 已上線。公開前端同源 API 的週日板橋、週五台北、週六土城三案均各回 3 套三站、`approved_dataset` 且每站含 Place ID。
