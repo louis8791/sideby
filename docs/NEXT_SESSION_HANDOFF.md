@@ -2,7 +2,7 @@
 
 ## 本輪優先入口（2026-09-06）
 
-`feat/live-review-signals` 本機新增 Google 即時評論情境線索：每個行程地點最多五則評論，單次請求內固定規則輸出最多十個正向／提醒標籤與提及次數，並明示不作硬篩選或核准事實。完整 `npm run check:all` 82 項測試通過；尚未完成 commit／push／PR／Cloudflare 部署及正式目視，不能當成已上線。評論及衍生線索不落盤、不進排序、索引、RAG、訓練或評測。
+Google 即時評論情境線索已上線：PR #25 merge `030de8b9e48151eb959c2e5d97ebe8dd358b46a3`，Cloudflare Worker version `4a13b1cc-6930-4c85-ad64-9059ebc8f914`。每個行程地點最多顯示五則評論，單次請求內固定規則輸出最多十個正向／提醒線索與提及次數，並明示不作硬篩選或核准事實。完整 `npm run check:all` 82 項測試、GitHub backend／frontend checks、公開首頁與 `/api/runtime` 200、正式 bundle 文案、雙瀏覽器邀請加入，以及 Maps JavaScript／Places／Routes／Geocoding 與底圖目視均通過。評論及衍生線索不落盤、不進排序、索引、RAG、訓練或評測；尚未逐一證明 13 個正式場地在當下評論都會命中線索。
 
 PR #22／#23 已合併，功能 commit `85e5ccd` 已部署；日常回到 `main`。Railway `724d3cbf-a31a-4a17-985c-9285541fc0f5`、Cloudflare `38e9fe98-8a69-4aff-85e3-cc2ff8a7bfdd`；81 tests／CI／正式同源 API 34 選項、雙人加入、3 套真實三站路線通過，登入表單可開。先讀 `docs/RECOMMENDATION_GROWTH.md`；末段「成長功能接續」是部署前歷史，SSH 阻塞已解決，不能再當現行 blocker。
 
