@@ -5,6 +5,7 @@
 - UI 契約鎖定邀請欄位 `maxLength=32`、`autoCapitalize=none`、`autoCorrect=off`、`spellCheck=false`，並以正式後端產生的完整 code 完成建立者／加入者兩個獨立瀏覽器狀態驗收。
 - `authAvailable` 初始固定為 false，只在 client effect 呼叫 `isSupabaseConfigured()` 後啟用，避免 Worker SSR 有平台變數而靜態瀏覽器 bundle 沒有 VITE 設定時產生 hydration 漂移與死按鈕。
 - Auth request wrapper 以 `finally` 保證解除 busy，捕捉被拋出的網路例外並顯示安全錯誤；production build 必須帶同一 Supabase URL／publishable key，並以無效測試帳密驗證表單確實收到服務回應，不建立測試帳號。
+- Runtime：PR #18 checks 與本機 `npm run check:all` 通過；Railway deployment `108b916d-6954-46a5-a418-1c60063b22fa`、Cloudflare version `49a0e177-7dae-4d49-8728-f0bdf90fedcf` 成功。公開 Worker 的兩個獨立瀏覽器完成完整 invite join、SSE 成員同步及進入共同條件頁；登入用無效測試帳密取得安全錯誤。未建立測試帳號，未取代實體手機驗收。
 
 ## 2026-09-06 Venue refresh staging
 

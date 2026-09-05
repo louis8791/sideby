@@ -5,6 +5,7 @@
 - 正式邀請碼由根後端產生，現行為 32 碼且區分大小寫。前端不得截短、自動大寫、自動校正或以較短展示碼假代；雙瀏覽器加入成功前不得宣稱雙人主流程可用。
 - 帳號功能是可選的 Supabase 介面，不得由 SSR 平台變數單方面畫出瀏覽器端無法接管的登入按鈕。登入入口只在 client hydration 確認公開設定後顯示；所有登入請求不論成功、服務錯誤或網路例外都必須解除 busy 並給明確訊息。
 - Cloudflare production build 若要啟用帳號入口，必須在建置階段提供 `VITE_SUPABASE_URL` 與 `VITE_SUPABASE_PUBLISHABLE_KEY`；兩者是瀏覽器公開設定，不得混用 service role。根 API 的匿名雙人房間仍是推薦主流程權威。
+- PR #18 已合併 `main`（`45cac2d`）。Railway deployment `108b916d-6954-46a5-a418-1c60063b22fa` 與 Cloudflare Worker version `49a0e177-7dae-4d49-8728-f0bdf90fedcf` 成功；正式 Worker 已目視驗證登入表單可開啟、錯誤帳密有回應，以及兩個獨立瀏覽器以完整 32 碼加入同房並同步成員狀態。這仍不是兩支實體手機驗收。
 
 ## 2026-09-06 政府地點更新管線
 
