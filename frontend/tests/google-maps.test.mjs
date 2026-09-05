@@ -85,7 +85,8 @@ test('private Gemini use requires explicit user consent and never logs provider 
   const page = readFileSync(new URL('../src/routes/index.tsx', import.meta.url), 'utf8');
   const provider = readFileSync(new URL('../src/lib/preference-ai.server.ts', import.meta.url), 'utf8');
   assert.match(page, /if \(externalAiConsent\)/);
-  assert.match(page, /允許本次內容送至 Gemini 解析/);
+  assert.match(page, /我確認這是非敏感展示內容，允許送至 Gemini/);
+  assert.match(page, /Gemini 免費層可能使用內容改善 Google 產品/);
   assert.match(page, /未授權外部 AI/);
   assert.doesNotMatch(provider, /await res\.text\(\)/);
 });

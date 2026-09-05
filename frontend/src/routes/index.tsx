@@ -1479,8 +1479,8 @@ function Home() {
                     onChange={(event) => setExternalAiConsent(event.target.checked)}
                   />
                   <span>
-                    <strong>允許本次內容送至 Gemini 解析</strong>
-                    <small>未勾選仍可配對，系統只用本機規則；此選項不代表同意公開或訓練。</small>
+                    <strong>我確認這是非敏感展示內容，允許送至 Gemini</strong>
+                    <small>Gemini 免費層可能使用內容改善 Google 產品；請勿輸入姓名、聯絡方式或真實私密資訊。未勾選只用本機規則。</small>
                   </span>
                 </label>
 

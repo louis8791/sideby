@@ -1,5 +1,11 @@
 # Sideby — MVP PRD
 
+## 2026-09-06 Gemini 免費展示決策
+
+Owner 選擇零付費方案；Gemini 維持非主打、選用的黑客松展示能力。專用 Free tier API key 只存在 Cloudflare secret，未連結預付流程。正式 Worker 已用兩個獨立瀏覽器完成完整邀請加入、雙方合成／非敏感偏好送出、Server Function 200 與三套 `approved_dataset` 路線產生。此證據只代表非敏感展示 Runtime 通過，不代表真實私密偏好可送免費層，也不取代兩支實體手機與 Owner 驗收。
+
+勾選文案必須明示 Gemini 免費層可能使用內容改善 Google 產品，並要求使用者確認內容不含姓名、聯絡方式或真實私密資訊。未勾選時只使用本機規則；真實私密偏好仍不得送入免費／未付費 API。
+
 ## 2026-09-06 首次使用流程修正
 
 建立者取得的完整 32 碼、區分大小寫邀請碼，必須能由另一個瀏覽器原樣輸入並加入同一房間；加入前不得生成行程。手機輸入框不得截短、自動改大小寫或自動校正。登入入口只有在瀏覽器端確認 Supabase 公開設定後才顯示，點擊必須開啟登入表單；送出後若帳密錯誤、服務錯誤或網路中斷，必須顯示結果並恢復按鈕，不可像沒有反應。Supabase 登入是保存帳號資料的可選功能，不取代根後端匿名雙人房間身分。
@@ -80,7 +86,7 @@ Google 地圖入口為 `/maps-check`：不依賴 Supabase／Gemini，可填自�
 
 三個接點都只在使用者明確送出或合法推薦完成後各呼叫一次；不隨輸入按鍵、地圖操作或輪詢呼叫。API key 僅放伺服器。供應商失敗時顯示真實錯誤，或以明確標示的程式安全理由降級，不以固定方案冒充 AI 成功。
 
-免費／未付費 Gemini API 只用合成或非敏感展示內容；真實私密偏好須使用連結有效帳務的 API 專案，並在送出前完成外部處理告知與同意。依 Google [Gemini API Terms](https://ai.google.dev/gemini-api/terms)／[Billing](https://ai.google.dev/gemini-api/docs/billing) 於 2026-09-05 查核；正式部署前須重新確認。需求 JSON adapter 已接主流程，缺金鑰時明示本機規則 fallback；真實 Gemini 尚未驗收，評論標籤與安全理由改寫仍待實作。
+免費／未付費 Gemini API 只用合成或非敏感展示內容；真實私密偏好須使用連結有效帳務的 API 專案，並在送出前完成外部處理告知與同意。依 Google [Gemini API Terms](https://ai.google.dev/gemini-api/terms)／[Billing](https://ai.google.dev/gemini-api/docs/billing) 於 2026-09-05 查核；正式部署前須重新確認。需求 JSON adapter 已接主流程，缺金鑰時明示本機規則 fallback；2026-09-06 已完成免費層合成／非敏感雙瀏覽器 Runtime，真實私密 Gemini、評論標籤與安全理由改寫仍未驗收。
 
 ## 1. 產品摘要
 

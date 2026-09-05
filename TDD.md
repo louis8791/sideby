@@ -1,5 +1,11 @@
 # Sideby — MVP TDD
 
+## 2026-09-06 Gemini free-tier demo runtime
+
+- Owner 採零付費方案；`GEMINI_API_KEY` 維持 Cloudflare server secret，免費層只接受合成／非敏感展示內容。UI 的 opt-in 必須同時包含「非敏感展示內容」自我確認與免費層資料使用告知；真實私密內容仍走本機規則。
+- Production 行為證據：兩個獨立瀏覽器完成 32 碼邀請加入、共同條件、雙方非敏感偏好輸入與最新版確認；Gemini Server Function 回 200，未出現 provider error，最後產生三套 `approved_dataset` 三站路線。診斷用 Cloudflare invocation logs 已關閉；此證據不取代真實私密資料、失敗矩陣、兩支實體手機或 Owner 驗收。
+- 回歸測試須鎖住免費層告知文字、明確 opt-in、無 provider body 日誌，以及 key 不進 client bundle／Git。不得用本機 fallback 的成功結果冒充 Gemini 成功。
+
 ## 2026-09-06 Invite and authentication regression
 
 - UI 契約鎖定邀請欄位 `maxLength=32`、`autoCapitalize=none`、`autoCorrect=off`、`spellCheck=false`，並以正式後端產生的完整 code 完成建立者／加入者兩個獨立瀏覽器狀態驗收。
@@ -209,7 +215,7 @@ Gemini adapter 一律在伺服器執行，`GEMINI_API_KEY` 不得使用 `VITE_` 
 
 最小測試需證明：三用途不交叉、評論標籤未確認不落盤、同一確認冪等、另一方不可讀取原文／候選、PublicState／SSE／日誌零私密內容、禁止 Google 衍生輸入、非法模型輸出 fail closed、程式理由不被模型新增事實、API key 不進 client bundle。真實驗收另以兩個瀏覽器／兩支手機檢查送出一次只呼叫一次、確認流程、供應商失敗、刷新保存與公開畫面。
 
-2026-09-05 狀態：`private_preference_parse` 已接根後端匿名身分與主流程；模型正規化結果只能進既有 allowlist 解析器，不被保存或公開，原始文字仍由根後端保管。缺 `GEMINI_API_KEY` 時明示使用本機規則 fallback；真實模型成功／失敗尚未用有效金鑰驗收。`review_tag_suggestion`、`public_reason_rewrite` 尚未實作。
+2026-09-06 狀態：`private_preference_parse` 已接根後端匿名身分與主流程；模型正規化結果只能進既有 allowlist 解析器，不被保存或公開。缺 `GEMINI_API_KEY` 時明示使用本機規則 fallback；免費層已用合成／非敏感內容完成雙瀏覽器成功 Runtime，但真實私密資料與完整失敗矩陣仍未驗收。`review_tag_suggestion`、`public_reason_rewrite` 尚未實作。
 
 ### 4.1 場地回饋、可見性與同意
 
