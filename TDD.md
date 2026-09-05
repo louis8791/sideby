@@ -1,8 +1,16 @@
 # Sideby — MVP TDD
 
+## 2026-09-05 單一 Repo 整合更新
+
+唯一主 Repo 為 `louis8791/sideby`。根 Next.js／PostgreSQL 管既有應用狀態；`frontend/` 為 TanStack Start／Vite＋Supabase／Gemini／Google Maps 來源程式，包含獨立伺服器功能，不能當成純靜態網頁。根 npm lockfile、前端 Bun lockfile 各自安裝；根 TypeScript 排除 frontend 及 .local。
+
+開發 `/api/*` 經前端 Vite 代理轉至根後端，保留 Host／Origin／Authorization／SSE；正式部署另配置同源反向代理。代理只驗連線，不自動改寫前端固定房號、行程或 Supabase 身分。入口、欄位與部署見 TEAM_INTEGRATION、BACKEND_API、DEPLOYMENT。
+
+本輪選 Gemini＋Google Maps，外部服務取代自行訓練／自管模型／RAG 的排程；不因匯入而宣稱已接根後端。下方自管／零 API／訓練工作包是歷史／延後參考，保留已有測試與資料守門。外部解析需有效同意、輸出驗證、私密出口隔離及誠實失敗；既有基準零呼叫不代表整合前端也零呼叫。
+
 ## 1. 技術決策
 
-2026-09-05 工作區隔離：主 repo 保留 Next.js／PostgreSQL，外部 TanStack／Vite 或 Manus 專案放 `.local/frontends/`，各有依賴、Git 與建置目錄。TypeScript 僅掃描正式來源目錄並排除 `.local`，Next root 固定為本 repo。`dev:local`／`demo:local` 驗證 cwd、明確埠與占用狀態後才啟動資料庫；不允許啟動時自動換埠。跨前端接線使用受控同源 `/api` 代理；詳見 `docs/TEAM_INTEGRATION.md`。
+工作區隔離：根 repo 保留 Next.js／PostgreSQL，TanStack 前端納入 `frontend/`，各有依賴與建置目錄，只有根 Git。TypeScript 僅掃描明確來源並排除 `.local`／`frontend`；Next root 固定。既有 local launcher 維持 cwd／埠檢查。以下未更新的模型技術章節是前一版規劃。
 
 實作狀態依 ROADMAP 的 Phase 1～8 八個頂層階段回報；舊 1A／1B 與 4A～4E 僅保留為歷史工作包與證據入口，不能作為現行額外 Phase 或整階段通過證據。
 

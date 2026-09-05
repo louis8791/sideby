@@ -11,7 +11,7 @@ npm ci
 npm run dev:local
 ```
 
-服務預設 `http://127.0.0.1:3000`，此階段只有 `/api/*`，首頁 404 是預期行為。`dev:local` 自動啟動套件攜帶的真正 PostgreSQL 18.4、執行 migration，再啟動 Next.js；僅綁定本機，不新增 Windows 服務。資料、隨機密碼與資料庫日誌保存在 `.local/dev-postgres/`，不提交 Git。結束時關閉該程序與資料庫。
+服務預設 `http://127.0.0.1:3000`，提供 `/api/*` 與根後端整合首頁；匯入的 `frontend/` 是另一個執行元件，開發預設 5173。`dev:local` 自動啟動套件攜帶的真正 PostgreSQL 18.4、執行 migration，再啟動 Next.js；僅綁定本機，不新增 Windows 服務。資料、隨機密碼與資料庫日誌保存在 `.local/dev-postgres/`，不提交 Git。結束時關閉該程序與資料庫。
 
 已有 PostgreSQL 時，由啟動環境設定伺服器專用 `DATABASE_URL`，執行 `npm run db:migrate`，再執行 `npm run dev`。migration 指令不自動讀取 `.env`；部署環境必須明確注入變數。此階段透過後端驗證成員，禁止將資料庫或資料表直接開放瀏覽器／PostgREST；尚未配置 Supabase RLS。
 

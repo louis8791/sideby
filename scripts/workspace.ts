@@ -41,11 +41,11 @@ if (process.argv[1]?.endsWith('workspace.ts')) {
   (async () => {
     const directory = await assertWorkspaceRoot();
     const config = JSON.parse(await readFile(resolve(directory, 'tsconfig.json'), 'utf8'));
-    if (!config.exclude?.includes('.local') || config.include?.some((path: string) => path.startsWith('**/'))) {
+    if (!config.exclude?.includes('.local') || !config.exclude?.includes('frontend') || config.include?.some((path: string) => path.startsWith('**/'))) {
       throw new Error('WORKSPACE_SCOPE_INVALID: keep external frontends and worktrees outside the main compiler scope');
     }
     console.log(JSON.stringify({ status: 'WORKSPACE_BOUNDARIES_OK', root: directory,
-      externalFrontends: '.local/frontends', worktrees: '.local/worktrees',
+      frontend: 'frontend', backend: 'app/api + src/server', worktrees: '.local/worktrees',
       note: 'Checks directory/configuration only; this is not product acceptance.' }, null, 2));
   })().catch(error => { console.error(error.message); process.exitCode = 1; });
 }

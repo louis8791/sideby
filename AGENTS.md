@@ -1,5 +1,15 @@
 # Sideby 專案規則
 
+## 2026-09-05 最新共同開發決策（優先於下方歷史模型規劃）
+
+- 使用者指定 `louis8791/sideby` 為唯一主 Repo；Lovable 程式已匯入 `frontend/`，根後端保留 `app/api/`、`src/`、`db/`。共同操作入口為 `docs/TEAM_INTEGRATION.md`，部署依 `docs/DEPLOYMENT.md`。
+- 本輪採 Gemini＋Google Maps API 型 MVP，不排模型訓練／自管生成／Embedding／RAG。下方相關舊禁止及訓練工作包是歷史／延後參考，不阻擋本輪；權限、硬限制、來源與隱私守門保持必要。
+- 外部 API 只按已配置服務執行，不把失敗默默切成假成功。私密資料送模型須告知與同意；不得公開原文、憑證或原始供應商錯誤。
+- 根後端的 `rule_baseline_v1` 與零外部呼叫結果仍是既有基準；不得把其通過宣稱為 frontend 的 Gemini／Google Maps 已驗收。
+- Google 即時查詢／展示已獲本次方向授權；既有自有資料政策繼續阻擋 Google 評論、照片及衍生標籤進共用 RAG／訓練，不由匯入程式碼推定所有保存行為合法。
+- 前端與後端是同一 Repo 的兩個執行元件，lockfile 與編譯範圍分開。原 Lovable 連線仍在隊友 Repo，沒有自動改接此子目錄；共同修改以本 Repo feature 分支為準。
+- Supabase 身分、本地畫面 state、固定房號與範例行程不是根 API 的成員／定案來源。架構匯入、代理連通、完整功能串接與實機驗收分開回報。
+
 ## 專案目的
 
 本專案定義 Sideby，一個雙人私密需求共決策的約會行程 MVP。文件中的產品範圍、隱私界線、硬限制與驗收標準優先於臨時的實作便利。
@@ -67,7 +77,7 @@
 
 ## 分工與施工順序
 
-- 2026-09-05 現場三人協作以 `docs/TEAM_INTEGRATION.md` 為操作入口：本 repo 是唯一後端與整合權威；Lovable／Manus 放 `.local/frontends/` 各自維護，不能覆蓋主 package、lockfile、API、DB 或權威文件。同一 checkout 同時只允許一位 writer，其他成員用自己的分支／工作目錄；只有整合者修改共同 API 與根設定。已存在且落後的 worktree 先核對基底和未提交內容，不能直接回蓋。
+- 2026-09-05 現場三人協作以 `docs/TEAM_INTEGRATION.md` 為操作入口：本 repo 是唯一後端與整合權威，Lovable 前端在 `frontend/` 共同維護；Manus 收到後只納入指定元件。不同 package／lockfile／API／DB 不可互相覆蓋；每個 checkout 同時只允許一位 writer，其他人用自己的分支／工作目錄。落後的 worktree 先核對基底與未提交內容，不能直接回蓋。
 
 - 另一位成員負責前端 UIUX、畫面狀態與應用 API 串接；使用者負責應用後端、資料權限、決策規則與整合測試；模型／RAG 獨立為可交由另一位協作者承接的工作包，承接人尚待確認。
 - 雙方先對齊請求／回應、錯誤與公開狀態契約，前端可用明確標示的合成資料開發。

@@ -1,5 +1,11 @@
 # Sideby — MVP ROADMAP
 
+## 2026-09-05 本輪最新路徑
+
+使用者指定主 Repo `louis8791/sideby`。本輪先完成同 Repo 的 `frontend/`、根後端、獨立 lockfile／建置與共同文件，再依序接建房／加入、私密輸入、確認、Gemini／Google Maps、生成／定案，最後驗雙裝置及正式網址。Manus 只增指定元件。
+
+不排訓練、自管生成、Embedding 或 RAG；進階需求句改作核准後的回歸驗收。下方八階段與舊自管／零 API 工作包保留歷史對照，相關項目為 DEFERRED，不能當作 API 型 MVP 的必要訓練前置。既有後端規則／隱私測試仍需通過，前端匯入與代理不代表主流程串接完成。最新分工與驗收界線見 `docs/TEAM_INTEGRATION.md`。
+
 現場協作入口：`docs/TEAM_INTEGRATION.md`。先固定後端與唯一展示主線，再接 Lovable；Manus 先交指定畫面／元件。本輪整合不增加新的頂層 Phase，現有八階段與模型／RAG 的延後決策維持適用。
 
 ## 交付原則
@@ -9,7 +15,7 @@
 跨階段固定邊界：
 
 - Sideby 是雙人私密需求共決策產品，不是地點清單或單人行程產生器。
-- 自行部署生成模型與 Embedding 模型；共用 RAG 只使用核准場地資料，不呼叫外部模型 API，也不在失敗時轉送雲端。
+- 本輪採 Gemini＋Google Maps；自管生成、Embedding、RAG 及訓練為 DEFERRED。外部解析要驗同意、隱私、schema 與失敗狀態，不以固定範例假裝成功。
 - 不以 Google Places／Maps API 或批次 Google Text Search 建庫。唯一可長期保存的 Google 識別欄位是 optional `google_place_id`。
 - Google 衍生的名稱、地址、評論、照片、搜尋結果與標籤不得進持久層、RAG、Embedding、訓練或評測；推薦、排序與公開理由只用自有、合作方授權或合規開放資料。
 - 硬限制、雙人公平計分、行程組合、局部重排與最終合法性由確定性程式負責；模型只做受控解析與公開文字改寫。
