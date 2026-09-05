@@ -3,7 +3,7 @@
 ## 2026-09-06 評論資訊模擬
 
 - `feat/live-review-signals` 已完成單次 Google 評論的固定規則粗分類、最多五則評論／十個情境線索、提及次數與 UI 免責文字；完整 `npm run check:all` 82 項測試通過。
-- 待完成：完整 `check:all`、GitHub PR／checks、Cloudflare 部署及正式 Place Details 目視。此功能只增加展示資訊，不提高 13 筆正式核准場地數，也不構成模型持續學習證據。
+- PR #25 已合併，Cloudflare Worker version `4a13b1cc-6930-4c85-ad64-9059ebc8f914` 已部署；首頁、同源 Runtime、正式 bundle、雙瀏覽器加入及 Google 四項連線／底圖均通過。尚未逐一證明 13 個正式場地在當下評論都會命中線索。此功能只增加展示資訊，不提高 13 筆正式核准場地數，也不構成模型持續學習證據。
 
 ## 2026-09-06 成長功能目前完成度
 
