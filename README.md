@@ -44,6 +44,8 @@ npm run frontend:dev
 
 後端建立專案內獨立 PostgreSQL；無合成種子模式用 npm run dev:local。前端雲端功能須自行設定 frontend/.env；未配置時登入、Gemini、地圖可能不可用，見 [部署說明](docs/DEPLOYMENT.md)。
 
+正式後端使用平台提供的 `DATABASE_URL` 執行 `npm start`；啟動前會冪等套用 migration，並綁定平台可連線的 `0.0.0.0`。本機仍使用上述 `dev:local`／`demo:local`，不要把正式資料庫拿來跑合成種子。
+
 前端開發及正式 Worker 的 `/api/*` 都可代理到根後端。主畫面已接匿名房間、共享／私密需求、確認、合成三套行程、反應／重排、定案與本人偏好回饋；正式環境仍須填部署值並另做雙手機驗收。
 
 ## 驗證

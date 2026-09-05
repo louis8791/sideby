@@ -8,6 +8,8 @@ Google 接線：`frontend/src/lib/google-maps.server.ts` 使用官方 Places／R
 
 開發 `/api/*` 經前端 Vite 代理轉至根後端；正式 TanStack Worker 入口也以 `SIDEBY_API_ORIGIN` 轉送同來源 `/api/*`，保留 Authorization／SSE、驗瀏覽器 Origin，並把 Origin 改為根 API 自身 Origin 供後端守門。未設定或非 HTTPS 目標即回 503。最新主畫面以根 API 的匿名 Bearer 身分完成房間、共享、私密、確認、生成、反應／重排、定案與回饋；Supabase 只是可選帳號功能，不是根 API 身分來源。
 
+根後端正式啟動入口為 `npm start`：`prestart` 先以 advisory lock 冪等執行 PostgreSQL migrations，Next 再綁 `0.0.0.0` 並使用平台 `PORT`。本機隔離資料庫仍只走 `dev:local`／`demo:local`，正式環境不得自動 seed synthetic 資料。
+
 本輪選 Gemini＋Google Maps，外部服務取代自行訓練／自管模型／RAG 的排程；不因匯入而宣稱已接根後端。下方自管／零 API／訓練工作包是歷史／延後參考，保留已有測試與資料守門。外部解析需有效同意、輸出驗證、私密出口隔離及誠實失敗；既有基準零呼叫不代表整合前端也零呼叫。
 
 黑客松 UI 可保留固定邀請碼與範例行程。範例必須有獨立 demo／synthetic 狀態；真正 API 呼叫一旦失敗，只能顯示失敗或不可用，不得切換範例並沿用成功狀態。這項 cut 不降低後端權限、私密隔離與輸出驗證。

@@ -27,7 +27,7 @@
 
 對外提供一個 HTTPS 入口：頁面及 TanStack server functions 交前端；`frontend/src/server.ts` 會在正式 Worker 將同來源 `/api/*` 轉送到 `SIDEBY_API_ORIGIN`，保留 Authorization／SSE，拒絕跨來源瀏覽器請求。Google server functions 另要求 `SIDEBY_PUBLIC_ORIGIN` 與公開網址完全一致。不可用 wildcard CORS 或網址 token 取代。
 
-前端正式環境至少設定：`SIDEBY_API_ORIGIN=https://<後端網域>`、`SIDEBY_PUBLIC_ORIGIN=https://<公開前端網域>`、兩把 Google key；要啟用 Gemini 再加 `GEMINI_API_KEY`。根後端另設定 `DATABASE_URL` 並執行 migration。不要在值尾端加路徑或 `/`，也不要提交任何真實 secret。
+前端正式環境至少設定：`SIDEBY_API_ORIGIN=https://<後端網域>`、`SIDEBY_PUBLIC_ORIGIN=https://<公開前端網域>`、兩把 Google key；要啟用 Gemini 再加 `GEMINI_API_KEY`。根後端另設定 `DATABASE_URL`。平台執行 `npm start` 時會先冪等套用 migration，再以 `0.0.0.0` 與平台 `PORT` 啟動；不會自動 seed synthetic 資料。不要在 Origin 值尾端加路徑或 `/`，也不要提交任何真實 secret。
 
 正式部署另設定登入允許的回呼、Google browser key 來源限制與流量額度，先在測試環境驗證，再記錄公開網址、兩個元件 commit、資料版本及維運負責人。
 

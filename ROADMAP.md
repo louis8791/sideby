@@ -289,7 +289,7 @@ Owner 已將 Gemini MVP 固定為三個接點，不新增頂層 Phase：私密�
 
 ## 下一刀
 
-先把整合分支合回最新 `main`，再選定後端 PostgreSQL／Node 部署與前端 Cloudflare 部署，填 `SIDEBY_API_ORIGIN`、`SIDEBY_PUBLIC_ORIGIN` 及平台 secrets；用公開網址完成兩支手機的房間、隱私、生成、定案與刷新驗收。Gemini 有有效金鑰後先驗私密需求單次呼叫及 fallback；評論候選標籤與安全理由改寫若時間不足維持 `PLANNED`，不得用文件冒充完成。
+整合版已在 `main`；根後端也已具備 migration＋`0.0.0.0` 的雲端啟動入口。下一步選定 PostgreSQL／Node 與 Cloudflare 帳號，填 `SIDEBY_API_ORIGIN`、`SIDEBY_PUBLIC_ORIGIN` 及平台 secrets；用公開網址完成兩支手機的房間、隱私、生成、定案與刷新驗收。Gemini 有有效金鑰後先驗私密需求單次呼叫及 fallback；評論候選標籤與安全理由改寫若時間不足維持 `PLANNED`。
 
 ## 橫向品質門檻
 
