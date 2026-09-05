@@ -1,12 +1,14 @@
 # 偏好、地點發布與持續改進
 
-## 全候選正式推薦（待部署）
+## 全候選正式推薦（已部署）
 
 Owner 已決定不以每筆完整價格、時段、區域、室內外與冷氣證據作發布前置。最新 1,121 筆合格政府候選全部進版本化推薦池：原 13 筆維持完整驗證，其餘 1,108 筆標為 `needs_confirmation`，未知值保持 unknown／null。一般需求可從全池產生三套不同路線；含未知站點時總價顯示「部分價格待確認」並列出缺件。明確室內外、冷氣、飲食、過敏與無障礙硬條件仍 fail closed。
 
-`npm run venues:publish-candidates -- --apply` 會從最新 staging 建立 release、provisional slots、估計交通矩陣與推薦索引；Migration 012 讓索引保留未知價格，發布與索引採批次 SQL。每日 `venues:refresh-all` 已串接同一流程。本機 `npm run check:all` 共 84 項測試及兩端 build 通過；正式 production 尚未切換前仍是 13 筆。
+`npm run venues:publish-candidates -- --apply` 會從最新 staging 建立 release、provisional slots、估計交通矩陣與推薦索引；Migration 012 讓索引保留未知價格，發布與索引採批次 SQL。每日 `venues:refresh-all` 已串接同一流程。本機 `npm run check:all` 共 84 項測試及兩端 build 通過。
 
 Google 評論最多五則、最多 12 個即時線索，可粗略顯示室內、冷氣或營業提醒，但不持久化、不影響核准、CoupleScore、硬篩選、索引或學習。這樣能增加展示資訊，不會把評論猜測冒充場地事實。
+
+PR #27／Railway／Cloudflare 已完成。Production release／index 均為 1,121 筆；其中 13 fully verified、1,108 needs confirmation。公開 API 的 3 套三站方案全部使用新 release，共 7 個待確認站；正式前端已顯示 nullable price 與出發前確認警示。兩支實體手機及新模型品質提升仍未驗。
 
 ## Google 評論即時模擬線索
 
@@ -18,7 +20,7 @@ PR #22／#23 已合併及部署。功能 commit `85e5ccd`；Railway deployment `
 
 - 30 軟偏好均有明確對應，合計 21 個計分屬性；另有室內／戶外（含戶外區）、冷氣／無冷氣 4 個硬條件。前端傳原文及選項，不再用正規化文字覆蓋原始限制。未支援的硬限制須澄清。
 - 辨識不等於地點能滿足：未知軟屬性維持中性分數，未知硬條件拒絕；不能把未觀察的氣氛、服務或冷氣補成事實。情境觀察不會無條件當成一般屬性。
-- 2026-09-06 重新讀取政府來源共 1,121 筆候選；128 筆有來源營業文字、19 筆有可精確辨識的單一入場費文字、425 筆缺街道地址。這是原始候選完整度，不是正式資料已歸零。既有正式核准資料仍為 13 筆，本次沒有批量冒名核准。
+- 2026-09-06 重新讀取政府來源共 1,121 筆候選；128 筆有來源營業文字、19 筆有可精確辨識的單一入場費文字、425 筆缺街道地址。這是原始候選完整度；後續全候選 release 只核准發布資格，沒有把缺件批量冒名為已驗證。
 - 全候選池先過政策及硬條件，再取最多 20 個兼顧雙方與類別的候選進行路線組合；不再以 ID 前 32 筆作全部候選。這是有界搜尋，不保證全域最優。
 
 ## 地點更新及發布
@@ -57,4 +59,4 @@ Google 官方 [計價表](https://developers.google.com/maps/billing-and-pricing
 
 正式同源 API 以兩個獨立測試身分驗證加入、逐項 30 軟偏好／4 環境、拒絕以 normalizedText 消除原始限制，以及 3 套各 3 站 approved_dataset 路線；本次不呼叫 Gemini。瀏覽器登入按鈕完成 hydration 後可開啟表單。Google IDs-only 單次探針成功，與既有 Place ID 一致且未寫回。
 
-正式 `venues:refresh-all` 成功：新候選快照保留 1,121 筆／1,120 Place IDs／128 有營業文字／19 明確入場費；active 13 核准場地與 index 維持。每日 cron `0 0 * * *`（UTC，即台灣 08:00）繼續同一流程。`learning:refresh` 正式回傳 eligible=0、created=0、index recordCount=13；沒有假造同意或學習語料。實體手機、主觀場地證據及真正模型品質提升仍未驗。
+該次 `venues:refresh-all` 成功：新候選快照保留 1,121 筆／1,120 Place IDs／128 有營業文字／19 明確入場費；當時 active／index 為 13。現在 active／index 已依本檔最上方切成 1,121；每日 cron `0 0 * * *`（UTC，即台灣 08:00）繼續同一流程。`learning:refresh` 當次回傳 eligible=0、created=0，沒有假造同意或學習語料。實體手機、主觀場地證據及真正模型品質提升仍未驗。

@@ -1,13 +1,14 @@
 # Sideby — MVP TDD
 
-## 2026-09-06 全候選正式發布契約（待部署）
+## 2026-09-06 全候選正式發布契約（已部署）
 
 - `buildCandidatePoolRelease` 從單一最新政府 staging run 建立版本化 release：保留 13 筆既有 `verified_current` 記錄與時段，其餘有效候選發布為 `eligible_with_unknowns`，每筆只建立一個未來 90 天的 `provisional` slot，避免用每日假時段膨脹資料。
 - `venue_records`／`venue_recommendation_index` 的未知價格維持 SQL `NULL`；索引 `price_basis` 可為 `unknown`。未知價格不可回填為 0，未知室內外或冷氣不可回填 false。
 - 推薦輸出允許 nullable `total_cost`／`estimated_cost`，每站帶 `verification_status` 與 `unknown_fields`。含待確認候選的方案必須是 `confirmation_required=true`、`hard_constraints_passed=false`；前端須清楚警示。
-- 一般無衝突需求可使用 provisional 候選；任何明確室內外、冷氣、飲食、過敏、無障礙等硬條件仍以精確值過濾，未知不得通過。此分支的 `npm run check:all` 已通過 84 項測試及兩端 build；正式 migration、release、索引數量與公開 Runtime 尚待部署實查。
+- 一般無衝突需求可使用 provisional 候選；任何明確室內外、冷氣、飲食、過敏、無障礙等硬條件仍以精確值過濾，未知不得通過。`npm run check:all` 已通過 84 項測試及兩端 build。
 - 發布與索引寫入改為 JSON 批次 SQL，避免 1,121 筆逐列 round trip。每日 `venues:refresh-all` 依序更新政府資料、Place ID、全候選 release 與學習索引；同日同來源版本冪等。
 - Google 評論分類最多 12 個即時線索，新增室內、冷氣、冷氣可能不足與營業提醒；測試必須鎖住不持久化、不參與硬條件或排名的邊界。
+- Production 驗收：Railway migration 012 後成功發布 `sideby-release-pool-20260906-a8f936dc01`；資料庫為 1,121 records、2,058 slots、1,108 provisional slots、107,616 legs，active index 1,121 entries／1,108 unknown price。公開後端以兩身分完整確認後回 3 套三站，全部採此 release，3 套均 `confirmation_required=true`，共 7 個待確認站點；Cloudflare version `c0aace76-df4f-4914-b373-db9e956564a3` 首頁／同源 runtime 200，正式 bundle 含兩項警示文案。
 
 ## 2026-09-06 Google 評論即時線索測試
 
@@ -17,7 +18,7 @@
 
 ## 2026-09-06 成長功能正式驗收
 
-本機 `check:all` 共 81 tests 及兩端 build 通過，PR #22／#23 前後端 CI 通過。Migration 011、個人無屬性回饋排序、候選來源撤回、匯出 split、資料／矩陣／索引原子 rollback、重啟保留 release，以及匯入轉換版本更新均有回歸測試。正式 API 驗證完整 34 選項、原始硬限制不被 normalizedText 覆蓋、雙人加入與 3 套 approved_dataset 三站方案；瀏覽器登入表單可開。正式資料庫確認 migration／13 筆索引與更新快照，完整 refresh-all 成功。實體手機及真實學習品質未驗。見 `docs/RECOMMENDATION_GROWTH.md`。
+本機 `check:all` 共 81 tests 及兩端 build 通過，PR #22／#23 前後端 CI 通過。Migration 011、個人無屬性回饋排序、候選來源撤回、匯出 split、資料／矩陣／索引原子 rollback、重啟保留 release，以及匯入轉換版本更新均有回歸測試。正式 API 驗證完整 34 選項、原始硬限制不被 normalizedText 覆蓋、雙人加入與 3 套 approved_dataset 三站方案；瀏覽器登入表單可開。該次正式資料庫為 13 筆索引，已由本檔最上方的 1,121 筆 release／index 取代。實體手機及真實學習品質未驗。見 `docs/RECOMMENDATION_GROWTH.md`。
 
 - 測試全部 30 軟選項與 4 環境選項、否定、未知語句；禁止前端正規化靜默覆蓋原始限制。
 - 候選召回依硬限制及雙方適配，不能用 venue_id 前 32 筆作全部候選；只有核准屬性及可重算行程事實可計分。
