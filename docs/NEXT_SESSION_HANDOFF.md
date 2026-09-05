@@ -46,7 +46,7 @@ git -C E:\sideby rev-parse origin/main
 
 ## 2. 已完成且已驗證
 
-- Lovable 主畫面已接根後端：匿名建立／加入房間、共享條件、本人私密需求、雙方確認、三套 synthetic 行程、reaction、局部重排、finalize、本人 `too_dark` 回饋。
+- Lovable 主畫面已接根後端：匿名建立／加入房間、共享條件、本人私密需求、雙方確認、三套 synthetic 行程、reaction、局部重排、finalize，以及太暗／太吵／太幼稚／太正式／走太多五種本人回饋。
 - 根後端仍是身分、權限、Session version、私密保存與定案唯一來源；Supabase 未設定時明示「免登入展示」。
 - 私密文字只有使用者勾選「允許本次內容送至 Gemini」才會呼叫 Gemini；未勾選或供應商不可用時，明示使用本機規則。
 - 合成場地沒有明確 `google_place_id` 就不查 Google；不以名稱搜尋第一筆結果誤配真實商家，也不顯示其照片、評分或地址。
@@ -77,7 +77,7 @@ git -C E:\sideby rev-parse origin/main
 - Gemini「評論候選標籤＋本人確認」與「合法推薦後安全理由改寫」仍是後續規劃，不是本次提交主線或阻斷。
 - Google 評論沒有接入，也不得拿來建立 Sideby 場地標籤、RAG、Embedding 或訓練資料。
 - 真實核准場地、兩支實體手機、跨網路效能與 Owner sign-off 未完成；正式網域本身已建立並通過基本 API。
-- 持續學習只有本人 `too_dark` 偏好事件已實作；`training_candidates` 與版本化場地索引重建仍未完成／延後。
+- 持續學習的本人偏好路徑已擴充為五種 allowlist 事件：尚無 reaction／finalize choice 時可立即重生三套；已有決策進度則拒絕重生並保留資料。定案後只有個人化有效才接受回饋並跨 Session 保留。`training_candidates` 與版本化場地索引重建仍未完成／延後，不得把偏好門檻更新稱為模型訓練。
 
 ## 5. 下一個對話的施工順序
 

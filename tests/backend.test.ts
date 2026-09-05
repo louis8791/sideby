@@ -398,8 +398,23 @@ test('Phase 2 + Phase 3 + Phase 5 + Phase 6 backend: real PostgreSQL + built Nex
     const restored = await call('POST', phase5Path + '/generate', phase5A, { version: 3 });
     assert.equal(restored.status, 200);
 
-    const target = restored.data.itineraries[0];
-    const other = restored.data.itineraries[1];
+    const immediateSource = restored.data.itineraries[0];
+    const immediate = await call('POST', `/api/itineraries/${immediateSource.itinerary_id}/preference-feedback`, phase5A, {
+      version: 3, stopId: immediateSource.stops[0].stop_id, signal: 'too_noisy',
+    });
+    assert.equal(immediate.data.sessionApplied, true);
+    assert.equal(immediate.data.longTermPreferenceVersion, null);
+    await call('POST', `/api/itineraries/${immediateSource.itinerary_id}/preference-feedback`, phase5A, {
+      version: 3, stopId: immediateSource.stops[0].stop_id, signal: 'too_noisy',
+    });
+    assert.equal((await db.query(`SELECT count(*)::int AS n FROM preference_feedback_events
+      WHERE itinerary_id=$1 AND signal='too_noisy'`, [immediateSource.itinerary_id])).rows[0].n, 1);
+    const regenerated = await call('POST', phase5Path + '/generate', phase5A, { version: 3 });
+    assert.equal(regenerated.status, 200);
+    assert.equal(regenerated.data.itineraries.length, 3);
+
+    const target = regenerated.data.itineraries[0];
+    const other = regenerated.data.itineraries[1];
     const lockedStop = target.stops[0];
     const rejectedStop = target.stops[1];
     const reactionPath = `/api/itineraries/${target.itinerary_id}/reactions`;
@@ -427,6 +442,9 @@ test('Phase 2 + Phase 3 + Phase 5 + Phase 6 backend: real PostgreSQL + built Nex
     assert.equal((await db.query(`SELECT count(*)::int AS n FROM itinerary_reactions
       WHERE itinerary_id=$1 AND user_id=(SELECT id FROM anonymous_users WHERE token_hash=$2)`,
     [target.itinerary_id, createHash('sha256').update(phase5A).digest('hex')])).rows[0].n, 1);
+    assert.equal((await call('POST', phase5Path + '/generate', phase5A, { version: 3 })).data.error.code, 'DECISION_IN_PROGRESS');
+    assert.equal((await db.query('SELECT count(*)::int AS n FROM itinerary_reactions WHERE itinerary_id=$1',
+      [target.itinerary_id])).rows[0].n, 1);
     const lockedResponse = await call('POST', reactionPath, phase5B, {
       version: 3, stopId: lockedStop.stop_id, reaction: 'like',
     });
@@ -452,6 +470,9 @@ test('Phase 2 + Phase 3 + Phase 5 + Phase 6 backend: real PostgreSQL + built Nex
       version: 3, itineraryId: target.itinerary_id,
     });
     assert.equal(firstChoice.data.status, 'pending_partner');
+    assert.equal((await call('POST', phase5Path + '/generate', phase5A, { version: 3 })).data.error.code, 'DECISION_IN_PROGRESS');
+    assert.equal((await db.query(`SELECT count(*)::int AS n FROM session_finalize_choices
+      WHERE session_id=$1 AND session_version=3`, [phase5Id])).rows[0].n, 1);
     const conflict = await call('POST', phase5Path + '/finalize', phase5B, {
       version: 3, itineraryId: other.itinerary_id,
     });
@@ -475,21 +496,19 @@ test('Phase 2 + Phase 3 + Phase 5 + Phase 6 backend: real PostgreSQL + built Nex
     assert.equal((await call('POST', phase5Path + '/generate', phase5A, { version: 3 })).data.error.code, 'SESSION_FINALIZED');
 
     const preferencePath = `/api/itineraries/${target.itinerary_id}/preference-feedback`;
+    assert.equal((await call('POST', preferencePath, phase5A, {
+      version: 3, stopId: lockedStop.stop_id, signal: 'unknown_signal',
+    })).status, 400);
     assert.equal((await call('POST', preferencePath, c, {
       version: 3, stopId: lockedStop.stop_id, signal: 'too_dark',
     })).status, 404);
     const sessionOnly = await call('POST', preferencePath, phase5A, {
       version: 3, stopId: lockedStop.stop_id, signal: 'too_dark',
     });
-    assert.deepEqual(sessionOnly.data, {
-      sessionId: phase5Id, version: 3, sessionApplied: true, longTermPreferenceVersion: null,
-    });
-    await call('POST', preferencePath, phase5A, {
-      version: 3, stopId: lockedStop.stop_id, signal: 'too_dark',
-    });
+    assert.equal(sessionOnly.data.error.code, 'PERSONALIZATION_REQUIRED');
     assert.equal((await db.query(`SELECT count(*)::int AS n FROM preference_feedback_events
       WHERE itinerary_id=$1 AND user_id=(SELECT id FROM anonymous_users WHERE token_hash=$2)`,
-    [target.itinerary_id, createHash('sha256').update(phase5A).digest('hex')])).rows[0].n, 1);
+    [target.itinerary_id, createHash('sha256').update(phase5A).digest('hex')])).rows[0].n, 0);
     await call('PUT', '/api/me/consents', phase5B, {
       termsVersion: CURRENT_TERMS_VERSION, acceptTerms: true,
       personalizationEnabled: true, modelImprovementOptIn: false,
@@ -498,13 +517,15 @@ test('Phase 2 + Phase 3 + Phase 5 + Phase 6 backend: real PostgreSQL + built Nex
       version: 3, stopId: lockedStop.stop_id, signal: 'too_dark',
     });
     assert.equal(remembered.data.longTermPreferenceVersion, 1);
+    assert.equal((await call('POST', preferencePath, phase5B, {
+      version: 3, stopId: lockedStop.stop_id, signal: 'too_dark',
+    })).data.longTermPreferenceVersion, 1);
     assert.equal('signal' in remembered.data, false);
     assert.ok(!JSON.stringify(await call('GET', phase5Path + '/itineraries', phase5B)).includes('too_dark'));
-    const learningRows = await db.query(`SELECT long_term_applied,preference_version_after
-      FROM preference_feedback_events WHERE itinerary_id=$1 ORDER BY long_term_applied`, [target.itinerary_id]);
+    const learningRows = await db.query(`SELECT signal,long_term_applied,preference_version_after
+      FROM preference_feedback_events WHERE itinerary_id=$1 ORDER BY long_term_applied,signal`, [target.itinerary_id]);
     assert.deepEqual(learningRows.rows, [
-      { long_term_applied: false, preference_version_after: null },
-      { long_term_applied: true, preference_version_after: 1 },
+      { signal: 'too_dark', long_term_applied: true, preference_version_after: 1 },
     ]);
 
     await db.query("UPDATE venue_datasets SET status='stale' WHERE version='test-v1'");

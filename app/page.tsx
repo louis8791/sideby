@@ -22,14 +22,23 @@ type Itinerary = {
 type OwnFeedback = {
   feedbackId: string; venueId: string; rating: number | null; visitState: 'saved' | 'visited'; updatedAt: string;
 };
+type PreferenceFeedbackSignal = 'too_dark' | 'too_noisy' | 'too_childish' | 'too_formal' | 'too_much_walking';
 
 const storageKey = 'sideby.formal.v1';
+const preferenceFeedbackOptions: Array<{ signal: PreferenceFeedbackSignal; label: string }> = [
+  { signal: 'too_dark', label: '太暗' },
+  { signal: 'too_noisy', label: '太吵' },
+  { signal: 'too_childish', label: '太幼稚' },
+  { signal: 'too_formal', label: '太正式' },
+  { signal: 'too_much_walking', label: '走太多' },
+];
 const errorText: Record<string, string> = {
   UNAUTHENTICATED: '這個匿名工作階段已失效，請重新建立或加入房間。',
   INVITE_UNAVAILABLE: '邀請碼不存在或已過期。', ROOM_FULL: '這個房間已經有兩個人。',
   VERSION_CONFLICT: '另一位剛更新了內容，畫面已同步，請再試一次。',
   PARTNER_REQUIRED: '需要另一位加入後才能確認。', SHARED_REQUIRED: '請先設定共同條件。',
   TERMS_REQUIRED: '請先閱讀並儲存同意設定。', PERSONALIZATION_REQUIRED: '要長期記住偏好，請先開啟個人化。',
+  DECISION_IN_PROGRESS: '你們已開始喜歡、鎖定或選擇方案；為避免清掉共同決策，這次不會重新產生。',
   PRIVATE_INPUT_UNRESOLVED: '其中一人的需求還需要改寫成更明確的句子。',
   SESSION_NOT_READY: '兩位都要輸入需求並確認最新版本。',
   RECOMMENDATION_DATA_UNAVAILABLE: '目前沒有可用且版本一致的推薦資料。',
@@ -318,11 +327,19 @@ export default function Home() {
                 await api('POST', `/api/itineraries/${itinerary.itinerary_id}/reactions`, { version: state!.version, stopId: stop.stop_id, reaction: 'replace' });
                 setNotice('已標記；按下局部重排才會更換。');
               })}>換這站</button></>}
-              {finalizedId === itinerary.itinerary_id && <button className="quiet" disabled={Boolean(learnedStops[stop.stop_id])} onClick={() => run('記錄太暗', async () => {
-                const result = await api('POST', `/api/itineraries/${itinerary.itinerary_id}/preference-feedback`, { version: state!.version, stopId: stop.stop_id, signal: 'too_dark' });
-                setLearnedStops(value => ({ ...value, [stop.stop_id]: result.longTermPreferenceVersion
-                  ? `已套用本次並更新長期偏好 v${result.longTermPreferenceVersion}` : '只套用於本次偏好' }));
-              })}>{learnedStops[stop.stop_id] ?? '這間太暗'}</button>}
+              {preferenceFeedbackOptions.map(({ signal, label }) => {
+                const key = `${stop.stop_id}:${signal}`;
+                return <button key={signal} className="quiet" disabled={Boolean(learnedStops[key])} onClick={() => run(`記錄${label}`, async () => {
+                  const result = await api('POST', `/api/itineraries/${itinerary.itinerary_id}/preference-feedback`, { version: state!.version, stopId: stop.stop_id, signal });
+                  setLearnedStops(value => ({ ...value, [key]: result.longTermPreferenceVersion
+                    ? `${label}：已更新 v${result.longTermPreferenceVersion}` : `${label}：已記錄本次` }));
+                  if (result.sessionApplied && !finalizedId) {
+                    const regenerated = await api('POST', `/api/sessions/${identity!.sessionId}/generate`, { version: state!.version });
+                    setItineraries(regenerated.itineraries);
+                    setNotice(`已依「${label}」重新產生三套方案。`);
+                  }
+                })}>{learnedStops[key] ?? label}</button>;
+              })}
               <button className="quiet" disabled={!termsAccepted || Boolean(busy)} onClick={() => saveVenue(stop, 'saved')}>加入我的清單</button>
               <button className="quiet" disabled={!termsAccepted || Boolean(busy)} onClick={() => saveVenue(stop, 'visited')}>記錄去過</button>
             </div>

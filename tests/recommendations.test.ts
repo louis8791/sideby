@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import { parseWithRuleBaseline } from '../src/model/preference-query';
-import { applyBrightPreferenceDelta } from '../src/model/preference-learning';
+import { applyPreferenceFeedback, preferenceAdjustmentBySignal } from '../src/model/preference-learning';
 import { composeItineraries, materiallyDifferent, publicItinerarySchema } from '../src/recommendations/engine';
 import { showcaseDatasetVersion, showcaseExecutionSlots, showcaseMatrixVersion, showcaseRecords, showcaseTravelLegs } from '../src/recommendations/showcase-data';
 import {
@@ -198,7 +198,9 @@ test('replan preserves locked stops, excludes rejected venues and fails closed w
 
 test('too-dark feedback changes only the reporting user projection and can change ranking', () => {
   const untouchedB = structuredClone(parserOutputs[1]);
-  const learnedA = applyBrightPreferenceDelta(parserOutputs[0], 0.3);
+  const learnedA = applyPreferenceFeedback(parserOutputs[0], [
+    { attribute: 'bright', bound: 'min', delta: 0.3 },
+  ]);
   assert.deepEqual(parserOutputs[1], untouchedB);
   const learned = composeItineraries({ sessionId, version: 3, shared,
     parserOutputs: [learnedA, parserOutputs[1]], venues, legs });
@@ -206,6 +208,24 @@ test('too-dark feedback changes only the reporting user projection and can chang
   assert.equal(learned.length, 3);
   assert.notDeepEqual(learned.map(item => item.stops.map(stop => stop.venue_id)),
     baseline.map(item => item.stops.map(stop => stop.venue_id)));
+});
+
+test('preference feedback applies minimum and maximum bounds without mutating the source', () => {
+  const source = structuredClone(parserOutputs[0]);
+  const learned = applyPreferenceFeedback(source, [
+    { attribute: 'quiet', bound: 'min', delta: 0.1 },
+    { attribute: 'walking', bound: 'max', delta: -0.2 },
+  ]) as any;
+  assert.deepEqual(source, parserOutputs[0]);
+  assert.equal(learned.result.preferences.find((item: any) => item.attribute === 'quiet').target_min, 0.7);
+  assert.equal(learned.result.avoid.find((item: any) => item.attribute === 'walking').target_max, 0.2);
+  assert.deepEqual(preferenceAdjustmentBySignal, {
+    too_dark: { attribute: 'bright', bound: 'min', delta: 0.1 },
+    too_noisy: { attribute: 'quiet', bound: 'min', delta: 0.1 },
+    too_childish: { attribute: 'childish', bound: 'max', delta: -0.1 },
+    too_formal: { attribute: 'formal', bound: 'max', delta: -0.1 },
+    too_much_walking: { attribute: 'walking', bound: 'max', delta: -0.1 },
+  });
 });
 
 test('public JSON Schema requires every runtime public field', async () => {

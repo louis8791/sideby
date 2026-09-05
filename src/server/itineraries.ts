@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
-import { applyBrightPreferenceDelta } from '../model/preference-learning';
+import {
+  applyPreferenceFeedback, preferenceAdjustmentBySignal, type PreferenceAdjustment,
+} from '../model/preference-learning';
 import { composeItineraries, publicItinerarySchema, type PublicItinerary } from '../recommendations/engine';
 import { ApiError, CURRENT_TERMS_VERSION, type ItineraryReaction, type PreferenceFeedback, type SharedConditions } from './contracts';
 import { pool, transaction } from './db';
@@ -36,6 +38,16 @@ async function assertNotFinalized(client: PoolClient, sessionId: string, version
   if (result.rowCount) throw new ApiError(409, 'SESSION_FINALIZED');
 }
 
+async function assertNoDecisionProgress(client: PoolClient, sessionId: string, version: number) {
+  const result = await client.query(`SELECT 1 FROM itinerary_reactions r
+    JOIN session_itineraries i ON i.id=r.itinerary_id
+    WHERE i.session_id=$1 AND i.session_version=$2
+    UNION ALL
+    SELECT 1 FROM session_finalize_choices WHERE session_id=$1 AND session_version=$2
+    LIMIT 1`, [sessionId, version]);
+  if (result.rowCount) throw new ApiError(409, 'DECISION_IN_PROGRESS');
+}
+
 async function recommendationContext(client: PoolClient, session: SessionRow) {
   if (!session.shared) throw new ApiError(409, 'SHARED_REQUIRED');
   const ready = await client.query(`SELECT count(*)::int AS members,
@@ -59,7 +71,7 @@ async function recommendationContext(client: PoolClient, session: SessionRow) {
     WHERE r.dataset_version=$1 ORDER BY r.venue_id LIMIT 16`, [dataset.rows[0].version]);
   const legs = await client.query(`SELECT matrix_version AS "matrixVersion",from_key AS "fromKey",
     to_key AS "toKey",mode,minutes FROM travel_matrix WHERE matrix_version=$1`, [matrix.rows[0].version]);
-  const deltas = await client.query(`SELECT e.user_id,sum(e.target_min_delta)::float AS bright_delta
+  const deltas = await client.query(`SELECT e.user_id,e.attribute,e.target_bound,sum(e.target_delta)::float AS delta
     FROM preference_feedback_events e
     WHERE e.user_id=ANY($1::uuid[]) AND (
       e.session_id=$2 OR (
@@ -68,11 +80,16 @@ async function recommendationContext(client: PoolClient, session: SessionRow) {
           WHERE p.user_id=e.user_id AND p.terms_version=$3 AND p.personalization_enabled
         )
       )
-    ) GROUP BY e.user_id`, [inputs.rows.map(row => row.user_id), session.id, CURRENT_TERMS_VERSION]);
-  const deltaByUser = new Map(deltas.rows.map(row => [row.user_id, Number(row.bright_delta)]));
+    ) GROUP BY e.user_id,e.attribute,e.target_bound`, [inputs.rows.map(row => row.user_id), session.id, CURRENT_TERMS_VERSION]);
+  const adjustmentsByUser = new Map<string, PreferenceAdjustment[]>();
+  for (const row of deltas.rows) {
+    const adjustments = adjustmentsByUser.get(row.user_id) ?? [];
+    adjustments.push({ attribute: row.attribute, bound: row.target_bound, delta: Number(row.delta) });
+    adjustmentsByUser.set(row.user_id, adjustments);
+  }
   return {
     shared: session.shared as SharedConditions,
-    parserOutputs: inputs.rows.map(row => applyBrightPreferenceDelta(row.parser_output, deltaByUser.get(row.user_id) ?? 0)),
+    parserOutputs: inputs.rows.map(row => applyPreferenceFeedback(row.parser_output, adjustmentsByUser.get(row.user_id) ?? [])),
     privateTexts: inputs.rows.map(row => String(row.raw_text)),
     venues: venues.rows,
     legs: legs.rows,
@@ -94,6 +111,7 @@ export async function generate(userId: string, sessionId: string, expectedVersio
     const session = await memberSession(client, userId, sessionId, true);
     if (session.version !== expectedVersion) throw new ApiError(409, 'VERSION_CONFLICT');
     await assertNotFinalized(client, sessionId, expectedVersion);
+    await assertNoDecisionProgress(client, sessionId, expectedVersion);
     const context = await recommendationContext(client, session);
     const itineraries = safeItineraries(composeItineraries({
       sessionId, version: expectedVersion, shared: context.shared,
@@ -147,15 +165,24 @@ export async function recordPreferenceFeedback(userId: string, itineraryId: stri
     if (current.session.version !== input.version) throw new ApiError(409, 'VERSION_CONFLICT');
     const stop = current.itinerary.stops.find(item => item.stop_id === input.stopId);
     if (!stop) throw new ApiError(404, 'NOT_FOUND');
+    const finalized = await client.query(
+      'SELECT 1 FROM session_finalizations WHERE session_id=$1 AND session_version=$2',
+      [current.session.id, input.version],
+    );
     const consent = await client.query(`SELECT p.personalization_enabled FROM terms_acceptances a
       LEFT JOIN consent_preferences p ON p.user_id=a.user_id AND p.terms_version=a.terms_version
       WHERE a.user_id=$1 AND a.terms_version=$2`, [userId, CURRENT_TERMS_VERSION]);
     if (!consent.rowCount) throw new ApiError(409, 'TERMS_REQUIRED');
+    if (finalized.rowCount && !consent.rows[0].personalization_enabled) {
+      throw new ApiError(409, 'PERSONALIZATION_REQUIRED');
+    }
+    const adjustment = preferenceAdjustmentBySignal[input.signal];
     const inserted = await client.query(`INSERT INTO preference_feedback_events(
-      id,user_id,session_id,session_version,itinerary_id,stop_id,venue_id,signal,attribute,target_min_delta)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'bright',0.10)
+      id,user_id,session_id,session_version,itinerary_id,stop_id,venue_id,signal,attribute,target_bound,target_delta)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
       ON CONFLICT (user_id,itinerary_id,stop_id,signal) DO NOTHING
-      RETURNING id`, [randomUUID(), userId, current.session.id, input.version, itineraryId, input.stopId, stop.venue_id, input.signal]);
+      RETURNING id`, [randomUUID(), userId, current.session.id, input.version, itineraryId, input.stopId,
+      stop.venue_id, input.signal, adjustment.attribute, adjustment.bound, adjustment.delta]);
     let longTermPreferenceVersion: number | null = null;
     if (inserted.rowCount && consent.rows[0].personalization_enabled) {
       const preference = await client.query(`INSERT INTO user_preference_versions(user_id,version)
@@ -173,7 +200,8 @@ export async function recordPreferenceFeedback(userId: string, itineraryId: stri
       longTermPreferenceVersion = existing.rows[0]?.preference_version_after ?? null;
     }
     return publicProjection({
-      sessionId: current.session.id, version: input.version, sessionApplied: true, longTermPreferenceVersion,
+      sessionId: current.session.id, version: input.version,
+      sessionApplied: !finalized.rowCount, longTermPreferenceVersion,
     });
   });
 }
