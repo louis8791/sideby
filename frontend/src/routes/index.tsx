@@ -420,6 +420,22 @@ function VenueDetails({ venue }: { venue: Venue }) {
           <ul>{venue.openingHours.map(line => <li key={line}>{line}</li>)}</ul>
         </details>
       )}
+      {venue.reviewSignals?.length && (
+        <div className="review-signals">
+          <div className="review-signals-title">
+            <strong>評論情境線索</strong>
+            <span>依目前 {venue.reviewSampleSize ?? venue.reviews?.length ?? 0} 則文字評論粗略歸類</span>
+          </div>
+          <div className="review-signal-list">
+            {venue.reviewSignals.map(signal => (
+              <span key={signal.label} className={`review-signal ${signal.tone}`}>
+                {signal.label}{signal.count > 1 ? ` ×${signal.count}` : ""}
+              </span>
+            ))}
+          </div>
+          <small>僅供模擬比較，不是 Sideby 核准事實，也不影響價格、冷氣或室內外硬篩選。</small>
+        </div>
+      )}
       {venue.reviews?.length && (
         <div className="venue-reviews">
           <strong>Google 最新評論</strong>

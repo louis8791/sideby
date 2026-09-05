@@ -3,10 +3,12 @@ const PLACES = "https://places.googleapis.com/v1";
 const BIAS = { circle: { center: { latitude: 25.0478, longitude: 121.5319 }, radius: 30000 } };
 export type Attribution = { displayName: string; uri?: string };
 export type PlaceReview = { author: Attribution; rating?: number; relativeTime?: string; text?: string };
+export type ReviewSignal = { label: string; count: number; tone: "positive" | "caution" };
 export type Venue = {
   query: string; placeId: string; name: string; address: string; lat: number; lng: number;
   rating?: number; ratingCount?: number; openNow?: boolean; category?: string; photoUri?: string;
-  openingHours?: string[]; photoAttributions?: Attribution[]; reviews?: PlaceReview[]; googleMapsUri: string;
+  openingHours?: string[]; photoAttributions?: Attribution[]; reviews?: PlaceReview[];
+  reviewSignals?: ReviewSignal[]; reviewSampleSize?: number; googleMapsUri: string;
 };
 export type TravelLeg = { from: string; to: string; walkMinutes?: number; transitMinutes?: number; distanceKm?: number };
 export type Point = { label: string; lat: number; lng: number };
@@ -80,6 +82,39 @@ async function googleJson<T>(url: string, init: RequestInit = {}, queryKey = fal
 
 const FIELDS = ["id", "displayName", "formattedAddress", "location", "rating", "userRatingCount",
   "currentOpeningHours.openNow", "primaryTypeDisplayName", "googleMapsUri"];
+
+const reviewSignalCatalog: Array<{ label: string; tone: ReviewSignal["tone"]; pattern: RegExp }> = [
+  { label: "安靜好聊", tone: "positive", pattern: /安靜|清幽|寧靜|不吵|聊天|談心/u },
+  { label: "浪漫氣氛", tone: "positive", pattern: /浪漫|約會|情侶|情人|氣氛很好|氛圍很好/u },
+  { label: "好拍照", tone: "positive", pattern: /好拍|拍照|打卡|美景|風景很美|夜景|景色很美/u },
+  { label: "服務友善", tone: "positive", pattern: /服務很好|服務親切|店員親切|人員親切|友善|熱情招待/u },
+  { label: "餐點受好評", tone: "positive", pattern: /好吃|美味|餐點不錯|料理不錯|甜點好吃|咖啡好喝|飲料好喝/u },
+  { label: "價格親民", tone: "positive", pattern: /平價|價格合理|價位合理|不貴|划算|物超所值|性價比高/u },
+  { label: "交通方便", tone: "positive", pattern: /交通方便|捷運.*方便|離捷運.*近|停車方便|很好找|位置方便/u },
+  { label: "環境舒適", tone: "positive", pattern: /環境舒適|空間舒適|很舒服|乾淨整潔|環境乾淨|空間寬敞/u },
+  { label: "適合散步", tone: "positive", pattern: /適合散步|散步|步道|走走|逛逛|公園/u },
+  { label: "文藝展覽", tone: "positive", pattern: /展覽|藝術|文創|文化|博物館|美術館|設計感/u },
+  { label: "親子友善", tone: "positive", pattern: /親子|小孩|兒童|家庭|帶孩子/u },
+  { label: "戶外景觀", tone: "positive", pattern: /戶外|露天|露臺|河景|海景|山景|觀景/u },
+  { label: "可能擁擠", tone: "caution", pattern: /人很多|人潮|擁擠|客滿|一位難求/u },
+  { label: "可能排隊", tone: "caution", pattern: /排隊|候位|等很久|久候/u },
+  { label: "價格偏高", tone: "caution", pattern: /價格偏高|價位偏高|價格高|價位高|不便宜|有點貴|很貴/u },
+  { label: "停車不易", tone: "caution", pattern: /難停車|停車位少|不好停|停車不便/u },
+  { label: "步行較多", tone: "caution", pattern: /走很久|走一段路|爬坡|階梯很多|走到很累/u },
+  { label: "可能吵雜", tone: "caution", pattern: /很吵|吵雜|嘈雜|噪音/u },
+];
+
+/** Request-local hints for the demo UI. Never persist or use as verified venue facts. */
+export function classifyReviewSignals(reviews: PlaceReview[]): ReviewSignal[] {
+  const texts = reviews.flatMap(review => review.text?.trim() ? [review.text.normalize("NFKC")] : []);
+  return reviewSignalCatalog.map((signal, order) => ({
+    ...signal, order, count: texts.filter(text => signal.pattern.test(text)).length,
+  })).filter(signal => signal.count > 0)
+    .sort((a, b) => b.count - a.count || a.order - b.order)
+    .slice(0, 10)
+    .map(({ label, tone, count }) => ({ label, tone, count }));
+}
+
 function toVenue(place: Place, query: string): Venue | null {
   if (!place.location || !place.id) return null;
   const venue: Venue = {
@@ -97,8 +132,13 @@ function toVenue(place: Place, query: string): Venue | null {
     ...(typeof review.rating === "number" ? { rating: review.rating } : {}),
     ...(review.relativePublishTimeDescription ? { relativeTime: review.relativePublishTimeDescription } : {}),
     ...(review.text?.text ? { text: review.text.text } : {}),
-  }] : []).slice(0, 3);
-  if (reviews.length) venue.reviews = reviews;
+  }] : []).slice(0, 5);
+  if (reviews.length) {
+    venue.reviews = reviews;
+    venue.reviewSampleSize = reviews.filter(review => review.text?.trim()).length;
+    const signals = classifyReviewSignals(reviews);
+    if (signals.length) venue.reviewSignals = signals;
+  }
   return venue;
 }
 

@@ -1,5 +1,9 @@
 # 偏好、地點發布與持續改進
 
+## Google 評論即時模擬線索
+
+`feat/live-review-signals` 將已核准行程地點的最多五則 Google 文字評論在該次請求內粗略歸類為最多十個約會情境線索，顯示正向／提醒類別與提及次數。此功能只增加黑客松展示資訊，不保存評論或衍生線索，也不改寫場地事實、CoupleScore、硬篩選、個人偏好、推薦索引或學習候選；正式部署與目視另驗。
+
 ## 2026-09-06 實作與驗收界線
 
 PR #22／#23 已合併及部署。功能 commit `85e5ccd`；Railway deployment `724d3cbf-a31a-4a17-985c-9285541fc0f5`；Cloudflare version `38e9fe98-8a69-4aff-85e3-cc2ff8a7bfdd`。Migration 011、推薦索引及完整資料更新已正式執行。

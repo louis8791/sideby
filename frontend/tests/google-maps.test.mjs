@@ -1,13 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { assertLocalMapsRequest, autocomplete, searchVenue, resolveVenueQueries, placeDetails, computeLeg, travelLegs, geocode } from '../src/lib/google-maps.server.ts';
+import { assertLocalMapsRequest, autocomplete, searchVenue, resolveVenueQueries, placeDetails, computeLeg, travelLegs, geocode, classifyReviewSignals } from '../src/lib/google-maps.server.ts';
 import { trustedGooglePlaceIds } from '../src/lib/venue-enrichment-policy.ts';
 import { proxySidebyApi } from '../src/lib/api-proxy.server.ts';
 
 const KEY = 'synthetic-server-key-for-offline-tests';
 const point = { label: 'synthetic point', lat: 25, lng: 121 };
 const place = { id: 'example-id', displayName: { text: 'Synthetic venue' }, formattedAddress: 'Synthetic address', location: { latitude: 25, longitude: 121 } };
+
+test('review signals are request-local, bounded and distinguish positive hints from cautions', () => {
+  const author = { displayName: 'Synthetic reviewer' };
+  const signals = classifyReviewSignals([
+    { author, text: '環境安靜不吵，很適合聊天，交通方便又好拍照。' },
+    { author, text: '景色很美，但是假日人很多而且需要排隊。' },
+    { author, text: '店員親切，甜點好吃，價格合理。' },
+  ]);
+  assert.ok(signals.some(signal => signal.label === '安靜好聊' && signal.tone === 'positive'));
+  assert.ok(signals.some(signal => signal.label === '可能擁擠' && signal.tone === 'caution'));
+  assert.ok(signals.some(signal => signal.label === '可能排隊' && signal.tone === 'caution'));
+  assert.ok(signals.length <= 10);
+});
 
 test('venue enrichment ignores names and accepts only explicit Place IDs', () => {
   assert.deepEqual(trustedGooglePlaceIds([
@@ -161,12 +174,13 @@ test('Google direct integration (offline; no real Google calls)', async t => {
     assert.equal(calls.at(-1).url.pathname, '/v1/places:autocomplete');
     response = { ...place, regularOpeningHours: { weekdayDescriptions: ['星期一: 10:00–18:00'] }, reviews: [{
       authorAttribution: { displayName: 'Synthetic reviewer', uri: 'https://example.com/reviewer' },
-      rating: 5, relativePublishTimeDescription: '1 天前', text: { text: 'Synthetic review' },
+      rating: 5, relativePublishTimeDescription: '1 天前', text: { text: '環境安靜，適合聊天。' },
     }] };
     const details = await placeDetails('x/y');
     assert.equal(details.venue.placeId, place.id);
     assert.deepEqual(details.venue.openingHours, ['星期一: 10:00–18:00']);
     assert.equal(details.venue.reviews[0].author.displayName, 'Synthetic reviewer');
+    assert.deepEqual(details.venue.reviewSignals, [{ label: '安靜好聊', tone: 'positive', count: 1 }]);
     assert.equal(calls.at(-1).url.pathname, '/v1/places/x%2Fy');
     assert.ok(calls.at(-1).init.headers.get('X-Goog-FieldMask').includes('reviews.authorAttribution'));
   });

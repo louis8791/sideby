@@ -1,5 +1,11 @@
 # Sideby — MVP TDD
 
+## 2026-09-06 Google 評論即時線索測試
+
+- 分類器只接單次 Place Details 回應中的最多五則文字評論，固定輸出最多十個 allowlist 線索，區分正向與提醒類並計算被幾則評論提及；無文字或無命中即不顯示。
+- 回歸測試須鎖住「安靜好聊／可能擁擠／可能排隊」等代表案例、數量上限與 Place Details 回傳接線。任何程式不得將評論或衍生線索傳到根 API、PostgreSQL、場地索引、偏好事件或學習候選。
+- UI 必須同時顯示粗略分類與不影響價格、冷氣、室內外硬篩選的告知。程式／離線測試通過不等於 Google 正式回應或公開畫面已驗收。
+
 ## 2026-09-06 成長功能正式驗收
 
 本機 `check:all` 共 81 tests 及兩端 build 通過，PR #22／#23 前後端 CI 通過。Migration 011、個人無屬性回饋排序、候選來源撤回、匯出 split、資料／矩陣／索引原子 rollback、重啟保留 release，以及匯入轉換版本更新均有回歸測試。正式 API 驗證完整 34 選項、原始硬限制不被 normalizedText 覆蓋、雙人加入與 3 套 approved_dataset 三站方案；瀏覽器登入表單可開。正式資料庫確認 migration／13 筆索引與更新快照，完整 refresh-all 成功。實體手機及真實學習品質未驗。見 `docs/RECOMMENDATION_GROWTH.md`。
@@ -284,7 +290,7 @@ Privacy Guard 必須在公開輸出前執行：
 
 外部訂位／購票只提供連結跳轉，不在 MVP 內代理付款、保證座位或處理退款。
 
-Google 詳細資訊以 Place ID 在行程頁即時查詢並顯示，包含名稱、地址、營業時間、評分、照片與最多三則評論；照片及評論保留作者標示，任何回應都不得寫入資料庫。地圖與導航 URL 以自有／授權的 `venue.name` 作必填 `query`，有 `google_place_id` 時加入 `query_place_id`／`destination_place_id` 優先定位，且不得包含 API key。
+Google 詳細資訊以 Place ID 在行程頁即時查詢並顯示，包含名稱、地址、營業時間、評分、照片與最多五則評論；照片及評論保留作者標示，任何回應都不得寫入資料庫。最多十個評論情境線索只在單次回應中產生與顯示，不得成為場地事實、排序或學習輸入。地圖與導航 URL 以自有／授權的 `venue.name` 作必填 `query`，有 `google_place_id` 時加入 `query_place_id`／`destination_place_id` 優先定位，且不得包含 API key。
 
 ### 自管模型／索引失敗
 
