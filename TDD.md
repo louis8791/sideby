@@ -272,7 +272,8 @@ Google 詳細資訊同樣只做外部跳轉。按鈕文字固定為「在 Google
 - CoupleScore 對一方 0 分的情況不被平均掩蓋。
 - 三套方案有實質差異。
 - replan 保留 locked stop，替換後重新驗證整條路線。
-- 「太暗」等回饋立即影響本次 session；只有有效 `personalization_enabled` 才寫入本人 long-term，且不影響其他使用者。
+- 太暗、太吵、太幼稚、太正式、走太多採伺服器 allowlist 映射；定案前回饋重生本次三套方案，只有有效 `personalization_enabled` 才寫入本人 long-term，且不影響其他使用者。
+- 非 allowlist signal 回 400；同一人、行程、站點、signal 重送冪等，不得由前端自訂 attribute、方向或 delta。
 
 ### 隱私
 

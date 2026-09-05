@@ -96,9 +96,17 @@ type Plan = {
   reason: string;
   dataMode?: "approved_dataset" | "synthetic_demo";
 };
+type PreferenceFeedbackSignal = "too_dark" | "too_noisy" | "too_childish" | "too_formal" | "too_much_walking";
 
 const planColors = ["mint", "lilac", "yellow"];
 const stopColors = ["yellow", "mint", "lilac", "peach"];
+const preferenceFeedbackOptions: Array<{ signal: PreferenceFeedbackSignal; label: string }> = [
+  { signal: "too_dark", label: "太暗" },
+  { signal: "too_noisy", label: "太吵" },
+  { signal: "too_childish", label: "太幼稚" },
+  { signal: "too_formal", label: "太正式" },
+  { signal: "too_much_walking", label: "走太多" },
+];
 
 function clock(value: string) {
   return new Intl.DateTimeFormat("zh-TW", { hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(value));
@@ -936,20 +944,30 @@ function Home() {
         : "兩人選擇一致，行程已正式定案！");
   };
 
-  const learnTooDark = async (stop: Stop) => {
+  const learnPreference = async (stop: Stop, signal: PreferenceFeedbackSignal, label: string) => {
     if (!identity || !publicState || !stop.backendStopId) return;
-    const result = await sidebyApi<{ longTermPreferenceVersion: number | null }>(
+    const result = await sidebyApi<{ sessionApplied: boolean; longTermPreferenceVersion: number | null }>(
       identity,
       "POST",
       `/api/itineraries/${selectedPlanId}/preference-feedback`,
-      { version: publicState.version, stopId: stop.backendStopId, signal: "too_dark" },
+      { version: publicState.version, stopId: stop.backendStopId, signal },
     );
+    const key = `${stop.backendStopId}:${signal}`;
     setLearnedStops((current) => ({
       ...current,
-      [stop.backendStopId!]: result.longTermPreferenceVersion
-        ? `已更新長期偏好 v${result.longTermPreferenceVersion}`
-        : "已套用本次偏好",
+      [key]: result.longTermPreferenceVersion
+        ? `${label}：已更新 v${result.longTermPreferenceVersion}`
+        : `${label}：已記錄本次`,
     }));
+    if (result.sessionApplied && !finalized) {
+      const regenerated = await sidebyApi<{ itineraries: SidebyItinerary[] }>(
+        identity, "POST", `/api/sessions/${identity.sessionId}/generate`, { version: publicState.version },
+      );
+      const nextPlans = regenerated.itineraries.map(fromSidebyItinerary);
+      setPlans(nextPlans);
+      setSelectedPlanId(nextPlans[0]!.id);
+      toast.success(`已依「${label}」重新產生三套方案。`);
+    }
   };
 
   const progress = { room: 20, shared: 40, private: 60, plans: 80, final: 100 }[screen];
@@ -1655,15 +1673,16 @@ function Home() {
                             替換
                           </button>
                         )}
-                        {finalized && stop.backendStopId && (
-                          <button className="replace-stop" disabled={Boolean(learnedStops[stop.backendStopId])}
-                            onClick={() => void learnTooDark(stop).catch((error) => {
+                        {stop.backendStopId && preferenceFeedbackOptions.map(({ signal, label }) => {
+                          const key = `${stop.backendStopId}:${signal}`;
+                          return <button key={signal} className="replace-stop" disabled={Boolean(learnedStops[key])}
+                            onClick={() => void learnPreference(stop, signal, label).catch((error) => {
                               const code = error instanceof SidebyApiError ? error.code : "SERVICE_UNAVAILABLE";
                               toast.error(backendErrors[code] ?? `目前無法更新偏好（${code}）。`);
                             })}>
-                            {learnedStops[stop.backendStopId] ?? "這間太暗"}
-                          </button>
-                        )}
+                            {learnedStops[key] ?? label}
+                          </button>;
+                        })}
                       </div>
                     </div>
                   );

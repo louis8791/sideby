@@ -22,8 +22,16 @@ type Itinerary = {
 type OwnFeedback = {
   feedbackId: string; venueId: string; rating: number | null; visitState: 'saved' | 'visited'; updatedAt: string;
 };
+type PreferenceFeedbackSignal = 'too_dark' | 'too_noisy' | 'too_childish' | 'too_formal' | 'too_much_walking';
 
 const storageKey = 'sideby.formal.v1';
+const preferenceFeedbackOptions: Array<{ signal: PreferenceFeedbackSignal; label: string }> = [
+  { signal: 'too_dark', label: '太暗' },
+  { signal: 'too_noisy', label: '太吵' },
+  { signal: 'too_childish', label: '太幼稚' },
+  { signal: 'too_formal', label: '太正式' },
+  { signal: 'too_much_walking', label: '走太多' },
+];
 const errorText: Record<string, string> = {
   UNAUTHENTICATED: '這個匿名工作階段已失效，請重新建立或加入房間。',
   INVITE_UNAVAILABLE: '邀請碼不存在或已過期。', ROOM_FULL: '這個房間已經有兩個人。',
@@ -318,11 +326,19 @@ export default function Home() {
                 await api('POST', `/api/itineraries/${itinerary.itinerary_id}/reactions`, { version: state!.version, stopId: stop.stop_id, reaction: 'replace' });
                 setNotice('已標記；按下局部重排才會更換。');
               })}>換這站</button></>}
-              {finalizedId === itinerary.itinerary_id && <button className="quiet" disabled={Boolean(learnedStops[stop.stop_id])} onClick={() => run('記錄太暗', async () => {
-                const result = await api('POST', `/api/itineraries/${itinerary.itinerary_id}/preference-feedback`, { version: state!.version, stopId: stop.stop_id, signal: 'too_dark' });
-                setLearnedStops(value => ({ ...value, [stop.stop_id]: result.longTermPreferenceVersion
-                  ? `已套用本次並更新長期偏好 v${result.longTermPreferenceVersion}` : '只套用於本次偏好' }));
-              })}>{learnedStops[stop.stop_id] ?? '這間太暗'}</button>}
+              {preferenceFeedbackOptions.map(({ signal, label }) => {
+                const key = `${stop.stop_id}:${signal}`;
+                return <button key={signal} className="quiet" disabled={Boolean(learnedStops[key])} onClick={() => run(`記錄${label}`, async () => {
+                  const result = await api('POST', `/api/itineraries/${itinerary.itinerary_id}/preference-feedback`, { version: state!.version, stopId: stop.stop_id, signal });
+                  setLearnedStops(value => ({ ...value, [key]: result.longTermPreferenceVersion
+                    ? `${label}：已更新 v${result.longTermPreferenceVersion}` : `${label}：已記錄本次` }));
+                  if (result.sessionApplied && !finalizedId) {
+                    const regenerated = await api('POST', `/api/sessions/${identity!.sessionId}/generate`, { version: state!.version });
+                    setItineraries(regenerated.itineraries);
+                    setNotice(`已依「${label}」重新產生三套方案。`);
+                  }
+                })}>{learnedStops[key] ?? label}</button>;
+              })}
               <button className="quiet" disabled={!termsAccepted || Boolean(busy)} onClick={() => saveVenue(stop, 'saved')}>加入我的清單</button>
               <button className="quiet" disabled={!termsAccepted || Boolean(busy)} onClick={() => saveVenue(stop, 'visited')}>記錄去過</button>
             </div>

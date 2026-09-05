@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { venueId } from '../venues/schema';
 import { environmentRequirements } from '../model/preference-query';
+import { preferenceFeedbackSignals } from '../model/preference-learning';
 
 export const id = z.uuid();
 export const version = z.number().int().min(0).max(2147483646);
@@ -94,7 +95,7 @@ export const finalizeChoice = z.strictObject({ version, itineraryId: id });
 export const preferenceFeedback = z.strictObject({
   version,
   stopId: id,
-  signal: z.literal('too_dark'),
+  signal: z.enum(preferenceFeedbackSignals),
 });
 
 export { venueId };

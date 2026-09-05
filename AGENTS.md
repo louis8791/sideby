@@ -156,7 +156,7 @@
 - 單方 stop like 不鎖定；雙方對同一 stop like 後才由伺服器輸出 `locked=true`。整套行程 like 不鎖死所有站點；鎖定站點不可 dislike／replace。
 - Replan 不接受客戶端自稱的 locked 清單；必須使用同一推薦 composer，保留 locked stop 的 stop_id、venue_id、order_no 與 locked 狀態，並重驗整條路線。無可行方案整體拒絕，不得部分覆寫或放寬硬限制。
 - 兩人選同一方案才 finalize；不同方案回衝突狀態。定案後 generate、reaction、replan 與改選另一方案均拒絕。
-- `too_dark` 只能由本人對當前 itinerary stop 寫入不可變事件，伺服器固定轉為 bright 門檻 `+0.10`；當次 Session 立即生效，只有有效 `personalization_enabled` 才遞增本人的 long-term preference version。事件不得進 PublicState、公開理由、共用事實或 RAG；同一人、行程、站點與 signal 重送冪等。
+- 本人只能對當前 itinerary stop 寫入 allowlist 不可變事件；伺服器固定映射 `too_dark→bright min +0.10`、`too_noisy→quiet min +0.10`、`too_childish→childish max -0.10`、`too_formal→formal max -0.10`、`too_much_walking→walking max -0.10`。定案前回饋立即重生三套方案；只有有效 `personalization_enabled` 才遞增本人的 long-term preference version。事件不得進 PublicState、公開理由、共用事實或 RAG；同一人、行程、站點與 signal 重送冪等。
 - 正式手機優先首頁已串接房間、共同條件、私密輸入、三套方案、反應、局部重排、Maps click-out、雙人定案、本人私人清單與回饋，並以 1.2 秒輪詢補足行程狀態同步。正式模式不自動帶入合成條件；`npm run demo:local` 使用獨立合成資料庫，UI／payload 明示 `synthetic_demo`，不得冒充真實推薦。
 - Chrome＋Edge 單一合成案例已實際完成上述主流程；管理審核、檢舉／隱藏、頻率限制、training candidates、三案例 Runtime、兩支實體手機與 Owner 仍 BLOCKED。驗收入口為 `npm run phase6:check` 與 `docs/PHASE6_ACCEPTANCE.md`。
 
@@ -169,7 +169,7 @@
 - 公開內容須有 pending／approved／rejected／hidden／deleted 等審核狀態，以及檢舉、隱藏、取消公開與刪除能力。私人內容不得經由列表、統計、搜尋、RAG、快取、日誌或錯誤訊息洩漏。
 - 公開評論是使用者意見，不直接改寫官方事實或共用場地屬性。只有通過同意、去識別、人工核准、最低樣本與版本化資料閘門後，才可成為後續模型或共用標籤的候選證據。
 
-目前後端已提供版本化條款與兩項設定、本人場地回饋 CRUD／列表、預設 private、逐筆切換 public、待審狀態、approved 公開列表，以及獨立的 `too_dark` 本人偏好更新事件。正式首頁已呈現本人私人清單、想去／去過與約會後「太暗」回饋；內容管理 API、檢舉／隱藏、頻率限制與訓練候選出口仍未完成。不得開放陌生使用者自由投稿，也不得把偏好門檻更新宣稱為模型已訓練。
+目前後端已提供版本化條款與兩項設定、本人場地回饋 CRUD／列表、預設 private、逐筆切換 public、待審狀態、approved 公開列表，以及五種 allowlist 本人偏好更新事件。正式首頁已呈現本人私人清單、想去／去過與五種感受回饋；定案前回饋會重生三套方案，定案後僅在個人化有效時延續至未來 Session。內容管理 API、檢舉／隱藏、頻率限制與訓練候選出口仍未完成。不得開放陌生使用者自由投稿，也不得把偏好門檻更新宣稱為模型已訓練。
 
 ## No-Fake-Success contract
 
