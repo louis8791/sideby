@@ -56,7 +56,7 @@ PR #13 已合併 `main`（`e3e6336`），Railway migration 010 已套用。Produ
 
 獨立 `venue-refresh-daily` 服務已改為每日 00:00 UTC 執行 `npm run venues:refresh-all`，先更新政府候選，再補齊缺漏 Place ID；deployment `71aa7dff-06a5-4b63-a12b-78f753f88af6` 成功。正式 API `/api/runtime` 回 200／`standard`，Cloudflare Worker 首頁回 200。
 
-2026-09-06 Owner 已核准 13 筆首批正式資料。標準 seed 會啟用 `sideby-approved-2026-09-06-v1` 與 `sideby-approved-routes-2026-09-06-v1`，建立未來 90 天可證明的室內參觀時段；場地間及使用者集合點交通先以政府座標作可重算估算，Google Routes 只在行程頁即時顯示。正式部署與公開三案例證據須在合併後另記。
+2026-09-06 Owner 核准的 13 筆首批正式資料已上線。標準 seed 已啟用 `sideby-approved-2026-09-06-v1` 與 `sideby-approved-routes-2026-09-06-v1`，Production 實查為 13 records、950 個未來 90 天室內 slots、468 legs 與 13 staging approvals。場地間及使用者集合點交通先以政府座標作可重算估算，Google Routes 只在行程頁即時顯示。Cloudflare 同源公開 API 的週日板橋、週五台北、週六土城三案都回 3 套三站、`approved_dataset` 且每站含 Place ID。
 
 ## 正式來源
 

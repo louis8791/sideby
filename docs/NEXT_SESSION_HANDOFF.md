@@ -2,7 +2,7 @@
 
 ## 最新部署接續（優先於下方歷史基線）
 
-- 2026-09-06 Owner 已要求正式推薦上線；本工作樹已加入 13 筆政府來源核准場地、90 天室內 execution slots、座標估算交通矩陣、Session 日期篩選與正式三套三站測試。標準 `prestart` 將啟用 `approved_dataset`，`synthetic_demo` 只保留本機 demo；冷氣與主觀屬性未知仍 fail closed。合併、Railway／Cloudflare 部署及公開三案例尚待本輪後續記錄，不得只憑本條宣稱 production 已切換。
+- 2026-09-06 首批正式推薦已上線：PR #15 merge `4e39cf307d4a3a15bf3e13b1fbecb2f11b7b09de`；公開實測發現前端集合點無內部 `matrixKey` 會無解，治本修正 PR #16 merge `84e5d3a12aa6db583c7ee11bd63f79a705baa1f7`。Railway backend deployment `60042a23-4865-4411-9aa9-088a5136e307`、cron deployment `7663da99-782f-4eab-9e4d-5f75b95fc19d`與 Cloudflare Worker version `ddb20462-0bcb-4276-b8b5-0dd358e9523d` 成功。Production DB 為 13 records、950 slots、468 legs。13 staging approvals；Cloudflare 同源公開 API 三個日間案例都回 3 套三站、`approved_dataset`與每站 Place ID。標準模式已不再使用九筆 `synthetic_demo`；冷氣與主觀屬性未知仍 fail closed。兩支真實手機與 Google 詳情目視是尚未完成的 Owner gate。
 - 2026-09-06 PR #13 已合併 `main` `e3e6336cb9403614b829a331f6efa5bba5c8fdc1`：migration 010、政府候選 ID-only Google Text Search 批次對應、Place ID 跨快照沿用、100 筆審查隊列，以及行程頁即時名稱／地址／營業時間／評分／照片／最多三則評論／路線顯示均已上線。Railway 正式 DB 實際為 1,121 筆候選、1,120 筆 matched、1 筆 not_found、0 筆 retry；Cron deployment `71aa7dff-06a5-4b63-a12b-78f753f88af6` 已改用 `npm run venues:refresh-all`。根後端 deployment `ab075dba-e37d-4ebf-bad4-ad93ba9250f7` 成功，Cloudflare Worker version `772bd542-38f9-478a-96b1-5b7698454cc4` 已部署；後端與前端首頁均回 200。此證據不等於 1,120 筆已人工核准。
 
 - PR #11 已合併 `main`（`0452445`）：交通部觀光署每日景點／餐飲更新管線讀到全臺 9,818、臺北／新北 1,138，Railway PostgreSQL 已寫入 1,121 筆 draft、拒絕 17，migration 009 與相同內容冪等回用已在 production 驗證。獨立 `venue-refresh-daily` 每日 00:00 UTC 執行；公開 runtime 維持 200。active 推薦仍是 9 個 `synthetic_demo`，下一刀是人工核准首批真實場地、補 execution slots／交通資料並跑三案例 Runtime；不得把候選庫冒充已核准場地。操作見 `docs/VENUE_REFRESH.md`。

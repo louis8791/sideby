@@ -2,6 +2,7 @@
 
 ## 2026-09-06 Venue refresh staging
 
+- Production 驗收：PR #15／#16 GitHub backend／frontend checks 全綠；Railway deployment `60042a23-4865-4411-9aa9-088a5136e307` 中 active dataset／matrix 均為 `approved_dataset`，實數為 13 records、950 slots、468 legs。13 staging approvals。Cloudflare Worker version `ddb20462-0bcb-4276-b8b5-0dd358e9523d` 的公開同源 API 已以三個日期／集合點完成雙方匿名身分、房間、共同條件、兩份私密輸入、雙確認與生成；三案均回 3 套三站且每站有 Place ID。
 - `src/recommendations/approved-real-data.ts` 固定首批 13 筆 Owner 核准記錄、Google Place ID、政府來源證據、週期營業規則與票價。`assessVenue` 必須讓 13 筆全部 `itineraryEligible=true`；attributes 保持空陣列，不用政府敘述冒充主觀體驗。
 - 標準 `prestart` 啟用 `approved_dataset` 與對應交通矩陣；只有 `SIDEBY_DATA_MODE=synthetic_demo` 才載入九筆展示資料。核准版按臺北日期產生未來 90 天 slots，查詢時只載入與 Session 時段相交的列，避免不同日期重複候選。
 - 場地間及集合點到首站使用政府座標的確定性時間估算做硬限制前置值；前端只傳集合點座標、沒有內部 `matrixKey` 時，`approved_dataset` 必須統一使用 `meeting_user` 且仍能生成。Google Routes 仍只在前端即時顯示，不把回應寫入 PostgreSQL。這不是即時路況，Google 顯示值不得回寫覆蓋矩陣。

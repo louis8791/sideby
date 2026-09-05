@@ -7,7 +7,8 @@
 - 已完成：PR #13 合併 `main` `e3e6336`，migration 010、ID-only Google Place ID 對應、跨政府快照沿用、即時地點詳情／路線顯示與 100 筆審查隊列已部署。Production DB 實際為 1,120 筆 matched、1 筆 not_found、0 筆 retry；Cron 已改為每日先更新政府資料、再補 Place ID。
 - 最新單次來源盤點：全臺 9,818、臺北／新北 1,138、可進 draft staging 1,121、拒絕 17；不是 Sideby 自有大數據，也不是 1,121 個已核准可執行地點。
 - 已完成程式與測試：Owner 從審查池核准 13 筆具官方票價／營業證據與 Place ID 的真實場地；已建立 `approved_dataset`、90 天室內 slots、座標估算交通矩陣及三套三站行為測試。標準啟動不再回切九筆 `synthetic_demo`。
-- 下一刀：合併並部署後，以公開 API 跑三個不同日間案例並核對前端 Google 即時詳情；再由兩支手機完成主流程。冷氣、主觀屬性、飲食／過敏與無障礙仍需逐筆補證，未知不得放行。
+- 已完成正式上線：PR #15／#16 合併後，Railway active 實查為 13 records、950 slots、468 matrix legs；Cloudflare 同源 API 的週日板橋、週五台北、週六土城三案均各產生 3 套三站 `approved_dataset` 行程，每站有 Place ID。
+- 下一個 Owner gate：兩支真實手機完成主流程與 Google 詳情目視。冷氣、主觀屬性、飲食／過敏與無障礙仍需逐筆補證，未知不得放行。
 - 偏好 UI 目前 34 項，原 30 項仍有 19 項缺正式推薦映射；偏好擴充另開一刀，不能為了增加數字而讓未定義標籤進排序。
 
 ## 2026-09-05 部署接續
