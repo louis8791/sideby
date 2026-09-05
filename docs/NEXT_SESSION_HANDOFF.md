@@ -3,15 +3,15 @@
 ## 最新部署接續（優先於下方歷史基線）
 
 - PR #6 已合併 `main`，merge commit `21b28f333f7cc0f70921ce3a60320183995b2817`：九個既有前端站點、十一個環境 slot、二十四條展示 travel matrix 已由 Railway `prestart` 冪等寫入 PostgreSQL；正式 API 實測生成三套、每套三站，partner 可讀回三套保存結果，共含九個 Google Place ID。展示價格、時長、屬性仍明示 `synthetic_demo`，不保存 Google 地址、照片、評分、評論或路線回應。
-- Google Maps JavaScript 正式底圖已因 Worker referrer 補齊而通過；Places API (New)／Routes API／Geocoding 的 production server 呼叫仍失敗，且相同 server key 在本機可解析九個 Place ID。下一個外部動作是由 key 擁有者核對 server key 的應用程式限制、API 限制、帳務與配額。
+- Google Maps JavaScript 正式底圖已通過；Places API (New)／Routes API／Geocoding 也已由 Cloudflare Worker 真實取得結果。Google Cloud 的 browser／server key 限制已核對正確；根因是 Worker 對 `redirect: "error"` 拋出 `TypeError`，已改為 `redirect: "manual"` 並拒絕所有 3xx，production 四項現均通過。
 - Owner 決定本次不主打 Gemini；它已從提交阻斷移為後續加值，不得用未驗收的 Gemini 能力包裝主流程。
 - PR #4 已合併 `main`，merge commit `16cfd041899356432caa1c4cc914fa94b7541902`；feature commit `db618d0` 已保存在遠端。產品介紹 `output/` 仍未追蹤，其他 worktree／archive 未動。
 - Railway 專案 `chic-bravery` 已建立 PostgreSQL 與根 Next.js 服務。GitHub source 是 `louis8791/sideby`／`main`，自動部署已開啟，`DATABASE_URL` 使用 Postgres reference，migration 成功，健康路徑 `/api/runtime`，公開 target port 已由錯誤的 3000 修正為平台實際 `PORT=8080`。
 - 後端 `https://sideby-production.up.railway.app`：`/api/runtime` 200／`standard`；直接匿名身分建立 201。
 - Cloudflare Worker `https://louis8791-sideby-frontend.louis8791.workers.dev` 已部署；`SIDEBY_API_ORIGIN`／`SIDEBY_PUBLIC_ORIGIN` 已設，Google server key 以 secret 上傳，browser key 由 Vite build 使用。首頁、`/maps-check` 與同源 `/api/runtime` 均 200，經代理匿名建立 201。
 - 最新 `npm run check:all` 通過 47 根＋15 Maps／proxy 測試，GitHub PR checks 全綠；未輸出、記錄或提交任何 secret。
-- Google production 部分通過：Maps JavaScript 正式底圖成功，Places／Routes／Geocoding 仍失敗。下一步由 key 擁有者核對三項 server API 限制、帳務與配額後重跑 `/maps-check`。
-- Railway deployment `9b251684-dcb4-422c-bd6f-739c477263d5` 已成功，PostgreSQL showcase 生成／保存 Runtime 通過；Cloudflare Worker version `22f78714-bb8c-4790-8832-5685d9f83b0a` 已部署。兩支手機、跨網路效能與 Owner sign-off 仍未驗；不要重建既有服務。
+- Google production 四項通過：正式底圖可見，Places 回傳臺北車站，Routes 回傳步行／大眾運輸時間，Geocoding 回傳 ROOFTOP 座標；未讀出、記錄或提交任何 key。
+- Railway deployment `9b251684-dcb4-422c-bd6f-739c477263d5` 已成功，PostgreSQL showcase 生成／保存 Runtime 通過；Google 四項通過的 Cloudflare Worker version 為 `25ada2bf-4101-4bcb-8b93-67e83c2d6d74`。兩支手機、跨網路效能與 Owner sign-off 仍未驗；不要重建既有服務。
 
 ## 本輪功能內容（已由 PR #4 推送合併）
 
@@ -59,7 +59,7 @@ git -C E:\sideby rev-parse origin/main
 - `npm run check:all`：44 項根測試＋14 項 Maps／代理測試全數通過，前端 typecheck、client／SSR／Cloudflare build 通過。
 - `npm run test:frontend-proxy`：API、Bearer、SSE 與跨來源拒絕 Runtime PASS。
 - 本機瀏覽器：未授權 Gemini時的規則 fallback、雙人流程與三套 synthetic 結果已走過。
-- `/maps-check`：Maps JavaScript、Places (New)、Routes、Geocoding 曾在這台電腦完成單次真實 PASS；這不是正式網域或手機證據。
+- `/maps-check`：Maps JavaScript、Places (New)、Routes、Geocoding 已在本機及正式 Cloudflare 網域完成單次真實 PASS；仍不是兩支手機或 Owner 驗收證據。
 - GitHub Actions：commit `6abd18f` 的 Sideby checks 成功。
 
 ## 3. 本機設定狀態
@@ -73,7 +73,7 @@ git -C E:\sideby rev-parse origin/main
 
 ## 4. 尚未完成，禁止宣稱 PASS
 
-- Google browser key 的正式 referrer 已完成，Maps JavaScript production 底圖通過；server key 的應用程式／API restriction 尚未由實際 key 擁有者完成，production Places／Routes／Geocoding 仍失敗。
+- Google browser／server key 限制已核對，production Maps JavaScript／Places／Routes／Geocoding 四項通過；尚未完成的是兩支實體手機上的完整流程與失敗降級驗收。
 - Gemini「評論候選標籤＋本人確認」與「合法推薦後安全理由改寫」仍是後續規劃，不是本次提交主線或阻斷。
 - Google 評論沒有接入，也不得拿來建立 Sideby 場地標籤、RAG、Embedding 或訓練資料。
 - 真實核准場地、兩支實體手機、跨網路效能與 Owner sign-off 未完成；正式網域本身已建立並通過基本 API。
@@ -82,10 +82,9 @@ git -C E:\sideby rev-parse origin/main
 ## 5. 下一個對話的施工順序
 
 1. 不重建 Railway、PostgreSQL、Cloudflare Worker 或既有 production origins；先將 showcase 分支合併並核對 Railway seed、公開 API 與前端版本。
-2. 由實際 Google key 擁有者在正確專案核對 server key 的應用程式限制；server key 只允許 Places API (New)、Routes API、Geocoding API，並設定配額／預算告警。
-3. 從正式 `/maps-check` 重跑四項；Maps JavaScript 已通過，三項 server API 成功後才改 production Google 為全數通過。
-4. 用公開網址、兩支手機完成：建立／加入、共享同步、雙方私密互不可見、兩人確認、三套方案、重排、雙方定案、刷新保存，以及 Google 成功／失敗 fallback。
-5. 只有上述證據成立後才更新 Phase／Owner 狀態；否則維持 `NOT_READY`／部分完成。
+2. 用公開網址先完成單瀏覽器全流程 smoke，確認既有 Railway／PostgreSQL／Cloudflare／Google 串接沒有回歸。
+3. 用兩支手機完成：建立／加入、共享同步、雙方私密互不可見、兩人確認、三套方案、重排、雙方定案、刷新保存，以及 Google 成功／失敗 fallback。
+4. 只有上述證據成立後才更新 Phase／Owner 狀態；否則維持 `NOT_READY`／部分完成。
 
 ## 6. 收尾規則
 

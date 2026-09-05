@@ -142,9 +142,9 @@ test('Google direct integration (offline; no real Google calls)', async t => {
     assert.equal(url.href, 'https://places.googleapis.com/v1/places:searchText');
     assert.equal(init.headers.get('X-Goog-Api-Key'), KEY);
     assert.equal(init.headers.has('Authorization'), false);
-    assert.equal(init.cache, 'no-store');
-    assert.equal(init.redirect, 'error');
-    assert.ok(init.signal instanceof AbortSignal);
+    assert.equal(init.cache, undefined);
+    assert.equal(init.redirect, 'manual');
+    assert.equal(init.signal, undefined);
     assert.equal(JSON.parse(init.body).pageSize, 1);
     assert.ok(init.headers.get('X-Goog-FieldMask').includes('places.photos.authorAttributions'));
     assert.equal(JSON.stringify(await searchVenue('synthetic')).includes(KEY), false);
@@ -199,6 +199,8 @@ test('Google direct integration (offline; no real Google calls)', async t => {
     await assert.rejects(() => geocode('private address'), safe);
     response = new Response(secret, { status: 200 });
     await assert.rejects(() => placeDetails('id'), safe);
+    response = new Response(null, { status: 302, headers: { location: 'https://attacker.example' } });
+    await assert.rejects(() => searchVenue('private input'), error => safe(error) && /重新導向/.test(error.message));
   });
   await t.test('photo author attribution travels with the photo', async () => {
     const authors = [{ displayName: 'Synthetic author', uri: 'https://example.com/author' }];

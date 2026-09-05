@@ -55,10 +55,17 @@ async function googleJson<T>(url: string, init: RequestInit = {}, queryKey = fal
   else headers.set("X-Goog-Api-Key", key);
   let response: Response;
   try {
-    response = await fetch(target, { ...init, headers, cache: "no-store", redirect: "error", signal: AbortSignal.timeout(12000) });
-  } catch {
+    response = await fetch(target.toString(), { ...init, headers, redirect: "manual" });
+  } catch (error) {
     // Fetch errors can contain the key-bearing Geocoding URL. Never forward them.
-    throw new Error("Google 連線逾時或網路不可用，請稍後重試");
+    if (error instanceof Error && error.name === "TimeoutError") {
+      throw new Error("Google 連線逾時，請稍後重試");
+    }
+    const category = error instanceof Error ? error.name : "UnknownError";
+    throw new Error(`Google 連線建立失敗（${category}）；請稍後重試`);
+  }
+  if (response.status >= 300 && response.status < 400) {
+    throw new Error("Google 服務回傳未預期的重新導向；已停止請求以保護伺服器金鑰");
   }
   if (!response.ok) throw new Error(`Google 服務拒絕請求（HTTP ${response.status}）；請檢查 API 啟用、帳務、金鑰限制與配額`);
   // Do not read/log provider error bodies, keys or request URLs.
