@@ -2,7 +2,7 @@
 
 ## 最新部署接續（優先於下方歷史基線）
 
-- `feature/showcase-data-integration` 已完成待提交：九個既有前端站點、十一個環境 slot、二十四條展示 travel matrix 會由 Railway `prestart` 冪等寫入 PostgreSQL；三套生成結果保存 dataset／matrix version，前端以 Google Place ID 即時載入地點與導航。展示價格、時長、屬性仍明示 `synthetic_demo`，不保存 Google 地址、照片、評分、評論或路線回應。
+- PR #6 已合併 `main`，merge commit `21b28f333f7cc0f70921ce3a60320183995b2817`：九個既有前端站點、十一個環境 slot、二十四條展示 travel matrix 已由 Railway `prestart` 冪等寫入 PostgreSQL；正式 API 實測生成三套、每套三站，partner 可讀回三套保存結果，共含九個 Google Place ID。展示價格、時長、屬性仍明示 `synthetic_demo`，不保存 Google 地址、照片、評分、評論或路線回應。
 - Google Maps JavaScript 正式底圖已因 Worker referrer 補齊而通過；Places API (New)／Routes API／Geocoding 的 production server 呼叫仍失敗，且相同 server key 在本機可解析九個 Place ID。下一個外部動作是由 key 擁有者核對 server key 的應用程式限制、API 限制、帳務與配額。
 - Owner 決定本次不主打 Gemini；它已從提交阻斷移為後續加值，不得用未驗收的 Gemini 能力包裝主流程。
 - PR #4 已合併 `main`，merge commit `16cfd041899356432caa1c4cc914fa94b7541902`；feature commit `db618d0` 已保存在遠端。產品介紹 `output/` 仍未追蹤，其他 worktree／archive 未動。
@@ -11,7 +11,7 @@
 - Cloudflare Worker `https://louis8791-sideby-frontend.louis8791.workers.dev` 已部署；`SIDEBY_API_ORIGIN`／`SIDEBY_PUBLIC_ORIGIN` 已設，Google server key 以 secret 上傳，browser key 由 Vite build 使用。首頁、`/maps-check` 與同源 `/api/runtime` 均 200，經代理匿名建立 201。
 - 最新 `npm run check:all` 通過 47 根＋15 Maps／proxy 測試，GitHub PR checks 全綠；未輸出、記錄或提交任何 secret。
 - Google production 部分通過：Maps JavaScript 正式底圖成功，Places／Routes／Geocoding 仍失敗。下一步由 key 擁有者核對三項 server API 限制、帳務與配額後重跑 `/maps-check`。
-- Railway／PostgreSQL／Cloudflare 基礎部署已完成；新 showcase 資料版尚待本分支合併後的公開 Runtime 驗收。兩支手機、跨網路效能與 Owner sign-off 仍未驗；不要重建既有服務。
+- Railway deployment `9b251684-dcb4-422c-bd6f-739c477263d5` 已成功，PostgreSQL showcase 生成／保存 Runtime 通過；Cloudflare Worker version `22f78714-bb8c-4790-8832-5685d9f83b0a` 已部署。兩支手機、跨網路效能與 Owner sign-off 仍未驗；不要重建既有服務。
 
 ## 本輪功能內容（已由 PR #4 推送合併）
 
