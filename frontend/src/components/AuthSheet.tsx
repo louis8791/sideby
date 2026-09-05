@@ -27,6 +27,18 @@ export function AuthSheet({ open, onClose }: { open: boolean; onClose: () => voi
 
   if (!open) return null;
 
+  const runAuthRequest = async <T,>(request: () => Promise<T>): Promise<T | null> => {
+    setBusy(true);
+    try {
+      return await request();
+    } catch (error) {
+      toast.error(authErrorMessage(error instanceof Error ? error.message : ""));
+      return null;
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
@@ -37,15 +49,15 @@ export function AuthSheet({ open, onClose }: { open: boolean; onClose: () => voi
     }
 
     if (mode === "forgot") {
-      setBusy(true);
-      const { error } = await supabase.auth.resetPasswordForEmail(mail, {
+      const result = await runAuthRequest(() => supabase.auth.resetPasswordForEmail(mail, {
         redirectTo: `${window.location.origin}/reset-password`,
-      });
-      setBusy(false);
+      }));
+      if (!result) return;
+      const { error } = result;
       if (error) {
-      toast.error(authErrorMessage(error.message));
-      return;
-    }
+        toast.error(authErrorMessage(error.message));
+        return;
+      }
       setSentReset(true);
       return;
     }
@@ -60,17 +72,17 @@ export function AuthSheet({ open, onClose }: { open: boolean; onClose: () => voi
       toast.error("兩次輸入的密碼不一樣");
       return;
     }
-      setBusy(true);
-      const { data, error } = await supabase.auth.signUp({
+      const result = await runAuthRequest(() => supabase.auth.signUp({
         email: mail,
         password,
         options: { emailRedirectTo: window.location.origin },
-      });
-      setBusy(false);
+      }));
+      if (!result) return;
+      const { data, error } = result;
       if (error) {
-      toast.error(authErrorMessage(error.message));
-      return;
-    }
+        toast.error(authErrorMessage(error.message));
+        return;
+      }
       if (!data.session) {
         setSentVerify(true);
         return;
@@ -80,9 +92,9 @@ export function AuthSheet({ open, onClose }: { open: boolean; onClose: () => voi
       return;
     }
 
-    setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({ email: mail, password });
-    setBusy(false);
+    const result = await runAuthRequest(() => supabase.auth.signInWithPassword({ email: mail, password }));
+    if (!result) return;
+    const { error } = result;
     if (error) {
       toast.error(authErrorMessage(error.message));
       return;

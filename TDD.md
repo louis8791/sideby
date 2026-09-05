@@ -1,5 +1,11 @@
 # Sideby — MVP TDD
 
+## 2026-09-06 Invite and authentication regression
+
+- UI 契約鎖定邀請欄位 `maxLength=32`、`autoCapitalize=none`、`autoCorrect=off`、`spellCheck=false`，並以正式後端產生的完整 code 完成建立者／加入者兩個獨立瀏覽器狀態驗收。
+- `authAvailable` 初始固定為 false，只在 client effect 呼叫 `isSupabaseConfigured()` 後啟用，避免 Worker SSR 有平台變數而靜態瀏覽器 bundle 沒有 VITE 設定時產生 hydration 漂移與死按鈕。
+- Auth request wrapper 以 `finally` 保證解除 busy，捕捉被拋出的網路例外並顯示安全錯誤；production build 必須帶同一 Supabase URL／publishable key，並以無效測試帳密驗證表單確實收到服務回應，不建立測試帳號。
+
 ## 2026-09-06 Venue refresh staging
 
 - Production 驗收：PR #15／#16 GitHub backend／frontend checks 全綠；Railway deployment `60042a23-4865-4411-9aa9-088a5136e307` 中 active dataset／matrix 均為 `approved_dataset`，實數為 13 records、950 slots、468 legs。13 staging approvals。Cloudflare Worker version `ddb20462-0bcb-4276-b8b5-0dd358e9523d` 的公開同源 API 已以三個日期／集合點完成雙方匿名身分、房間、共同條件、兩份私密輸入、雙確認與生成；三案均回 3 套三站且每站有 Place ID。
