@@ -30,7 +30,7 @@ MVP 採模組化單體，不拆微服務。建議以 React、Next.js、TypeScrip
 
 硬篩選限制必須套用至檢索候選集合；不足時可擴大合格集合內的召回，不能放寬硬限制來湊數。全程不依賴模型自行判定最終合法性。
 
-此為待實作流程：小型分類器是黑客松先行解析路徑，自管生成模型可在有驗證證據後補充未涵蓋語意；未接入前直接要求釐清，不假裝大型模型已完成解析。索引未就緒不能把規則排序標示為 RAG 成功；說明文字的中性模板只適用已驗證的行程。
+此流程尚未接通：小型分類器是黑客松先行解析路徑，需求資料契約與驗證器已完成；自管生成模型可在有驗證證據後補充未涵蓋語意。分類器未接入前直接要求釐清，不假裝大型模型已完成解析。索引未就緒不能把規則排序標示為 RAG 成功；說明文字的中性模板只適用已驗證的行程。
 
 ### 1.3 場地 RAG 資料契約
 
@@ -241,7 +241,7 @@ Google 詳細資訊同樣只做外部跳轉。按鈕文字固定為「在 Google
 
 Phase 1B 已有可執行 API、migration 與真實 PostgreSQL／HTTP 整合測試；完整 MVP 下列各層仍依各自證據驗收。真實雙裝置、私密輸入隔離、模型／RAG、推薦、外部連結及 Owner sign-off 尚未完成，不得以文件或房間測試代替。
 
-## 11. 黑客松小型需求分類器（已同意，待實作）
+## 11. 黑客松小型需求分類器（需求資料契約已實作，訓練待執行）
 
 ### 11.1 目標與基準
 
@@ -272,6 +272,15 @@ Phase 1B 已有可執行 API、migration 與真實 PostgreSQL／HTTP 整合測�
 
 同一原句、提示模板衍生改寫須同 group_id；若同一受訪者／來源有高度重複敘事，也共同分組。正式私密輸入不是預設訓練來源；資料採集／訓練同意與長期偏好記憶同意分開。
 
+Phase 1 已實作以下資料層入口：
+
+- `src/model/requirements.ts`：Zod 契約、逐筆驗證、重複 sample_id、group split 與資料／taxonomy 版本檢查。
+- `scripts/validate-requirements.ts`：JSONL 命令列驗證器，輸出 VALID／INVALID 與錯誤清單。
+- `data/training/requirements.example.jsonl`：六筆明確標為 synthetic 的格式範例，不是真實需求表或模型品質證據。
+- `tests/model-requirements.test.ts`：驗證合法範例、group 跨切分及未審核／虛構原文證據的拒絕行為。
+
+真實需求表放在 `.local/phase1/requirements.jsonl` 並排除 Git；只有人工核准案例可進 train／validation／test。資料驗證通過仍不代表分類器已訓練或達到品質門檻。
+
 ### 11.3 切分、訓練與保存
 
 1. 凍結第一版標籤定義，依 group_id 分組約 60% 訓練、20% 驗證、20% 最終測試。兼顧各屬性正反向涵蓋；分組優先於精確比例。只有一個群組的類別不能宣稱有獨立測試能力。
@@ -291,6 +300,8 @@ pending：解析服務結果預計分 parsed／needs_clarification／unavailable
 bright 等初始程度對應的區間由人工錨點及設定定義；未校準前不宣稱「明亮必然等於 0.7」。indifferent 不轉成排斥，not_mentioned 不生成限制。模糊詞、未知類別及 conflicting 不能自動當作「完全沒限制」。若使用者未說步行分鐘，不可補出硬上限。模糊句即使分類分數高，也不能略過釐清規則。
 
 ### 11.5 驗收與停止條件
+
+可重跑入口為 `npm run requirements:validate -- <requirements.jsonl>` 與 `npm run phase1:check`；完整 CC 交接見 `docs/PHASE1_ACCEPTANCE.md`。後者缺少模型、評測、RAG 或兩瀏覽器 Runtime 證據時必須 fail closed。
 
 - 逐屬性及各方向報告 precision／recall／F1、support，另報 macro-F1、混淆案例與 group 數。未提及類別分開報告，不用總 accuracy 掩蓋否定失敗。
 - 分開報告程度規則、明確數字／單位解析、釐清案例成功率及可自動處理覆蓋率。全部拒判不能算「解析零錯誤」的成功產品。

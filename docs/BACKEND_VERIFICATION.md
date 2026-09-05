@@ -6,7 +6,7 @@
 
 - Windows x64、Node.js 24.16.0、Next.js 16.3.4、PostgreSQL 18.4。
 - `npm run build`：正式建置通過，包含 TypeScript 檢查。
-- `npm test`：自動重建後，後端 14 個行為子測試＋1 個整合父測試，以及場地資料 4 個測試，共 19 passed、0 failed；最後一次約 9.4 秒。
+- `npm test`：自動重建後，後端 14 個行為子測試＋1 個整合父測試、場地資料 4 個測試及需求資料契約 3 個測試，共 22 passed、0 failed；最後一次約 10.9 秒。
 - 測試使用真正 PostgreSQL 與 `next start` 正式產物，經 HTTP 呼叫；沒有以資料庫／HTTP mock 代替。
 - 雙 SSE 訂閱的最後一次本機樣本：506ms。這只是一筆合成樣本，不是 p95、手機網路或負載效能承諾。
 - `npm run dev:local`：實際啟動後匿名入口回 201；Ctrl+C 關閉啟動的應用程序與資料庫。已修正 Windows pg_ctl 管線造成的額外等待及 Ctrl+C 關閉競爭。

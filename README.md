@@ -8,7 +8,7 @@
 
 需要 Node.js 22.13+。在 repo 根目錄執行 `npm ci`、`npm run dev:local`，即會啟動本機 PostgreSQL 與 Next.js API（http://127.0.0.1:3000）。目前首頁沒有 UI。完整欄位、同步、錯誤及環境說明見 [後端串接契約](docs/BACKEND_API.md)。
 
-驗證：`npm run build` 後執行 `npm test`；測試使用獨立 PostgreSQL 與正式建置的 HTTP 服務。2026-09-04 已驗證房間容量競爭、非成員拒絕、版本衝突、確認重設、同步重連、服務重啟與資料庫故障回應；真實雙手機與公開部署待驗收。
+驗證：執行 `npm test`，它會先正式建置，再以獨立 PostgreSQL 與正式 HTTP 服務測試後端、場地資料及需求資料契約。2026-09-05 共 22 tests passed；真實需求表、模型／RAG、兩個獨立瀏覽器與公開部署仍待驗收。
 
 ## 版本與提交紀錄
 
@@ -49,8 +49,8 @@ MVP 的核心承諾是：雙方分別輸入需求，AI 只把可安全公開的�
 - 前後端應用 API、雙人同步及自管推論內部介面保留；此決策不代表全系統離線。
 - RAG 僅檢索團隊核准的場地資料，保留 venue_id、來源與版本；私密對話不進共用索引，硬限制、計分與行程驗證由程式負責。
 - 另一位成員負責前端 UIUX；使用者負責應用後端、資料權限、決策規則與整合測試；模型／RAG 是可獨立交付的工作包，承接人待確認。
-- 模型型號、執行工具與硬體尚待 Phase 1A 驗證；該部分仍為規格階段，與已開工的房間後端分開驗收。
-- 已同意黑客松先訓練小型需求分類器：字元 TF-IDF＋Logistic Regression 對照固定規則，約 100–200 句人工標註、4–6 個屬性、分組 60%／20%／20% 評測；SetFit 為有時間後的比較選項。目前待需求表與實作，沒有已訓練模型。[詳細訓練規格](TDD.md#11-黑客松小型需求分類器已同意待實作)與 [六小時工作安排](ROADMAP.md#黑客松六小時工作安排規劃假設非工期承諾)已記入四份權威。
+- 模型型號、執行工具與硬體尚待 Phase 1A 驗證；需求 JSONL 契約與驗證器已開工，模型／RAG 與房間後端仍分開驗收。
+- 已同意黑客松先訓練小型需求分類器：字元 TF-IDF＋Logistic Regression 對照固定規則，約 100–200 句人工標註、4–6 個屬性、分組 60%／20%／20% 評測；SetFit 為有時間後的比較選項。目前只有六筆 synthetic 格式範例，沒有真實需求表或已訓練模型。[詳細訓練規格](TDD.md#11-黑客松小型需求分類器需求資料契約已實作訓練待執行)、[Phase 1 驗收交接](docs/PHASE1_ACCEPTANCE.md)與 [六小時工作安排](ROADMAP.md#黑客松六小時工作安排規劃假設非工期承諾)已記入專案。
 - 不接 Google API，不把 Google Maps／Places 衍生內容用於訓練或 RAG；場地採自有／適當授權資料及附證據的人工標籤。建議先做單一小區域試點，未知屬性與無照片權利時明確標示，不由模型補猜。
 
 ## 明確不包含
@@ -67,7 +67,9 @@ CRM、商家後台、App 內付款、訂閱、社群、即時聊天、遊戲化�
 | [AGENTS.md](AGENTS.md) | 本專案的執行規則與不可越過的契約 |
 | [docs/MVP_SPEC.md](docs/MVP_SPEC.md) | 完整 MVP 產品與系統規格 |
 | [docs/MODEL_RAG.md](docs/MODEL_RAG.md) | 模型、資料來源、隱私與 RAG 邊界 |
+| [docs/PHASE1_ACCEPTANCE.md](docs/PHASE1_ACCEPTANCE.md) | 給 CC 的 Phase 1 可重跑驗收步驟與證據格式 |
 | [schemas/](schemas/) | LLM 結構化輸出與行程輸出的 JSON Schema |
+| [data/training/requirements.example.jsonl](data/training/requirements.example.jsonl) | 需求資料契約的 synthetic 格式範例 |
 | [data/fixtures/](data/fixtures/) | 不含秘密的範例場地與評測案例 |
 
 ## 重要證據邊界
