@@ -57,6 +57,10 @@
 
 不得把 Google Maps／Places 的評論、照片、搜尋摘要或 Takeout 清單變成自有訓練／評測／場地資料或 Embedding 索引。來源採團隊自有、有適當授權或已確認可用的開放資料。官網可查閱不代表全文／照片可再利用；沒有照片權利時用自製圖示與文字。
 
+Google Place ID 是唯一保存例外：場地可選填 `google_place_id` 並長期保存，但它只用來定位外部 Google Maps 頁面，不可作排序特徵或檢索文本。若商家名稱、地址、評論、照片、搜尋結果或標籤的來源是 Google，仍不得複製、長存、重新發布或進入 RAG／Embedding／訓練／評測；MVP 不批次呼叫 Google Text Search 建庫。
+
+推薦卡片與公開理由只讀自有／授權資料。使用者按「在 Google Maps 查看」時，才以自有／授權的場地名稱與 Place ID 即時產生 `https://www.google.com/maps/search/?api=1&query=<urlencoded name>&query_place_id=<place_id>`。`query` 必須正確編碼；有 Place ID 時優先定位它；URL 不含 API key，開啟它不構成本專案的 GMP API 計費請求。Google 詳情在 Google Maps 內顯示，不回存 Sideby。
+
 主觀標籤須記錄證據、適用時段／區域、觀察／查核日期、尺度版本與審核狀態。未知為 null，不用 0 或模型猜測補值；照片不證明安靜、不排隊或全天採光。政府景點清單是候選入口，不能當成已完成主觀屬性標註的商家庫。
 
 ### MVP 場地 RAG

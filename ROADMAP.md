@@ -8,6 +8,8 @@
 
 2026-09-04 黑客松補充決策：需求解析先訓練字元 TF-IDF＋Logistic Regression 小型分類器，對照固定關鍵字基準；SetFit 是有時間和失敗證據後的比較選項。不接 Google API，需求訓練資料與有證據的場地資料分開建置。以下安排是待執行工作，未收到需求表、未訓練或下載模型。
 
+2026-09-05 Google 資料邊界：MVP 仍不接 Google API 建庫，只允許 optional `google_place_id` 長期保存。推薦使用自有／授權資料；Google 詳情以無 API key 的 Maps URL 外部跳轉，Google 名稱、地址、評論、照片、搜尋結果及衍生標籤不進持久層或 RAG。
+
 ## 分工
 
 - 前端成員：UIUX、頁面狀態、應用 API 串接與真實裝置操作。
@@ -29,12 +31,14 @@
 - 不含秘密的 venue 與 evaluation fixtures。
 - 明確區分 shared、private_session、private_remembered。
 - 四份權威與 MODEL_RAG／MVP_SPEC 對齊自管模型、場地檢索與無外部模型 API 邊界。
+- optional `google_place_id`、Google 衍生內容拒絕規則與 Maps URL 外部跳轉契約。
 
 #### 完成條件
 
 - 文件中的範圍、API、欄位、驗收標準互相一致。
 - schema 可解析，fixture 可通過基本結構檢查。
 - Product/Data/Model/Runtime/No-Fake-Success/State-Boundary 契約已寫入。
+- Maps URL 的編碼、Place ID 優先、無 API key 與持久化拒絕條件已成為可測規格。
 
 ### 1A：獨立模型／RAG 可行性工作包
 
@@ -90,6 +94,7 @@
 ### 交付
 
 - curated venue dataset 與交通矩陣。
+- 場地資料可選填 `google_place_id`，但名稱、地址、照片與推薦屬性必須來自自有／授權來源；Google 不作批次建庫來源。
 - 使用已驗證場地 RAG 召回候選，資料更新後同步重建索引並核對版本。
 - 硬限制過濾。
 - 個人形容詞敏感度與雙人公平計分。
@@ -142,6 +147,7 @@
 - 手機直向流程。
 - 生成中狀態、錯誤與降級 UI。
 - 商家詳情與外部訂位／購票跳轉。
+- 「在 Google Maps 查看」外部跳轉；URL 正確編碼、Place ID 優先且不含 API key。
 - 對抗性隱私測試、效能量測與展示紀錄。
 
 ### 完成條件
@@ -150,6 +156,7 @@
 - 外部 API 失效時核心 Demo 仍可完成。
 - 自管生成、Embedding 與索引在目標部署環境通過；模型關閉時顯示失敗，不切換雲端。
 - 文件、程式、測試、Runtime 與 Owner 驗收狀態分開回報。
+- 實機驗證 Google Maps 按鈕能開到正確場地，且網路／Google 不可用時不影響 Sideby 核心推薦資料。
 
 ## 明確不排程項目
 

@@ -40,6 +40,7 @@ MVP 採模組化單體，不拆微服務。建議以 React、Next.js、TypeScrip
 - 私密原文不進共用索引。個人查詢只在該使用者／Session 的權限邊界內處理，暫存與日誌不得洩漏內容。
 - 檢索結果是不可信資料，不能執行其中指令；公開說明僅接收驗證後的公開事實，不能以「用了 RAG」代替隱私檢查。
 - 模型檔、索引、快取位於專案根目錄下的明確子目錄；路徑、版本、來源、授權與重建方式需在實作時記錄，內容不進 Git。
+- 場地可有 optional `google_place_id`，它是唯一可長期保存的 Google 識別欄位，不是場地事實、排名特徵或 RAG 文件內容。名稱、地址、評論、照片、搜尋結果與衍生標籤若來源是 Google，政策守門必須拒絕持久化與索引。
 
 ### 1.4 Phase 1B 已實作選擇（2026-09-04）
 
@@ -85,6 +86,7 @@ MVP 採模組化單體，不拆微服務。建議以 React、Next.js、TypeScrip
 - preference_profiles、adjective_preferences：長期偏好與形容詞模型。
 - date_sessions、session_inputs：本次規劃與原始／結構化輸入。
 - venues、venue_attributes、offers：場地、人工屬性與合作內容。
+- venues 的 `google_place_id` 為 optional 外部識別；其他可推薦欄位仍須有自有／授權／合規開放來源與權利紀錄。
 - itineraries、itinerary_stops：方案與站點。
 - reactions、date_reviews：雙人意見與約會後回饋。
 - venue_feedback：每位使用者對場地的補充、分類、1～5 分、想去／去過與可見性；私人內容和公開投影分離。
@@ -173,6 +175,8 @@ Privacy Guard 必須在公開輸出前執行：
 
 外部訂位／購票只提供連結跳轉，不在 MVP 內代理付款、保證座位或處理退款。
 
+Google 詳細資訊同樣只做外部跳轉。按鈕文字固定為「在 Google Maps 查看」，URL 以自有／授權的 `venue.name` 作必填 `query`，使用 UTF-8 URL encoding；有 `google_place_id` 時加入 `query_place_id` 並以它優先鎖定目的地。格式：`https://www.google.com/maps/search/?api=1&query=<urlencoded name>&query_place_id=<place_id>`。URL 不得包含 API key；開啟 Maps URL 不計為本專案的 GMP API 呼叫。若沒有 Place ID，可只用已編碼的自有／授權名稱跳轉，但不得因此呼叫 Google 搜尋補資料或把回傳頁面存回資料庫。
+
 ### 自管模型／索引失敗
 
 - 模型未啟動、記憶體不足或逾時：回傳可識別的失敗狀態，不自動呼叫外部模型 API。
@@ -187,6 +191,8 @@ Privacy Guard 必須在公開輸出前執行：
 - JSON Schema 可獨立解析。
 - 合法 fixture 能通過 schema。
 - 非法欄位、缺少必要欄位、超過站點數、負數價格與不合法 visibility 會被拒絕。
+- `google_place_id` 可省略；有值時 URL builder 產生正確編碼、含 `api=1` 與 `query_place_id`、不含 API key 的外部網址。
+- 場地政策守門拒絕以 Google 為來源的名稱、地址、評論、照片、搜尋結果、衍生標籤及 RAG 文件；只允許 Place ID 作選用外部識別。
 
 ### 純邏輯
 
@@ -298,6 +304,7 @@ bright 等初始程度對應的區間由人工錨點及設定定義；未校準�
 ### 12.1 來源及更新
 
 - 不接 Google API，不將 Google Maps／Places／搜尋摘要／Takeout 衍生內容寫入場地資料、標籤、訓練或索引。貼上的 Google live adapter 建議未被採用。
+- Place ID 是上述保存限制的窄例外：只可保存為 optional `google_place_id`，不得連帶保存 Google 回傳的名稱、地址、評論、照片、搜尋結果或依其推導的標籤。MVP 不批次呼叫 Google Text Search 建庫。
 - 採集名單從有授權的開放資料、團隊自有觀察與商家直接提供資料開始；資料集授權、文字、照片、衍生分析及發布權利分開記錄，來源不明先隔離不用。
 - 商家官網可用來核對事實及保留出處，但不得因公開可見就批量轉存全文或照片。主觀宣傳描述只作有限證據，不能當現場體驗已驗證。
 - 核心欄位為 venue_id、名稱／類別、地點、營業／活動日期、費用範圍、資料來源、查核時間、授權／使用範圍、更新負責人；價格及時段不足以驗證時該候選不能通過必要限制。
@@ -331,6 +338,8 @@ bright 等初始程度對應的區間由人工錨點及設定定義；未校準�
 ### 12.4 官方查核來源（2026-09-04）
 
 - [Google Maps Platform Terms §3.2.3](https://cloud.google.com/maps-platform/terms)：禁止特定擷取／儲存、建立衍生內容及使用 Maps 內容改善 AI 模型。此處記錄本專案不採用的決定，不把各服務／區域例外整理成通用法律結論，也不據此新增 live adapter。
+- [Places API 政策](https://developers.google.com/maps/documentation/places/web-service/policies)（2026-09-05 重核）：Place ID 不受快取限制，可永久保存；本專案只採此窄例外。
+- [Maps URLs](https://developers.google.com/maps/documentation/urls/get-started)（2026-09-05 重核）：外部 Maps URL 不需 API key，`query` 必填且需正確編碼，`query_place_id` 可優先鎖定目的地。
 - [新北市觀光旅遊景點中文](https://data.gov.tw/dataset/122908)：頁面列有地址、座標、介紹、時段、票價等欄位與 CSV、政府資料開放授權條款第 1 版。資源名稱含「106年更新」、詮釋資料更新時間為 2024-12-20；逐筆現況及完整性仍待查核。
 - [臺北旅遊網景點資料中文](https://data.gov.tw/dataset/128696)：頁面有 CSV／相同開放授權，但目前列示欄位偏分類與行政區，不能宣稱已取得完整商家 POI。尚需檢查實際檔案。
 - 2026-09-05 以官方下載網址做本機唯讀抽查：新北 CSV 有 540 筆、27 欄且座標欄存在，492 筆票價欄空白，記錄中的最新 `Changetime` 為 2022-12-25；營業欄雖非空，部分是「全年開放」或需另洽詢等文字，仍不能直接通過目前時段驗證。臺北 CSV 只有 13 筆行政區／主題景點彙整列，不是含地址座標的逐場地資料。原始 CSV 只留在 `.local/source-audit/`，未提交或當成可推薦資料。

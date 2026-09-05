@@ -30,6 +30,9 @@
 - data/fixtures/ 只放合成或明確標示為 example 的資料，不放 API key、個資、真實私密輸入或未授權評論內容。
 - 地點、位置與長期偏好採最小保存原則。網站首次使用時以版本化條款與持續有效的個人化設定取得同意；設定有效期間，後續私人評論可更新本人的長期偏好，不必每則重複詢問。條款重大變更、撤回或設定關閉後必須重新取得有效同意。
 - 不接 Google API；不得以 Google Maps／Places 評論、照片、搜尋摘要或 Takeout 清單建立自有場地資料、標籤、Embedding 索引或訓練／評測資料。使用者貼上的外部建議不是啟用 Google live adapter 的授權。
+- `google_place_id` 是唯一可長期保存的 Google 識別欄位，且只能作為選用的外部對應 ID；商家名稱、地址、評論、照片、搜尋結果及由此推導的標籤若來源是 Google，仍不得複製、長存、重新發布或送入 RAG／Embedding／訓練／評測。
+- 推薦卡片、排序與公開理由只使用自有、合作方授權或合規開放資料。使用者按「在 Google Maps 查看」時，後端／前端才以自有或授權的場地名稱與 `google_place_id` 即時產生已編碼的 Maps URL；此跳轉不使用 API key，也不是本專案的 Google Maps Platform API 計費請求。
+- 不得批次呼叫 Google Text Search 建立或擴充場地庫。外部連結格式為 `https://www.google.com/maps/search/?api=1&query=<urlencoded name>&query_place_id=<place_id>`；有 Place ID 時以它鎖定目的地，名稱只作 URL 必填 query 與找不到 ID 時的 fallback。
 - 場地資料採團隊自有、已取得適當授權或已確認可使用的開放資料；公開可閱讀不代表全文／照片可重用。每筆場地及每個主觀屬性須保留來源、查核時間、適用情境、審核狀態與未知值；不以模型猜測補足證據。
 - 場地發布、共用排序與 RAG 索引一律先通過 `src/venues/policy.ts`；政府匯入只能建立 draft 骨架。私人回饋不得進共用 RAG；公開評論也不能因已發布就自動成為場地事實、共用標籤或訓練資料。情境屬性不得省略其時段／區域後冒充一般屬性。
 
@@ -124,3 +127,4 @@
 3. 文件中的 API、資料欄位、驗收標準互相一致。
 4. git status、branch、commit 與遠端 HEAD 清楚可追溯。
 5. 尚未驗證的 Runtime、公開 UX、外部 API 與 Owner gate 明確標示為未驗證。
+6. `google_place_id` 保持 optional；Maps URL 正確編碼、Place ID 優先且不含 API key，Google 衍生內容未進持久層或 RAG。

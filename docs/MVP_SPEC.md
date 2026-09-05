@@ -50,7 +50,7 @@
 7. 產生三套完整方案，經時間、成本、營業、路線與隱私檢查後回傳。
 8. 雙方對整套或個別站點 like、dislike、replace。
 9. 鎖定已接受的站點，只對衝突區域局部重排。
-10. 雙方選定最終方案，查看商家詳情與外部訂位／購票連結。
+10. 雙方選定最終方案，查看 Sideby 自有／授權的商家資訊；若場地有 Google Place ID，可按「在 Google Maps 查看」跳到外部 Google Maps，再使用外部訂位／購票連結。
 11. 約會後分別評分；只有勾選同意時才更新長期偏好。
 
 ## 5. 行動版畫面規格
@@ -73,7 +73,7 @@
 
 ### 5.5 完整行程
 
-每站顯示抵達／離開時間、停留、預估費用、交通、營業／活動確認狀態、商家詳情與外部連結。不能把無法確認的資料寫成已確認。
+每站顯示抵達／離開時間、停留、預估費用、交通、營業／活動確認狀態、Sideby 自有／授權的商家詳情與外部連結。場地有 optional `google_place_id` 時顯示「在 Google Maps 查看」；按下後才開啟外部 Google Maps。不能把無法確認的資料寫成已確認。
 
 ### 5.6 意見與局部重排
 
@@ -103,6 +103,7 @@
 | FR-14 | 合作內容 | 顯示優惠、商家詳情與外部訂位／購票。 |
 | FR-15 | 贊助治理 | sponsored 不進入 CoupleScore，且清楚標示。 |
 | FR-16 | 約會後回饋 | 雙方各自評分與回饋。 |
+| FR-21 | Google Maps 跳轉 | 以已編碼的自有／授權場地名稱與 optional Place ID 即時產生外部 Maps URL；Place ID 優先且不含 API key。 |
 
 ## 7. 硬限制
 
@@ -184,7 +185,7 @@ Privacy Guard 的流程是：檢查原句／相似片段、檢查身分線索、
 | adjective_preferences | user_id、adjective、target_min、target_max、importance、confidence、scope、source |
 | date_sessions | id、couple_id、mode、status、shared_constraints、finalized_itinerary_id、created_at |
 | session_inputs | id、session_id、user_id、raw_text、structured_input、visibility、created_at |
-| venues | id、name、category、座標、district、價格、營業時間、duration、booking_url、source |
+| venues | id、name、category、座標、district、價格、營業時間、duration、booking_url、source、google_place_id（optional） |
 | venue_attributes | venue_id、attribute、value、confidence、source |
 | offers | venue_id、title、description、sponsored、external_url |
 | itineraries | id、session_id、title、couple_score、total_cost、total_duration、public_reason、version |
@@ -221,7 +222,7 @@ RAG 文件保存 venue_id、來源、更新時間及索引版本，私密對話�
 
 資料流：雙方裝置 → Session／Auth／Validation → 解析器 → 硬限制過濾 → 偏好與雙人計分 → 行程組合 → 程式驗證 → Privacy Guard → 公開回應。
 
-API key 只放伺服器環境變數。展示使用 curated dataset 與預先建立的交通矩陣；不匯入 Google Maps／Places 衍生內容。場地事實與主觀標籤要有來源、日期、情境、權利與審核；未知必要事實不能由模型補猜成可執行方案。
+API key 只放伺服器環境變數。展示使用 curated dataset 與預先建立的交通矩陣；不匯入 Google Maps／Places 衍生內容。唯一可長期保存的 Google 識別欄位是 optional `google_place_id`；Google 名稱、地址、評論、照片、搜尋結果與衍生標籤不進持久層或 RAG。Maps URL 以自有／授權名稱正確編碼並以 Place ID 優先定位，不含 API key。場地事實與主觀標籤要有來源、日期、情境、權利與審核；未知必要事實不能由模型補猜成可執行方案。
 
 ## 14. 非功能規格
 
@@ -237,7 +238,7 @@ API key 只放伺服器環境變數。展示使用 curated dataset 與預先建�
 
 ## 15. MVP 驗收
 
-AC-01 至 AC-19 的正式清單位於 PRD.md。至少涵蓋雙裝置加入、公開同步、私密隔離、形容詞解析、三套完整行程、硬限制零違反、雙人適配、局部重排、本次學習、無私密洩漏、合作透明、外部連結、約會後學習、離線分類器評测、來源證據與不接 Google 的資料邊界。
+AC-01 至 AC-26 的正式清單位於 PRD.md。至少涵蓋雙裝置加入、公開同步、私密隔離、形容詞解析、三套完整行程、硬限制零違反、雙人適配、局部重排、本次學習、無私密洩漏、合作透明、外部連結、約會後學習、離線分類器評测、來源證據，以及 Google 衍生內容拒絕、Place ID 窄例外與 Maps URL 跳轉邊界。
 
 驗收必須區分 schema／單元／整合／雙裝置／公開畫面／外部服務／Owner 各層證據；其中一層通過不可冒充其他層已完成。
 
