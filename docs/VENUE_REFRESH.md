@@ -8,6 +8,9 @@
 |---|---:|---|
 | 正式展示場地 | 9 | 目前 production 推薦仍使用的 `synthetic_demo` |
 | Production draft staging | 1,121 | 已寫入 Railway PostgreSQL，尚未核准、不參與推薦 |
+| 已對應 Google Place ID | 1,120 | 只長期保存 Place ID；仍是待審 draft |
+| Place ID 查無結果 | 1 | 30 日後可再查，不影響其政府候選記錄 |
+| 首批審查隊列 | 100 | 依政府欄位完整度與 Place ID 狀態排序；非已核准 |
 | 官方來源全臺資料 | 9,818 | 景點 6,190＋餐飲 3,628；不是 Sideby 可推薦場地數 |
 | 臺北／新北來源記錄 | 1,138 | 符合 MVP 城市範圍的候選 |
 | 通過 schema／政策並可進 staging | 1,121 | 全部仍為 `draft`，不會自動進推薦 |
@@ -48,7 +51,9 @@ npm run venues:refresh-government -- --apply
 
 ## 正式部署狀態
 
-PR #11 已合併 `main`（`0452445`），Railway deployment 成功，migration 009 已套用。production 首次匯入寫入 1,121 筆 draft；再次執行回用同一 run，沒有重複資料。獨立 `venue-refresh-daily` 服務已設定每日 00:00 UTC 執行更新命令，並使用 Railway PostgreSQL reference；正式 API `/api/runtime` 仍回 200／`standard`。
+PR #13 已合併 `main`（`e3e6336`），Railway migration 010 已套用。Production 批次實際計數為 1,121 筆候選、1,120 筆 `matched`、1 筆 `not_found`、0 筆 `retry`，最新 staging 共 1,120 筆含 Place ID；`npm run venues:review-queue -- --limit=100` 已實際讀取 100 筆高完整度審查隊列。
+
+獨立 `venue-refresh-daily` 服務已改為每日 00:00 UTC 執行 `npm run venues:refresh-all`，先更新政府候選，再補齊缺漏 Place ID；deployment `71aa7dff-06a5-4b63-a12b-78f753f88af6` 成功。正式 API `/api/runtime` 回 200／`standard`，Cloudflare Worker 首頁回 200。
 
 ## 正式來源
 

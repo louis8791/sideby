@@ -8,7 +8,7 @@ Sideby 現有偏好 UI 共 34 個可選項（12 氛圍＋8 狀態＋10 互動＋
 
 Google API 金鑰繼續用於地圖、Places、Routes 與 Geocoding。系統可將既有政府候選以 ID-only Text Search 批次對應並長期保存 Place ID；Google 名稱、地址、營業時間、照片、評論、評分與路線只在使用者查看行程時即時取得，不進場地資料、訓練或 RAG。
 
-PR #11 已合併並部署。Railway PostgreSQL 現有 1,121 筆可追溯 draft 候選，另有每日 00:00 UTC 更新排程；這不改變「未核准不得進推薦」的產品規則，production active 仍保留 9 筆 `synthetic_demo`。
+PR #13 已合併至 `main` `e3e6336` 並完成 production 執行。Railway PostgreSQL 現有 1,121 筆可追溯 draft 候選，其中 1,120 筆已長期保存 Google Place ID、1 筆查無結果；100 筆高完整度候選已進審查隊列。每日 00:00 UTC 排程會先更新政府資料、再補齊 Place ID。這不改變「未核准不得進推薦」的產品規則，production active 仍保留 9 筆 `synthetic_demo`。
 
 ## 2026-09-05 公開部署狀態
 
