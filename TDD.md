@@ -2,6 +2,8 @@
 
 ## 1. 技術決策
 
+實作狀態依 ROADMAP 的 Phase 1～5 五個頂層階段回報；1A／1B 與 4A～4E 是工作包，不能作為額外 Phase 或整階段通過證據。
+
 MVP 採模組化單體，不拆微服務。建議以 React、Next.js、TypeScript、Server Routes、PostgreSQL、匿名身分與 Realtime 實作；本次不接 Google API，地點／路線以核准資料與本地交通矩陣提供。
 
 核心展示以整理好的大臺北場地資料與本地交通矩陣為基線，不能因外部 API 暫時不可用就無法產生結果。
