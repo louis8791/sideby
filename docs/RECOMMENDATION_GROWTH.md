@@ -2,6 +2,8 @@
 
 ## 2026-09-06 實作與驗收界線
 
+PR #22／#23 已合併及部署。功能 commit `85e5ccd`；Railway deployment `724d3cbf-a31a-4a17-985c-9285541fc0f5`；Cloudflare version `38e9fe98-8a69-4aff-85e3-cc2ff8a7bfdd`。Migration 011、推薦索引及完整資料更新已正式執行。
+
 - 30 軟偏好均有明確對應，合計 21 個計分屬性；另有室內／戶外（含戶外區）、冷氣／無冷氣 4 個硬條件。前端傳原文及選項，不再用正規化文字覆蓋原始限制。未支援的硬限制須澄清。
 - 辨識不等於地點能滿足：未知軟屬性維持中性分數，未知硬條件拒絕；不能把未觀察的氣氛、服務或冷氣補成事實。情境觀察不會無條件當成一般屬性。
 - 2026-09-06 重新讀取政府來源共 1,121 筆候選；128 筆有來源營業文字、19 筆有可精確辨識的單一入場費文字、425 筆缺街道地址。這是原始候選完整度，不是正式資料已歸零。既有正式核准資料仍為 13 筆，本次沒有批量冒名核准。
@@ -39,4 +41,8 @@ Google 官方 [計價表](https://developers.google.com/maps/billing-and-pricing
 
 ## 驗收
 
-本機 `npm run check:all`：80 tests、後端 build、前端 typecheck／build 通過。包含真 PostgreSQL／HTTP 房間流程、全部 30 選項、4 環境條件、個人排序、來源撤回、split 防洩漏、發布 rollback、重啟保留新 release。正式部署與兩支手機驗收須另記，不以此測試結果代替。
+本機 `npm run check:all`：81 tests、後端 build、前端 typecheck／build 通過。包含真 PostgreSQL／HTTP 房間流程、全部 30 選項、4 環境條件、個人排序、來源撤回、split 防洩漏、發布 rollback、重啟保留新 release，以及上游內容不變時新欄位仍透過轉換版本重新入庫。
+
+正式同源 API 以兩個獨立測試身分驗證加入、逐項 30 軟偏好／4 環境、拒絕以 normalizedText 消除原始限制，以及 3 套各 3 站 approved_dataset 路線；本次不呼叫 Gemini。瀏覽器登入按鈕完成 hydration 後可開啟表單。Google IDs-only 單次探針成功，與既有 Place ID 一致且未寫回。
+
+正式 `venues:refresh-all` 成功：新候選快照保留 1,121 筆／1,120 Place IDs／128 有營業文字／19 明確入場費；active 13 核准場地與 index 維持。每日 cron `0 0 * * *`（UTC，即台灣 08:00）繼續同一流程。`learning:refresh` 正式回傳 eligible=0、created=0、index recordCount=13；沒有假造同意或學習語料。實體手機、主觀場地證據及真正模型品質提升仍未驗。

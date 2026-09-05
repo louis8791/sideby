@@ -1,8 +1,8 @@
 # Sideby — MVP TDD
 
-## 2026-09-06 成長功能驗收（施工中）
+## 2026-09-06 成長功能正式驗收
 
-本機 `check:all` 共 80 tests 及兩端 build 通過，新增 UI 說明後前端型別／build 與 UI tests 再通過。Migration 011、個人無屬性回饋排序、候選來源撤回、匯出 split、資料／矩陣／索引原子 rollback 及重啟保留 release 已有回歸測試；未替代正式環境與實體手機驗收。見 `docs/RECOMMENDATION_GROWTH.md`。
+本機 `check:all` 共 81 tests 及兩端 build 通過，PR #22／#23 前後端 CI 通過。Migration 011、個人無屬性回饋排序、候選來源撤回、匯出 split、資料／矩陣／索引原子 rollback、重啟保留 release，以及匯入轉換版本更新均有回歸測試。正式 API 驗證完整 34 選項、原始硬限制不被 normalizedText 覆蓋、雙人加入與 3 套 approved_dataset 三站方案；瀏覽器登入表單可開。正式資料庫確認 migration／13 筆索引與更新快照，完整 refresh-all 成功。實體手機及真實學習品質未驗。見 `docs/RECOMMENDATION_GROWTH.md`。
 
 - 測試全部 30 軟選項與 4 環境選項、否定、未知語句；禁止前端正規化靜默覆蓋原始限制。
 - 候選召回依硬限制及雙方適配，不能用 venue_id 前 32 筆作全部候選；只有核准屬性及可重算行程事實可計分。
