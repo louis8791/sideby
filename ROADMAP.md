@@ -4,7 +4,7 @@
 
 本輪新增 Google 本機接線子項（不新增 Phase）：官方 Maps JavaScript／Places (New)／Routes／Geocoding、私密設定範本與 `/maps-check` 已實作，2026-09-05 已在本機單次真實驗收四項 PASS。這不代表帳務餘額、正式部署、首頁雙人流程或手機通過。操作與證據見 `docs/GOOGLE_MAPS_LOCAL_SETUP.md`、`docs/GOOGLE_MAPS_VERIFICATION.md`。
 
-使用者指定主 Repo `louis8791/sideby`。`frontend/` 已匯入隊友的 Lovable 前端，根目錄保留既有後端；兩者仍是獨立執行元件。下一步由前端負責人依共同契約接建房／加入、私密輸入、確認、Gemini／Google Maps、生成／重排／定案，最後才驗雙裝置及正式網址。後端工作不代做或覆蓋前端，除非 Owner 另行重新分工；Manus 只增指定元件。
+使用者指定主 Repo `louis8791/sideby`。`frontend/` 已匯入隊友的 Lovable 前端，根目錄保留既有後端；兩者仍是獨立執行元件。最新分工為使用者主責後端、一人支援後端、一人持續前端細修。黑客松可保留固定邀請碼與範例行程，只要清楚標示 demo／synthetic 且不掩蓋真實失敗；Manus 只增指定元件。
 
 本輪採 Gemini＋Google Maps 的 API 型 MVP；訓練、自管生成、Embedding 與 RAG 均為 `DEFERRED`，不屬目前主線前置條件。進階需求句只作人工核准後的回歸驗收。既有後端規則／隱私測試仍需通過；前端原始碼匯入、建置成功及 `/api` 代理連通都不代表畫面按鈕已串上根後端，也不代表真實 Gemini／Google Maps 已驗收。最新分工與驗收界線見 `docs/TEAM_INTEGRATION.md`。
 
@@ -29,7 +29,7 @@
 - `部分完成`：已有可執行交付或相應測試，但仍缺必要功能或較高層驗收。
 - `未開始`：只有需求、schema、fixture 或測試計畫，沒有對應可執行功能。
 
-2026-09-05 整合基線為 `main` commit `2b961f0`，且當時與 `origin/main` 一致。根後端已有匿名房間、私密輸入、合成三套推薦、reaction／locked／局部重排／定案與本人 `too_dark` 偏好更新；整合驗證記錄為 42 項後端測試通過。`frontend/` 已匯入且可建置，開發代理可連根 API，但固定邀請碼、範例行程、Supabase 身分與畫面 state 尚未逐項改接根後端。Google 四項本機檢查已通過；真實 Gemini、完整前端主流程、兩支實體手機、正式部署及 Owner 驗收都尚未完成。
+2026-09-05 整合基線為 `main` commit `76040d0`，且與 `origin/main` 一致。根後端已有匿名房間、私密輸入、合成三套推薦、reaction／locked／局部重排／定案與本人 `too_dark` 偏好更新；整體檢查為後端 39 項、Maps 11 項及前端 typecheck／build 通過。`frontend/` 已匯入且可建置，固定邀請碼與範例行程依 Owner 決策可保留作展示。Google 四項本機檢查已通過；真實 Gemini、展示所需資料流、兩支實體手機、正式部署及 Owner 驗收仍未完成。
 
 | Phase | 名稱 | 目前狀態 | 主要依賴 | 可平行資訊 |
 |---|---|---|---|---|
@@ -92,7 +92,7 @@
 
 ### 目前狀態
 
-`部分完成（後端已實作，正式前端未串接）`。根後端已有匿名身分、邀請、兩人上限、共享條件、版本、確認、GET／SSE 與重連，並有 PostgreSQL／HTTP 測試。前端開發代理已證明可轉送同源 API、Bearer 與 SSE，但匯入前端仍使用固定邀請碼／本地畫面 state，尚未完成實際建房、加入與同步串接；兩支實體手機、跨網路重連、正式 HTTPS、憑證撤銷／刪除及濫用防護也未驗收。
+`部分完成（後端已實作，展示資料流待核對）`。根後端已有匿名身分、邀請、兩人上限、共享條件、版本、確認、GET／SSE 與重連，並有 PostgreSQL／HTTP 測試。前端開發代理已證明可轉送同源 API、Bearer 與 SSE；固定邀請碼依黑客松 cut 可保留，但若展示雙人同步，仍須連到真實後端狀態。兩支實體手機、跨網路重連、正式 HTTPS、憑證撤銷／刪除及濫用防護尚未驗收。
 
 ### 相依／可平行
 
@@ -239,7 +239,7 @@
 
 ### 目前狀態
 
-`部分完成（前端已匯入，主流程未串接）`。`frontend/` 已納入主 Repo，獨立安裝、型別檢查、client／SSR build 及開發 `/api` 代理通過；獨立 `/maps-check` 也已用真實 Google 四項服務通過。這些只證明程式、基礎代理與地圖檢查頁可用。匯入前端仍含固定邀請碼、固定行程、獨立 Supabase 身分與本地畫面 state，尚未逐項接上根後端；真實 Gemini、完整首頁、失敗狀態、兩支實體手機及 Owner 驗收均未完成。
+`部分完成（前端細修中，展示資料流待核對）`。`frontend/` 已納入主 Repo，獨立安裝、型別檢查、client／SSR build 及開發 `/api` 代理通過；獨立 `/maps-check` 也已用真實 Google 四項服務通過。固定邀請碼與固定行程可保留為明示 demo／synthetic，不列為黑客松阻斷；真實 Gemini、必要資料流、失敗狀態、兩支實體手機及 Owner 驗收仍未完成。
 
 ### 相依／可平行
 
@@ -285,7 +285,7 @@
 
 ## 下一刀
 
-截止前 16 小時依 `docs/TEAM_INTEGRATION.md` 三線並行：前端移除固定邀請碼／INITIAL_PLANS 並接完整根 API；後端只補契約、權限、Gemini 安全轉接與資料守門；整合者鎖定契約、審 PR、合併與驗收。第 11 小時後不再加功能，專注兩瀏覽器／手機、隱私、外部失敗、fresh clone、部署與演示備援。缺資料或外部服務時維持真實不可用，不以固定行程補成功。
+截止前 16 小時依 `docs/TEAM_INTEGRATION.md` 三線並行：使用者主責房間、權限、私密資料與核心 API；後端支援者負責 Gemini／場地／推薦規則、測試與問題重現；前端成員只做網頁細修與展示流程。固定邀請碼／範例可保留且須標示 demo／synthetic。第 11 小時後不再加功能，專注兩瀏覽器／手機、隱私、外部失敗、fresh clone、部署與演示備援。
 
 ## 橫向品質門檻
 

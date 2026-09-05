@@ -6,6 +6,8 @@ Google 地圖本機入口為 `/maps-check`：不依賴 Supabase／Gemini，可�
 
 使用者已指定 `louis8791/sideby` 為三人唯一共同 Repo：Lovable 前端在 `frontend/`，現有後端／資料庫維持根目錄路徑。採 Gemini＋Google Maps API 型 MVP，不排訓練、自管模型或 RAG；需求句作人工核准後的回歸驗收。下方舊模型、零 API 及訓練章節保留為歷史／未來參考，本輪以此更新與 `docs/TEAM_INTEGRATION.md` 為準。
 
+黑客松展示可保留固定邀請碼與範例行程，不列為目前阻斷；畫面必須能辨識 demo／synthetic，API 或外部服務失敗時不得把範例冒充成新生成成功。三人分工為使用者主責後端、一人支援後端、一人持續前端細修。
+
 目標是正式網址能完成雙人核心流程，並提供可重建程式碼與環境說明。私密原文仍互不可見，硬限制、權限與定案由後端驗證。匯入前端不代表 Supabase、Gemini、Google Maps、匿名房間與定案已接通；必須另做實際服務與雙裝置驗收。
 
 ## 1. 產品摘要

@@ -29,7 +29,7 @@
 ## 每人工作方式
 
 1. 接受主 Repo 的 Collaborator 邀請並 clone，從最新 origin/main 建立 feature/<工作名稱> 分支。
-2. 前端成員改 frontend/；後端成員改 API／規則／DB；第三位改已約定的元件、docs/ 或測試案例。每個 checkout 只允許一個 writer。
+2. 前端成員改 `frontend/` 細部；使用者改後端核心；後端支援者改已分配的規則／資料／測試。每個 checkout 只允許一個 writer。
 3. Manus 收到後只納入指定畫面，不再覆蓋根 package、登入或資料庫。
 4. PR 一律指向本 Repo 的 main；共同欄位先更新 [BACKEND_API](BACKEND_API.md)，整合者確認檢查後合併。
 5. 舊 frontend-dev／backend-dev 若落後，先保存未提交工作並合併最新 main，不強制覆蓋舊分支。
@@ -54,16 +54,16 @@ npm run check:all 驗證後端及前端建置。正式部署另見 [DEPLOYMENT](
 
 ## 下一刀與證據界線
 
-匯入前端仍含固定邀請碼、INITIAL_PLANS、畫面 state 與獨立 Supabase 流程。目錄合併及 /api 代理不會把按鈕自動接上根後端。下一刀依序接建房／加入、私密輸入、確認、生成／重排、定案。
+匯入前端可保留固定邀請碼與 INITIAL_PLANS 作黑客松展示，不列為本輪阻斷；兩者要清楚標示 demo／synthetic，不能在 API 失敗時冒充新生成成功。目錄合併及 `/api` 代理仍不代表按鈕已接上根後端；UI 細修穩定後，再由後端支援者與前端成員共同核對必要串接。
 
 ## 截止前 16 小時分工
 
 | 工作區／角色 | 唯一可寫範圍 | 截止前必交 |
 |---|---|---|
-| `feature/sprint-frontend`／前端 | `frontend/` | 移除固定邀請碼與 INITIAL_PLANS，接建房／加入、條件、私密輸入、確認、三套方案、reaction／重排／finalize；呈現 API／Google／Gemini 真實失敗。 |
-| `feature/sprint-backend`／後端 | `app/api/`、`src/server/`、`src/model/`、`src/recommendations/`、`src/venues/`、`db/`、`schemas/` | 只補前端串接所需的契約、權限、Gemini 安全轉接與資料守門；不得重做 UI。 |
-| `feature/sprint-integration`／整合驗收 | `docs/`、`tests/`、CI／部署設定 | 鎖定 API 契約、審 PR、合併、跑兩瀏覽器／手機與 fresh clone；不得與功能負責人同時改同一檔。 |
+| `feature/sprint-backend`／使用者（後端主責） | `app/api/`、`src/server/`、`db/`、`schemas/` | 完成房間、權限、私密資料、確認／定案與前端需要的核心 API；決定後端契約與合併順序。 |
+| `feature/sprint-integration`／後端支援 | `src/model/`、`src/recommendations/`、`src/venues/`、`tests/`、必要文件 | 支援 Gemini 安全解析、Google／場地資料、推薦規則、整合測試與問題重現；需改核心 API 時先交給後端主責。 |
+| `feature/sprint-frontend`／前端 | `frontend/` | 完成網頁細部、手機版與展示流程；固定邀請碼／範例可保留，但要顯示 demo／synthetic 並呈現 API／Google／Gemini 真實失敗。 |
 
-時間盒：前 1 小時固定基線；第 1～7 小時前後端並行；第 7～11 小時整合完整主流程；第 11～14 小時做雙瀏覽器／手機、隱私與失敗路徑；最後 2 小時只修阻斷、部署、演示與備援，不再加功能。
+時間盒：前 7 小時後端主責與後端支援並行、前端持續細修；第 7～11 小時只接展示必需的資料流；第 11～14 小時做雙瀏覽器／手機、隱私與失敗路徑；最後 2 小時只修阻斷、部署、演示與備援，不再加功能。
 
 兩個獨立瀏覽器／手機需另驗同房、私密隔離、實際 Gemini／Google Maps、雙人定案與刷新保存。程式匯入不代表完整串接、正式部署或雲端帳號已移交。
