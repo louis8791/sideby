@@ -101,6 +101,8 @@ test('Phase 1B + Phase 2: real PostgreSQL + built Next.js over HTTP', { timeout:
     assert.equal((await call('POST', main + '/confirm', a, { version: 0, userId: 'B' })).status, 400);
     assert.equal((await call('POST', '/api/couples', a, { text: 'x'.repeat(9000) })).status, 413);
     assert.equal((await call('POST', main + '/confirm', a, { version: 0 })).data.error.code, 'SHARED_REQUIRED');
+    const sameOrigin = await fetch(base + main, { headers: { Authorization: `Bearer ${a}`, Origin: base } });
+    assert.equal(sameOrigin.status, 200);
     const crossOrigin = await fetch(base + main, { headers: { Authorization: `Bearer ${a}`, Origin: 'https://untrusted.example' } });
     assert.equal(crossOrigin.status, 403);
   });

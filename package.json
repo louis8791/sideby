@@ -11,7 +11,7 @@
     "schemas:venues": "tsx scripts/generate-venue-schema.ts",
     "venues:import-government": "tsx scripts/import-government-venues.ts",
     "requirements:validate": "tsx scripts/validate-requirements.ts",
-    "phase1:check": "npm test && npm run requirements:validate -- data/training/requirements.example.jsonl && tsx scripts/check-phase1.ts",
+    "phase1:check": "npm test && npm run requirements:validate -- data/training/requirements.hackathon.jsonl && tsx scripts/check-phase1.ts",
     "phase2:check": "npm test && tsx scripts/check-phase2.ts",
     "db:migrate": "tsx scripts/migrate.ts",
     "test:backend": "tsx --test --test-concurrency=1 tests/backend.test.ts",

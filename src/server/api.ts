@@ -78,7 +78,14 @@ export async function handle(request: Request): Promise<Response> {
     const url = new URL(request.url);
     // UI and application API share an origin. Do not enable wildcard credentialed CORS.
     const origin = request.headers.get('origin');
-    if (origin && origin !== url.origin) throw new ApiError(403, 'ORIGIN_DENIED');
+    if (origin) {
+      const host = request.headers.get('host')?.toLocaleLowerCase('en-US');
+      let originHost: string;
+      try { originHost = new URL(origin).host.toLocaleLowerCase('en-US'); }
+      catch { throw new ApiError(403, 'ORIGIN_DENIED'); }
+      // Next may normalize request.url to localhost; Host is the browser-visible same-origin authority.
+      if (!host || originHost !== host) throw new ApiError(403, 'ORIGIN_DENIED');
+    }
     const path = url.pathname;
     if (path === '/api/auth/anonymous' && request.method === 'POST') {
       await body(request, empty);
