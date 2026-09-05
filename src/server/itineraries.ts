@@ -4,6 +4,7 @@ import {
   applyPreferenceFeedback, preferenceAdjustmentBySignal, type PreferenceAdjustment,
 } from '../model/preference-learning';
 import { composeItineraries, publicItinerarySchema, type PublicItinerary } from '../recommendations/engine';
+import { approvedMeetingLegs } from '../recommendations/approved-real-data';
 import { ApiError, CURRENT_TERMS_VERSION, type ItineraryReaction, type PreferenceFeedback, type SharedConditions } from './contracts';
 import { pool, transaction } from './db';
 import { publicProjection, safePublicReason } from './privacy';
@@ -68,9 +69,15 @@ async function recommendationContext(client: PoolClient, session: SessionRow) {
   if (dataset.rows[0].data_mode !== matrix.rows[0].data_mode) throw new ApiError(503, 'RECOMMENDATION_DATA_UNAVAILABLE');
   const venues = await client.query(`SELECT r.record,s.execution FROM venue_records r
     JOIN venue_execution_slots s ON s.dataset_version=r.dataset_version AND s.venue_id=r.venue_id
-    WHERE r.dataset_version=$1 ORDER BY r.venue_id LIMIT 16`, [dataset.rows[0].version]);
+    WHERE r.dataset_version=$1
+      AND (s.execution->>'opensAt')::timestamptz < $3::timestamptz
+      AND (s.execution->>'closesAt')::timestamptz > $2::timestamptz
+    ORDER BY r.venue_id LIMIT 32`, [dataset.rows[0].version, session.shared.startsAt, session.shared.endsAt]);
   const legs = await client.query(`SELECT matrix_version AS "matrixVersion",from_key AS "fromKey",
     to_key AS "toKey",mode,minutes FROM travel_matrix WHERE matrix_version=$1`, [matrix.rows[0].version]);
+  const meetingLegs = dataset.rows[0].data_mode === 'approved_dataset'
+    ? approvedMeetingLegs(session.shared.meetingPoint.matrixKey ?? 'meeting_user', session.shared.meetingPoint)
+    : [];
   const deltas = await client.query(`SELECT e.user_id,e.attribute,e.target_bound,sum(e.target_delta)::float AS delta
     FROM preference_feedback_events e
     WHERE e.user_id=ANY($1::uuid[]) AND (
@@ -92,7 +99,7 @@ async function recommendationContext(client: PoolClient, session: SessionRow) {
     parserOutputs: inputs.rows.map(row => applyPreferenceFeedback(row.parser_output, adjustmentsByUser.get(row.user_id) ?? [])),
     privateTexts: inputs.rows.map(row => String(row.raw_text)),
     venues: venues.rows,
-    legs: legs.rows,
+    legs: [...legs.rows, ...meetingLegs],
     dataMode: dataset.rows[0].data_mode as 'approved_dataset' | 'synthetic_demo',
     datasetVersion: String(dataset.rows[0].version),
     routeMatrixVersion: String(matrix.rows[0].version),

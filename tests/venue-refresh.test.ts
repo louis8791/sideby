@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { Pool } from 'pg';
 import { localPostgres } from '../scripts/postgres';
+import { seedShowcase } from '../scripts/seed-showcase';
+import { approvedDatasetVersion, approvedMatrixVersion } from '../src/recommendations/approved-real-data';
+import { assessVenue } from '../src/venues/policy';
 import { buildTourismVenueBatch, stageTourismVenueBatch } from '../src/venues/tourism-open-data';
 import { findGooglePlaceId, listMatchCandidates, saveGooglePlaceMatch } from '../src/venues/google-place-matcher';
 
@@ -115,4 +118,28 @@ test('Google matching stores only the reusable Place ID and carries it into late
       WHERE run_id=$1 AND venue_id=$2`, [nextRun.runId, candidates[0]!.venueId]);
     assert.equal(carried.rows[0].place_id, placeId);
   } finally { await db.end(); await postgres.stop(); }
+});
+
+test('standard startup activates the Owner-approved real venue dataset instead of synthetic showcase data', { timeout: 60_000 }, async () => {
+  const { postgres, url } = await localPostgres(`.local/tests/approved-venues-${Date.now()}`);
+  const db = new Pool({ connectionString: url });
+  const previousMode = process.env.SIDEBY_DATA_MODE;
+  delete process.env.SIDEBY_DATA_MODE;
+  try {
+    await seedShowcase(url);
+    const dataset = await db.query("SELECT version,data_mode FROM venue_datasets WHERE status='active'");
+    const matrix = await db.query("SELECT version,data_mode FROM travel_matrix_versions WHERE status='active'");
+    assert.deepEqual(dataset.rows[0], { version: approvedDatasetVersion, data_mode: 'approved_dataset' });
+    assert.deepEqual(matrix.rows[0], { version: approvedMatrixVersion, data_mode: 'approved_dataset' });
+    const records = await db.query('SELECT record FROM venue_records WHERE dataset_version=$1', [approvedDatasetVersion]);
+    assert.equal(records.rowCount, 13);
+    assert.ok(records.rows.every(row => assessVenue(row.record).itineraryEligible));
+    assert.ok((await db.query('SELECT count(*)::int n FROM venue_execution_slots WHERE dataset_version=$1', [approvedDatasetVersion])).rows[0].n > 700);
+    assert.equal((await db.query('SELECT count(*)::int n FROM travel_matrix WHERE matrix_version=$1', [approvedMatrixVersion])).rows[0].n, 468);
+  } finally {
+    if (previousMode === undefined) delete process.env.SIDEBY_DATA_MODE;
+    else process.env.SIDEBY_DATA_MODE = previousMode;
+    await db.end();
+    await postgres.stop();
+  }
 });
