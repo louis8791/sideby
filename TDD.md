@@ -1,5 +1,12 @@
 # Sideby — MVP TDD
 
+## 2026-09-06 產品介紹稽核證據
+
+- 已完整讀取並渲染 `output/pdf/Sideby_窗口產品介紹.pdf` 12 頁；逐頁 claims ledger 存於 `docs/PRODUCT_INTRO_CLAIM_AUDIT.md`。PDF 本身未覆寫，保留作 2026-09-05 歷史快照。
+- 稽核採現行程式契約、84 項 `check:all` 回歸、GitHub checks、正式 Railway／PostgreSQL、Cloudflare／Google Runtime 與部署紀錄交叉比對。2026-09-06 重新讀取公開 Worker、同源 `/api/runtime` 及 Railway `/api/runtime` 均為 200；`www.sideby.dev`／`sideby.dev` 沒有可用 DNS／HTTPS。
+- 已證實的更新：30 個軟標籤對應 `src/model/preference-catalog.ts` 的 21 屬性；五種個人回饋對應 `src/model/preference-learning.ts`；active release／index 為 1,121 筆，13 verified＋1,108 confirmation-required；Gemini 只證明免費層非敏感雙瀏覽器成功。
+- 尚未證實且不得由 PDF 代替：兩支實體手機、成功帳號跨裝置恢復、跨網路完整流程、Owner sign-off、第一方採用／留存、模型訓練或新模型品質提升。
+
 ## 2026-09-06 全候選正式發布契約（已部署）
 
 - `buildCandidatePoolRelease` 從單一最新政府 staging run 建立版本化 release：保留 13 筆既有 `verified_current` 記錄與時段，其餘有效候選發布為 `eligible_with_unknowns`，每筆只建立一個未來 90 天的 `provisional` slot，避免用每日假時段膨脹資料。
