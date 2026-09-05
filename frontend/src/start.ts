@@ -26,6 +26,9 @@ const csrfMiddleware = createCsrfMiddleware({
 });
 
 export const startInstance = createStart(() => ({
-  functionMiddleware: [attachSupabaseAuth],
+  // Maps-only local setup must work without constructing an unconfigured Supabase client.
+  // This only attaches an optional browser token; requireSupabaseAuth still protects private server functions.
+  functionMiddleware: import.meta.env["VITE_SUPABASE_URL"] && import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"]
+    ? [attachSupabaseAuth] : [],
   requestMiddleware: [errorMiddleware, csrfMiddleware],
 }));

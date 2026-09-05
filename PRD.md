@@ -2,6 +2,8 @@
 
 ## 2026-09-05 本輪範圍更新
 
+Google 地圖本機入口為 `/maps-check`：不依賴 Supabase／Gemini，可先填自己的兩把金鑰再人工啟動查詢；Maps JavaScript、Places (New)、Routes 與獨立 Geocoding 直接連 Google。空值、配額／授權失敗、未知交通均不得假裝成功。本輪交付止於憑證輸入，真實服務、公開部署與主流程未驗收；細節見 `docs/GOOGLE_MAPS_LOCAL_SETUP.md`。
+
 使用者已指定 `louis8791/sideby` 為三人唯一共同 Repo：Lovable 前端在 `frontend/`，現有後端／資料庫維持根目錄路徑。採 Gemini＋Google Maps API 型 MVP，不排訓練、自管模型或 RAG；需求句作人工核准後的回歸驗收。下方舊模型、零 API 及訓練章節保留為歷史／未來參考，本輪以此更新與 `docs/TEAM_INTEGRATION.md` 為準。
 
 目標是正式網址能完成雙人核心流程，並提供可重建程式碼與環境說明。私密原文仍互不可見，硬限制、權限與定案由後端驗證。匯入前端不代表 Supabase、Gemini、Google Maps、匿名房間與定案已接通；必須另做實際服務與雙裝置驗收。

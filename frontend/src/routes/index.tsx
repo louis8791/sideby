@@ -32,6 +32,7 @@ import { PlaceField } from "@/components/PlaceField";
 
 import { useSession } from "@/lib/use-session";
 import { computeTravelLegs, resolveVenues, type TravelLeg, type Venue } from "@/lib/maps.functions";
+import { GoogleAttribution } from "@/components/GoogleAttribution";
 import { analyzePreferenceInput } from "@/lib/preferences.functions";
 import type { PreferenceProfile } from "@/lib/preference-types";
 
@@ -244,7 +245,13 @@ function VenueDetails({ venue }: { venue: Venue }) {
   return (
     <div className="venue-block">
       {venue.photoUri && (
-        <img className="venue-photo" src={venue.photoUri} alt={`${venue.name} 實景照片`} loading="lazy" />
+        <figure>
+          <img className="venue-photo" src={venue.photoUri} alt={`${venue.name} 實景照片`} loading="lazy" />
+          <figcaption>{venue.photoAttributions?.map((author, i) => (
+            <span key={i}>{i > 0 && " · "}{author.uri && /^(https:\/\/|\/\/)/.test(author.uri)
+              ? <a href={author.uri} target="_blank" rel="noreferrer">{author.displayName}</a> : author.displayName}</span>
+          ))}</figcaption>
+        </figure>
       )}
       <div className="venue-meta">
         <span className="venue-name">{venue.name}</span>
@@ -262,6 +269,7 @@ function VenueDetails({ venue }: { venue: Venue }) {
         )}
       </div>
       {venue.address && <p className="venue-address">{venue.address}</p>}
+      <GoogleAttribution />
       <div className="venue-actions">
         <a className="venue-btn" href={mapsUrl} target="_blank" rel="noreferrer">
           <MapPin size={14} /> 在 Google 地圖開啟

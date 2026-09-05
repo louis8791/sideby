@@ -8,6 +8,7 @@ import {
   type Venue,
 } from "@/lib/maps.functions";
 import { loadGoogleMaps } from "@/lib/google-maps-loader";
+import { GoogleAttribution } from "./GoogleAttribution";
 
 function MiniMap({ place }: { place: Venue }) {
   const ref = useRef<HTMLDivElement | null>(null);
@@ -68,6 +69,7 @@ export function PlaceField({
   const [busy, setBusy] = useState(false);
   const [query, setQuery] = useState(value);
   const [picked, setPicked] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -78,9 +80,10 @@ export function PlaceField({
     }
     const timer = setTimeout(() => {
       setBusy(true);
+      setError(null);
       search({ data: { input: text } })
         .then((res) => setSuggestions(res.suggestions))
-        .catch(() => setSuggestions([]))
+        .catch(() => { setSuggestions([]); setError("地點服務尚未設定或暫時不可用，請到 /maps-check 檢查"); })
         .finally(() => setBusy(false));
     }, 320);
     return () => clearTimeout(timer);
@@ -97,6 +100,7 @@ export function PlaceField({
       onPick(res.venue);
     } catch {
       onPick(null);
+      setError("地點詳情暫時無法取得，請重新選擇或檢查 Google 設定");
     }
   };
 
@@ -123,7 +127,7 @@ export function PlaceField({
       {open && !picked && (query.trim().length >= 2 || busy) && (
         <div className="place-suggestions">
           {busy && suggestions.length === 0 && <div className="place-empty">正在搜尋地點…</div>}
-          {!busy && suggestions.length === 0 && <div className="place-empty">找不到相符的地點</div>}
+          {!busy && !error && suggestions.length === 0 && <div className="place-empty">找不到相符的地點</div>}
           {suggestions.map((s) => (
             <button key={s.placeId} className="place-option" onClick={() => pick(s)}>
               <MapPin size={15} />
@@ -133,14 +137,17 @@ export function PlaceField({
               </span>
             </button>
           ))}
+          {suggestions.length > 0 && <GoogleAttribution />}
         </div>
       )}
+      {error && <p role="alert">{error}</p>}
       {place && (
         <div className="place-preview">
           <MiniMap place={place} />
           <div className="place-preview-info">
             <strong>{place.name}</strong>
             {place.address && <small>{place.address}</small>}
+            <GoogleAttribution />
             <a
               className="venue-btn"
               href={place.googleMapsUri}

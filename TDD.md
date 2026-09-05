@@ -2,6 +2,8 @@
 
 ## 2026-09-05 單一 Repo 整合更新
 
+Google 本機接線：`frontend/src/lib/google-maps.server.ts` 使用官方 Places／Routes／Geocoding REST；`maps.functions.ts` 驗輸入並檢查 development／loopback／同 Origin。瀏覽器 loader 只用 `VITE_GOOGLE_MAPS_API_KEY`，其餘用不同 `GOOGLE_MAPS_SERVER_API_KEY`。Node 開發入口讀 `.env.local`，`maps:config` 僅檢查欄位，`/maps-check` 由使用者觸發真實公開地標查詢。無全域 Places／照片快取；照片保留作者歸屬；逾時／拒絕不洩漏 key／原始錯誤。離線 `test:maps` 與真實 API、主流程、正式部署分開驗收。Supabase token 附加僅在有瀏覽器配置時使用，私密函式的伺服器授權不移除。
+
 唯一主 Repo 為 `louis8791/sideby`。根 Next.js／PostgreSQL 管既有應用狀態；`frontend/` 為 TanStack Start／Vite＋Supabase／Gemini／Google Maps 來源程式，包含獨立伺服器功能，不能當成純靜態網頁。根 npm lockfile、前端 Bun lockfile 各自安裝；根 TypeScript 排除 frontend 及 .local。
 
 開發 `/api/*` 經前端 Vite 代理轉至根後端，保留 Host／Origin／Authorization／SSE；正式部署另配置同源反向代理。代理只驗連線，不自動改寫前端固定房號、行程或 Supabase 身分。入口、欄位與部署見 TEAM_INTEGRATION、BACKEND_API、DEPLOYMENT。

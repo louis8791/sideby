@@ -67,9 +67,9 @@ export function DateMap({ stops }: { stops: MapStop[] }) {
             },
           });
           marker.addListener("click", () => {
-            info.setContent(
-              `<div style="font-family:'Noto Sans TC',sans-serif;font-weight:600;font-size:13px;color:#151515">${stop.label}</div>`,
-            );
+            const label = document.createElement("div");
+            label.textContent = stop.label;
+            info.setContent(label);
             info.open(map, marker);
           });
           cleanups.push(() => marker.setMap(null));
@@ -115,7 +115,7 @@ export function DateMap({ stops }: { stops: MapStop[] }) {
         </div>
       )}
       <div className="map-label">
-        <MapPin size={16} /> 實際路線與站點順序
+        <MapPin size={16} /> 站點順序示意（虛線非導航路線）
         <br />
         <small>編號 1 → {Math.max(1, stops.length - 1)} 依行程順序</small>
       </div>

@@ -1,5 +1,7 @@
 # Sideby 前端協作規則
 
+2026-09-05：Google 本機設定依根 `docs/GOOGLE_MAPS_LOCAL_SETUP.md`；已改用官方 API，不再使用 Lovable gateway。兩把金鑰分離，只有 Maps JavaScript 的來源受限金鑰可加 VITE_。Google web service 的本輪執行範圍只有本機開發，不代表公開部署已授權／驗收。
+
 此目錄已匯入 `louis8791/sideby/frontend`，唯一共同開發來源是本 repo。原始來源為 `leeshim-gif/sideby` 的 `e094875f89139ad02b8b3d98483aebe131a12bbd`。本目錄沒有獨立 Git repository。
 
 - 先讀根目錄 `AGENTS.md`、`docs/TEAM_INTEGRATION.md` 與 `docs/BACKEND_API.md`。

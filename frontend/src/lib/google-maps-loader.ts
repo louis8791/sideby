@@ -8,10 +8,9 @@ export function loadGoogleMaps(): Promise<typeof google.maps> {
   if (loaderPromise) return loaderPromise;
 
   loaderPromise = new Promise((resolve, reject) => {
-    const key = import.meta.env["VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY"];
-    const channel = import.meta.env["VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_TRACKING_ID"] ?? "";
+    const key = import.meta.env["VITE_GOOGLE_MAPS_API_KEY"]?.trim();
     if (!key) {
-      reject(new Error("地圖金鑰尚未設定"));
+      reject(new Error("請先在 frontend/.env.local 填入 VITE_GOOGLE_MAPS_API_KEY，然後重啟前端"));
       return;
     }
     if (typeof google !== "undefined" && google.maps?.Map) {
@@ -19,12 +18,15 @@ export function loadGoogleMaps(): Promise<typeof google.maps> {
       return;
     }
 
-    (window as unknown as Record<string, unknown>)[CALLBACK_NAME] = () => resolve(google.maps);
+    const global = window as unknown as Record<string, unknown>;
+    const timer = window.setTimeout(() => reject(new Error("Google 地圖載入逾時，請檢查網路與金鑰限制")), 15000);
+    global[CALLBACK_NAME] = () => { window.clearTimeout(timer); resolve(google.maps); };
+    global["gm_authFailure"] = () => { window.clearTimeout(timer); reject(new Error("Google 地圖授權失敗，請檢查瀏覽器金鑰、來源限制與帳務")); };
 
     const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&loading=async&language=zh-TW&region=TW&callback=${CALLBACK_NAME}&channel=${channel}`;
+    script.src = `https://maps.googleapis.com/maps/api/js?${new URLSearchParams({ key, loading: "async", language: "zh-TW", region: "TW", callback: CALLBACK_NAME })}`;
     script.async = true;
-    script.onerror = () => reject(new Error("地圖載入失敗"));
+    script.onerror = () => { window.clearTimeout(timer); reject(new Error("地圖載入失敗")); };
     document.head.appendChild(script);
   });
 
