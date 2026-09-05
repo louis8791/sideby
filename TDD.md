@@ -84,7 +84,7 @@ MVP 採模組化單體，不拆微服務。建議以 React、Next.js、TypeScrip
 - users：匿名或正式使用者顯示資料。
 - couples、couple_members：雙人關係與角色。
 - preference_profiles、adjective_preferences：長期偏好與形容詞模型。
-- date_sessions、session_inputs：本次規劃與原始／結構化輸入。
+- date_sessions、session_inputs：本次規劃與原始／結構化輸入；`session_inputs` 以 `(session_id,user_id)` 唯一，保存 visibility、parse_status 與已驗證 parser envelope。
 - venues、venue_attributes、offers：場地、人工屬性與合作內容。
 - venues 的 `google_place_id` 為 optional 外部識別；其他可推薦欄位仍須有自有／授權／合規開放來源與權利紀錄。
 - itineraries、itinerary_stops：方案與站點。
@@ -119,9 +119,17 @@ MVP 採模組化單體，不拆微服務。建議以 React、Next.js、TypeScrip
 | POST | /api/public-reviews/:id/reports | 檢舉公開評論 |
 | GET／PUT | /api/me/consents | 讀寫條款接受、個人化與模型改進設定 |
 
-2026-09-05 已實作並以正式建置產物做 HTTP 整合測試：`GET／PUT /api/me/consents`、`GET／PUT /api/me/venues/:venueId/feedback`、`PATCH／DELETE /api/me/venue-feedback/:id`、`GET /api/venues/:venueId/public-reviews`。`POST /api/public-reviews/:id/reports`、管理者審核／隱藏介面、頻率限制、前端及模型學習出口尚未實作。現在只有場地 ID 格式驗證；正式場地資料表尚未接入，因此尚未驗證該 ID 確實存在。
+2026-09-05 已實作並以正式建置產物做 HTTP 整合測試：`GET／PUT /api/me/consents`、`GET／PUT /api/me/venues/:venueId/feedback`、`PATCH／DELETE /api/me/venue-feedback/:id`、`GET /api/venues/:venueId/public-reviews`，以及 `GET／POST／DELETE /api/sessions/:id/private-inputs`。`POST /api/public-reviews/:id/reports`、管理者審核／隱藏介面、頻率限制、前端、正式自管模型／RAG 與模型學習出口尚未實作。現在只有場地 ID 格式驗證；正式場地資料表尚未接入，因此尚未驗證該 ID 確實存在。
 
 私密輸入 endpoint 只能由輸入者與受信任的伺服器決策流程使用；對方的讀取 API 不得回傳 raw_text、structured_input 或可辨識來源的錯誤訊息。
+
+### 4.2 Phase 2 私密輸入與 parser envelope
+
+`POST /api/sessions/:id/private-inputs` body 為 `rawText`、`tags` 與 `visibility`；伺服器從 Bearer token 決定 user_id，資料庫以 `(session_id,user_id)` upsert。GET 只取得本人輸入，DELETE 刪除本人輸入；非成員及另一人的不存在投影都回 404。POST／DELETE／remembered 撤回會增加 Session 公開 revision 並清除既有 confirmations，使並行的舊版確認以 VERSION_CONFLICT 失敗；公開 revision 只表示決策輸入已改變，不暴露內容。
+
+目前 parser 入口是 `rule_baseline_v1`，envelope 狀態固定為 `parsed／needs_clarification／unavailable`。只有符合 preference-query 契約的 parsed 結果可保存；不完整候選轉成 `PARSER_OUTPUT_INVALID` unavailable。規則只處理有限明示語句與阿拉伯數字限制，不能安全覆蓋完整句子時回澄清，不忽略未支援硬限制。這是可執行基準，不是自管分類器或 LLM 已交付。
+
+`private_remembered` 只在當期條款有效且 `personalization_enabled=true` 時接受；關閉設定時，既有 session_inputs visibility 與 parsed result visibility 一併降為 `private_session`。原始私密輸入不會因 `model_improvement_opt_in` 自動進 training candidate 或共用索引。
 
 ### 4.1 場地回饋、可見性與同意
 
@@ -168,6 +176,8 @@ Privacy Guard 必須在公開輸出前執行：
 5. 重新通過公開 itinerary schema 與 policy check。
 
 不要只依賴 LLM 的自我約束；要有程式層的欄位隔離、輸出 allowlist、日誌過濾與對抗性測試。
+
+目前 PublicState／SSE 與公開評論出口已接 `publicProjection` 欄位守門，遇到 rawText、structuredInput、parserOutput、clarification、userId、token 或 inviteCode 等私密欄位會拒絕輸出；`safePublicReason` 會拒絕私密原句及 A／B／「其中一方」來源線索。Phase 3 生成公開理由時仍須把所有私密原文傳入同一守門並做兩瀏覽器對抗測試，現階段不能宣稱完整 Privacy Guard 已驗收。
 
 ## 7. 外部服務與降級
 
@@ -295,7 +305,7 @@ Phase 1 已實作以下資料層入口：
 
 訓練表不是前端直接傳送的 preference-query schema。後端需有轉換及驗證步驟：方向／程度 → 版本化尺度 → preferences／avoid；明確數值規則 → hard_constraints；最後驗證 schemas/preference-query.schema.json。
 
-pending：解析服務結果預計分 parsed／needs_clarification／unavailable。只有 parsed 攜帶合法 preference-query；追問只對輸入者顯示，不把私密片段送進共同狀態。這是待實作契約，當前 API／schema 尚未新增此 envelope，不能呼叫不存在的路由並期待成功。
+已實作：解析服務結果分 parsed／needs_clarification／unavailable。只有 parsed 攜帶合法 preference-query；追問只由本人 private-input API 取得，不進共同狀態。當前只接 `rule_baseline_v1`，自管分類器／生成模型 adapter 尚未接入；規則基準不得冒充模型驗收。
 
 bright 等初始程度對應的區間由人工錨點及設定定義；未校準前不宣稱「明亮必然等於 0.7」。indifferent 不轉成排斥，not_mentioned 不生成限制。模糊詞、未知類別及 conflicting 不能自動當作「完全沒限制」。若使用者未說步行分鐘，不可補出硬上限。模糊句即使分類分數高，也不能略過釐清規則。
 

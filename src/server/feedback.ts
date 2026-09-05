@@ -4,6 +4,7 @@ import { pool, transaction } from './db';
 import {
   ApiError, CURRENT_TERMS_VERSION, type FeedbackInput, type FeedbackPatch,
 } from './contracts';
+import { publicProjection } from './privacy';
 
 async function requireTerms(client: PoolClient, userId: string) {
   const accepted = await client.query(
@@ -51,6 +52,19 @@ export async function updateConsents(
       'SELECT accepted_at FROM terms_acceptances WHERE user_id=$1 AND terms_version=$2',
       [userId, input.termsVersion],
     );
+    if (!input.personalizationEnabled) {
+      const changed = await client.query(`UPDATE session_inputs SET visibility='private_session',
+        parser_output=CASE WHEN parser_output->>'status'='parsed'
+          THEN jsonb_set(parser_output,'{result,visibility}',to_jsonb('private_session'::text),false)
+          ELSE parser_output END,
+        updated_at=clock_timestamp()
+        WHERE user_id=$1 AND visibility='private_remembered' RETURNING session_id`, [userId]);
+      const sessionIds = changed.rows.map(row => row.session_id);
+      if (sessionIds.length) {
+        await client.query('UPDATE date_sessions SET version=version+1 WHERE id=ANY($1::uuid[])', [sessionIds]);
+        await client.query('DELETE FROM session_confirmations WHERE session_id=ANY($1::uuid[])', [sessionIds]);
+      }
+    }
     return consentView({ ...accepted.rows[0], ...result.rows[0] });
   });
 }
@@ -134,7 +148,7 @@ export async function listPublicReviews(venueId: string, limit: number, offset: 
       AND moderation_status='approved' AND deleted_at IS NULL
     ORDER BY created_at DESC,id DESC LIMIT $2 OFFSET $3`, [venueId, limit + 1, offset]);
   const more = result.rows.length > limit;
-  return {
+  return publicProjection({
     reviews: result.rows.slice(0, limit).map(row => ({
       feedbackId: row.id,
       venueId: row.venue_id,
@@ -145,5 +159,5 @@ export async function listPublicReviews(venueId: string, limit: number, offset: 
       createdAt: row.created_at,
     })),
     nextCursor: more ? String(offset + limit) : null,
-  };
+  });
 }

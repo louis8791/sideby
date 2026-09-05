@@ -12,11 +12,13 @@
     "venues:import-government": "tsx scripts/import-government-venues.ts",
     "requirements:validate": "tsx scripts/validate-requirements.ts",
     "phase1:check": "npm test && npm run requirements:validate -- data/training/requirements.example.jsonl && tsx scripts/check-phase1.ts",
+    "phase2:check": "npm test && tsx scripts/check-phase2.ts",
     "db:migrate": "tsx scripts/migrate.ts",
     "test:backend": "tsx --test --test-concurrency=1 tests/backend.test.ts",
     "test:venue-data": "tsx --test tests/venue-data.test.ts",
     "test:model-input": "tsx --test tests/model-requirements.test.ts",
-    "test": "npm run build && npm run test:backend && npm run test:venue-data && npm run test:model-input"
+    "test:privacy": "tsx --test tests/privacy-parser.test.ts",
+    "test": "npm run build && npm run test:backend && npm run test:venue-data && npm run test:model-input && npm run test:privacy"
   },
   "engines": {
     "node": ">=22.13.0"

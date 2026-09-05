@@ -20,6 +20,8 @@
 
 目前已提供 `src/model/requirements.ts`、`scripts/validate-requirements.ts`、六筆 synthetic JSONL 範例與 group split／人工核准／原文證據檢查。真實資料須放在 `.local/phase1/requirements.jsonl`，不得提交 Git。完整缺件與 CC 重跑步驟見 `docs/PHASE1_ACCEPTANCE.md`；資料格式通過不代表模型或 RAG 已完成。
 
+Phase 2 已加入 `rule_baseline_v1` 與 parsed／needs_clarification／unavailable envelope，供私密輸入後端先驗證 schema、拒判與權限。它只承認有限明示語句，未支援混合限制會要求釐清；`externalModelApiCalls=0`。這是規則基準，不是分類器、生成模型或場地 RAG 已接通。RAG 與兩瀏覽器證據見 `docs/PHASE2_ACCEPTANCE.md` 的後續閘門。
+
 ### LLM 可以做
 
 - 把 Partner A 或 B 的自然語言轉為固定的 preference-query JSON。

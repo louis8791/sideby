@@ -17,7 +17,7 @@ const shared = {
   outdoorAllowed: true, bookingAllowed: false,
 };
 
-test('Phase 1B: real PostgreSQL + built Next.js over HTTP', { timeout: 120000 }, async t => {
+test('Phase 1B + Phase 2: real PostgreSQL + built Next.js over HTTP', { timeout: 120000 }, async t => {
   const { postgres, url } = await localPostgres(`.local/tests/${Date.now()}`);
   const db = new Pool({ connectionString: url });
   let app: ChildProcess | undefined;
@@ -82,6 +82,7 @@ test('Phase 1B: real PostgreSQL + built Next.js over HTTP', { timeout: 120000 },
   await call('POST', '/api/couples/join', b, { inviteCode: mainRoom.inviteCode });
   const mainId = (await call('POST', '/api/sessions', a, { coupleId: mainRoom.coupleId })).data.sessionId;
   const main = `/api/sessions/${mainId}`;
+  let privateA = '', privateB = '', privateSessionId = '', privateMain = '';
   await t.test('nonmember cannot read, write, confirm, stream or create a session', async () => {
     for (const [method, endpoint, data] of [
       ['GET', main, undefined], ['PUT', main + '/shared', { version: 0, shared }],
@@ -120,9 +121,9 @@ test('Phase 1B: real PostgreSQL + built Next.js over HTTP', { timeout: 120000 },
     assert.deepEqual(result.data.members.map((m: { confirmed: boolean }) => m.confirmed), [false, false]);
     assert.equal((await call('POST', main + '/confirm', a, { version: 1 })).data.error.code, 'VERSION_CONFLICT');
   });
-  async function stream(token: string) {
+  async function stream(token: string, sessionPath = main) {
     const controller = new AbortController();
-    const response = await fetch(base + main + '/events', { headers: { Authorization: `Bearer ${token}` }, signal: controller.signal });
+    const response = await fetch(base + sessionPath + '/events', { headers: { Authorization: `Bearer ${token}` }, signal: controller.signal });
     assert.equal(response.status, 200);
     assert.ok(response.headers.get('content-type')?.includes('text/event-stream'));
     const reader = response.body!.getReader(), decoder = new TextDecoder();
@@ -173,6 +174,107 @@ test('Phase 1B: real PostgreSQL + built Next.js over HTTP', { timeout: 120000 },
     await db.query("UPDATE couple_members SET last_seen_at=now()-interval '31 seconds' WHERE couple_id=$1 AND role='B'", [mainRoom.coupleId]);
     assert.equal((await call('GET', main, a)).data.members[1].online, false);
     assert.equal((await call('GET', main, b)).data.members[1].online, true);
+  });
+  await t.test('private inputs stay owner-only and supported wording is parsed without an external model API', async () => {
+    privateA = (await call('POST', '/api/auth/anonymous', undefined, {})).data.token;
+    privateB = (await call('POST', '/api/auth/anonymous', undefined, {})).data.token;
+    const privateRoom = (await call('POST', '/api/couples', privateA, {})).data;
+    await call('POST', '/api/couples/join', privateB, { inviteCode: privateRoom.inviteCode });
+    privateSessionId = (await call('POST', '/api/sessions', privateA, { coupleId: privateRoom.coupleId })).data.sessionId;
+    privateMain = `/api/sessions/${privateSessionId}`;
+    await call('PUT', privateMain + '/shared', privateA, { version: 0, shared });
+    const privatePath = privateMain + '/private-inputs';
+    const privateCanary = '想找明亮、可愛但不要太幼稚，也不要走太多路。';
+    assert.equal((await call('POST', privatePath, privateA, {
+      rawText: privateCanary, tags: ['secret-desire-canary'], visibility: 'private_session',
+    })).data.error.code, 'TERMS_REQUIRED');
+    await call('PUT', '/api/me/consents', privateA, {
+      termsVersion: CURRENT_TERMS_VERSION, acceptTerms: true,
+      personalizationEnabled: false, modelImprovementOptIn: false,
+    });
+    const privateStream = await stream(privateB, privateMain);
+    assert.equal((await privateStream.nextState()).version, 1);
+    const saved = await call('POST', privatePath, privateA, {
+      rawText: privateCanary, tags: ['secret-desire-canary'], visibility: 'private_session',
+    });
+    assert.equal(saved.status, 200);
+    assert.equal(saved.data.rawText, privateCanary);
+    assert.equal(saved.data.parse.status, 'parsed');
+    assert.equal(saved.data.parse.externalModelApiCalls, 0);
+    assert.deepEqual(saved.data.parse.result.preferences.map((item: { attribute: string }) => item.attribute), ['bright', 'cute']);
+    assert.deepEqual(saved.data.parse.result.avoid.map((item: { attribute: string }) => item.attribute), ['childish', 'walking']);
+    assert.deepEqual(Object.keys(saved.data).sort(), [
+      'createdAt', 'inputId', 'parse', 'rawText', 'sessionId', 'tags', 'updatedAt', 'visibility',
+    ]);
+    assert.equal((await call('GET', privatePath, privateA)).data.inputId, saved.data.inputId);
+    assert.equal((await call('GET', privatePath, privateB)).status, 404);
+    assert.equal((await call('GET', privatePath, c)).status, 404);
+    assert.equal((await call('POST', privatePath, privateA, {
+      rawText: privateCanary, tags: ['secret-desire-canary'], visibility: 'private_session', userId: 'B',
+    })).status, 400);
+    const publicState = await call('GET', privateMain, privateB);
+    const realtimeState = await privateStream.nextState();
+    await privateStream.close();
+    assert.equal(publicState.data.version, 2);
+    assert.equal(realtimeState.version, 2);
+    assert.ok(!JSON.stringify(publicState.data).includes('secret-desire-canary'));
+    assert.ok(!JSON.stringify(realtimeState).includes('secret-desire-canary'));
+    assert.equal((await db.query(
+      'SELECT count(*)::int AS n FROM session_inputs WHERE session_id=$1', [privateSessionId],
+    )).rows[0].n, 1);
+  });
+  await t.test('remembered visibility follows personalization consent and ambiguous wording asks the owner', async () => {
+    const privatePath = privateMain + '/private-inputs';
+    assert.equal((await call('POST', privatePath, privateA, {
+      rawText: '想安靜聊天。', tags: [], visibility: 'private_remembered',
+    })).data.error.code, 'PERSONALIZATION_REQUIRED');
+    await call('PUT', '/api/me/consents', privateA, {
+      termsVersion: CURRENT_TERMS_VERSION, acceptTerms: true,
+      personalizationEnabled: true, modelImprovementOptIn: false,
+    });
+    let remembered = await call('POST', privatePath, privateA, {
+      rawText: '想安靜聊天。', tags: [], visibility: 'private_remembered',
+    });
+    assert.equal(remembered.data.visibility, 'private_remembered');
+    assert.equal(remembered.data.parse.result.visibility, 'private_remembered');
+    assert.equal(remembered.data.parse.result.context.remember, true);
+    const withdrawal = await Promise.all([
+      call('PUT', '/api/me/consents', privateA, {
+        termsVersion: CURRENT_TERMS_VERSION, acceptTerms: true,
+        personalizationEnabled: false, modelImprovementOptIn: false,
+      }),
+      call('POST', privatePath, privateA, {
+        rawText: '想安靜聊天。', tags: [], visibility: 'private_session',
+      }),
+    ]);
+    assert.deepEqual(withdrawal.map(result => result.status), [200, 200]);
+    remembered = await call('GET', privatePath, privateA);
+    assert.equal(remembered.data.visibility, 'private_session');
+    assert.equal(remembered.data.parse.result.visibility, 'private_session');
+
+    await call('PUT', '/api/me/consents', privateB, {
+      termsVersion: CURRENT_TERMS_VERSION, acceptTerms: true,
+      personalizationEnabled: false, modelImprovementOptIn: false,
+    });
+    const ambiguous = await call('POST', privatePath, privateB, {
+      rawText: '想去有氣氛的地方。', tags: [], visibility: 'private_session',
+    });
+    assert.equal(ambiguous.data.parse.status, 'needs_clarification');
+    assert.match(ambiguous.data.parse.clarification, /浪漫/);
+
+    const currentVersion = (await call('GET', privateMain, privateA)).data.version;
+    await call('POST', privateMain + '/confirm', privateA, { version: currentVersion });
+    assert.equal((await call('POST', privateMain + '/confirm', privateB, { version: currentVersion })).data.status, 'ready');
+    await call('POST', privatePath, privateA, {
+      rawText: '希望明亮。', tags: [], visibility: 'private_session',
+    });
+    assert.equal((await call('GET', privateMain, privateB)).data.status, 'editing');
+    assert.equal((await call('POST', privateMain + '/confirm', privateB, {
+      version: currentVersion,
+    })).data.error.code, 'VERSION_CONFLICT');
+    assert.equal((await call('DELETE', privatePath, privateA)).status, 204);
+    assert.equal((await call('GET', privatePath, privateA)).status, 404);
+    assert.equal((await call('DELETE', privatePath, privateA)).status, 404);
   });
   await t.test('migration retry and application restart retain session version and conditions', async () => {
     await migrate(url);
@@ -280,6 +382,6 @@ test('Phase 1B: real PostgreSQL + built Next.js over HTTP', { timeout: 120000 },
     await db.query("UPDATE anonymous_users SET expires_at=now()-interval '1 second'");
     assert.equal((await call('GET', main, a)).status, 401);
     assert.equal((await call('GET', main + '/events', b)).status, 401);
-    for (const secret of [a, b, c, mainRoom.inviteCode, 'private-canary', url]) assert.ok(!logs.includes(secret));
+    for (const secret of [a, b, c, privateA, privateB, mainRoom.inviteCode, 'private-canary', 'secret-desire-canary', url]) assert.ok(!logs.includes(secret));
   });
 });

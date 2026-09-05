@@ -95,6 +95,12 @@
 - 非法或不完整模型輸出會 fail closed。
 - 私密原文不進共用向量索引，查詢快取、日誌與公開理由不可洩漏；檢索文件不能注入指令。
 
+### Phase 2 目前證據（2026-09-05）
+
+已實作 `session_inputs` migration、本人 GET／POST／DELETE、條款及 remembered 個人化閘門、撤回後降回 session scope、三態 parser envelope、有限規則基準與 Privacy Guard 公開欄位出口。正式建置＋PostgreSQL／HTTP 測試已驗證另一位成員與非成員不能讀取、共同 GET／SSE 不含私密 canary、修改私密輸入會清除舊確認；完整 `npm test` 共 27 tests passed。
+
+尚未接入 Phase 1A 的自管模型與場地 RAG，也沒有前端兩瀏覽器的私密輸入／Realtime／log 驗收。因此目前只稱 Phase 2 後端第一刀完成，Phase 2 overall 為 NOT_READY；CC 入口見 `docs/PHASE2_ACCEPTANCE.md`。
+
 ## Phase 3 — 推薦與三套行程
 
 ### 交付
@@ -172,7 +178,7 @@ CRM、商家後台、App 內付款、訂閱、完整社群（追蹤、好友、�
 
 ## 下一刀
 
-使用者提供有原句／標籤／群組／來源的需求表，先凍結 4–6 個屬性與標註定義，開始 H1；同時確認小區域場地試點是否有足夠證據。應用後端下一刀是 Phase 2 私密輸入、Privacy Guard 與自管解析 adapter，並在場地正式匯入後補上 venue_id 存在性驗證；前端依 docs/BACKEND_API.md 串接房間及本次已完成的回饋 API。Phase 4 後續只續做個人偏好更新器、4D 管理治理與 4E 學習候選。模型或索引未就緒回真實不可用狀態，不能用假結果標示完成。
+使用者提供有原句／標籤／群組／來源的需求表，先凍結 4–6 個屬性與標註定義，開始 H1；同時確認小區域場地試點是否有足夠證據。應用後端下一刀是把 Phase 1A 自管 parser／RAG adapter 接到已完成的 Phase 2 私密輸入 envelope，並在場地正式匯入後補上 venue_id 存在性驗證；前端依 docs/BACKEND_API.md 串接房間、私密輸入及回饋 API，再做兩瀏覽器隱私驗收。Phase 4 後續只續做個人偏好更新器、4D 管理治理與 4E 學習候選。模型或索引未就緒回真實不可用狀態，不能用假結果標示完成。
 
 ## 黑客松六小時工作安排（規劃假設，非工期承諾）
 

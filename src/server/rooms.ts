@@ -2,6 +2,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { pool, transaction } from './db';
 import { ApiError, type PublicState, type SharedConditions } from './contracts';
+import { publicProjection } from './privacy';
 
 export const hash = (value: string) => createHash('sha256').update(value).digest('hex');
 export async function identify(request: Request): Promise<string> {
@@ -101,9 +102,9 @@ export async function publicState(userId: string, sessionId: string, touch = tru
   if (!result.rowCount) throw new ApiError(404, 'NOT_FOUND');
   const row = result.rows[0];
   const members: PublicState['members'] = row.members;
-  return {
+  return publicProjection({
     sessionId: row.id, coupleId: row.couple_id, version: row.version, shared: row.shared,
     status: members.length < 2 ? 'waiting_partner' : members.every(member => member.confirmed) ? 'ready' : 'editing',
     members,
-  };
+  } as PublicState);
 }

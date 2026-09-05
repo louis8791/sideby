@@ -1,6 +1,6 @@
-# Phase 1B 後端串接契約
+# Phase 1B＋Phase 2 後端串接契約
 
-2026-09-05：已實作房間／公開條件骨架，以及版本化同意、私人場地清單與待審公開評論後端。模型／RAG、私密 Session 輸入、偏好更新器、內容管理、推薦與 UI 尚未接入。
+2026-09-05：已實作房間／公開條件骨架、私密 Session 輸入、有限規則解析，以及版本化同意、私人場地清單與待審公開評論後端。自管模型／RAG、偏好更新器、內容管理、推薦與 UI 尚未接入。
 
 ## 啟動與驗證
 
@@ -48,6 +48,9 @@ npm test
 | PUT `/api/sessions/:id/shared` | `{ "version": 0, "shared": {…} }` | 200，最新 PublicState |
 | POST `/api/sessions/:id/confirm` | `{ "version": 1 }` | 200，最新 PublicState |
 | GET `/api/sessions/:id/events` | 無 | SSE：`state`、`heartbeat`、`error` |
+| GET `/api/sessions/:id/private-inputs` | 無 | 200，本人的私密輸入；無資料、非成員或對方沒有自己的投影為 404 |
+| POST `/api/sessions/:id/private-inputs` | 見下方 | 200，新增或取代本人的私密輸入與 parser envelope |
+| DELETE `/api/sessions/:id/private-inputs` | 無 | 204，刪除本人的私密輸入 |
 | GET `/api/me/consents` | 無 | 200，目前條款版本與兩項設定 |
 | PUT `/api/me/consents` | 見下方 | 200，持久化後的條款與設定 |
 | GET `/api/me/venues/:venueId/feedback` | 無 | 200，本人的私人回饋；無資料或非本人為 404 |
@@ -59,6 +62,77 @@ npm test
 邀請碼是 24 隨機 bytes 的 32 字元 base64url，可包成邀請連結（建議 URL fragment，由 UI 讀取後清除）；有效 24 小時，只有建房回應給建立者，伺服器僅存雜湊。加入交易鎖住房間，資料庫限制 A／B 各一名，第三人回 409。已加入成員重送加入請求回原角色，不新增席位。
 
 Phase 1B 每房間一個 Session；任一成員建立或重送會取得同一 sessionId。新一輪約會／歷史 Session 留待後續產品流程。建房／建立匿名身分每次會產生新資源，前端防止連點；網路結果不明時不可無限自動重試建房。
+
+## 私密輸入與解析
+
+先接受目前條款，再送：
+
+```json
+{
+  "rawText": "想找明亮、可愛但不要太幼稚，也不要走太多路。",
+  "tags": ["約會"],
+  "visibility": "private_session"
+}
+```
+
+`rawText` 為 1～1000 字純文字並拒絕控制字元；`tags` 最多 12 個不重複項目、每項 1～30 字。visibility 只能是 `private_session` 或 `private_remembered`，省略時預設 session。後者還要求 `personalizationEnabled=true`，否則回 `PERSONALIZATION_REQUIRED`；設定關閉後，既有 remembered 輸入會降回 session scope。
+
+成功回應只供本人使用：
+
+```json
+{
+  "inputId": "<UUID>",
+  "sessionId": "<UUID>",
+  "rawText": "想找明亮、可愛但不要太幼稚，也不要走太多路。",
+  "tags": ["約會"],
+  "visibility": "private_session",
+  "parse": {
+    "status": "parsed",
+    "engine": "rule_baseline_v1",
+    "result": {
+      "session_id": "<UUID>",
+      "mode": "future",
+      "visibility": "private_session",
+      "preferences": [
+        { "attribute": "bright", "target_min": 0.6, "importance": 0.8, "confidence": 1, "scope": "session", "source": "conversation" },
+        { "attribute": "cute", "target_min": 0.4, "importance": 0.7, "confidence": 1, "scope": "session", "source": "conversation" }
+      ],
+      "avoid": [
+        { "attribute": "childish", "target_max": 0.3, "importance": 0.9, "hard": false, "scope": "session" },
+        { "attribute": "walking", "target_max": 0.4, "importance": 0.8, "hard": false, "scope": "session" }
+      ],
+      "hard_constraints": {
+        "date": null,
+        "start_time": null,
+        "end_time": null,
+        "meeting_point": null,
+        "budget_scope": "couple_total",
+        "ideal_budget": null,
+        "absolute_budget": null,
+        "transport_modes": [],
+        "max_walk_minutes": null,
+        "max_total_travel_minutes": null,
+        "outdoor_allowed": null,
+        "booking_required": null,
+        "dietary_restrictions": [],
+        "accessibility_needs": [],
+        "hard_no": [],
+        "weather_required": null
+      },
+      "context": { "energy": "unknown", "remember": false },
+      "parser_confidence": 1
+    },
+    "clarification": null,
+    "externalModelApiCalls": 0
+  },
+  "createdAt": "<ISO 時間>",
+  "updatedAt": "<ISO 時間>"
+}
+```
+
+完整結構以 `schemas/preference-query.schema.json` 為準。`parser_confidence: 1` 在此只表示這些列出的欄位由明確規則完整匹配，不代表模型機率或已知道使用者的精確偏好尺度。`rule_baseline_v1` 只承認有限明示詞句；「有氣氛」或含未支援限制的混合句回 `needs_clarification`。共同條件尚未建立時回 `unavailable／SHARED_REQUIRED`。非法 parser 候選固定轉成 `unavailable／PARSER_OUTPUT_INVALID`，不能當 parsed。
+
+GET 永遠只依 Bearer token 讀本人，不能傳 userId／role；POST、DELETE 與 remembered 撤回會增加 Session 的公開 revision 並清除既有雙方確認，讓同時送出的舊版確認失敗。revision 只表示決策輸入已變，不透露誰輸入了什麼。rawText、tags、parse 及 clarification 不進 PublicState 或 SSE，也不自動進共用 RAG／訓練候選。當前解析器是可執行規則基準，不代表自管分類器、生成模型或 RAG 已完成。
 
 ## 條款、私人清單與公開評論
 
@@ -185,8 +259,9 @@ data: {"code":"UNAUTHENTICATED"}
 | 409 | SHARED_REQUIRED | 先設定共同條件 |
 | 409 | PARTNER_REQUIRED | 等另一人加入 |
 | 409 | TERMS_REQUIRED | 先接受目前條款版本 |
+| 409 | PERSONALIZATION_REQUIRED | private_remembered 前先開啟個人化設定 |
 | 413 | BODY_TOO_LARGE | JSON 超過 8 KiB |
 | 415 | JSON_REQUIRED | 設定 application/json |
 | 503 | SERVICE_UNAVAILABLE | 服務／資料庫未就緒，顯示錯誤並退避 |
 
-尚未實作的 private-inputs、generate、itineraries、公開評論檢舉／管理等路由不會回傳假成功。目前只可串接上表，其他功能按 Roadmap 後續接入。
+尚未實作的 generate、itineraries、公開評論檢舉／管理等路由不會回傳假成功。目前只可串接上表，其他功能按 Roadmap 後續接入。

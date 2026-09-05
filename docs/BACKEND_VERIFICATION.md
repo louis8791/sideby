@@ -1,12 +1,12 @@
-# Phase 1B＋場地回饋後端本機驗證紀錄
+# Phase 1B＋Phase 2 私密輸入＋場地回饋後端本機驗證紀錄
 
-日期：2026-09-05。範圍：使用者負責的應用後端房間骨架及場地回饋第一刀；全部請求均為合成資料。
+日期：2026-09-05。範圍：使用者負責的應用後端房間骨架、Phase 2 私密輸入第一刀及場地回饋；全部請求均為合成資料。
 
 ## 已觀察結果
 
 - Windows x64、Node.js 24.16.0、Next.js 16.3.4、PostgreSQL 18.4。
 - `npm run build`：正式建置通過，包含 TypeScript 檢查。
-- `npm test`：自動重建後，後端 14 個行為子測試＋1 個整合父測試、場地資料 4 個測試及需求資料契約 3 個測試，共 22 passed、0 failed；最後一次約 10.9 秒。
+- `npm test`：自動重建後，後端 16 個行為子測試＋1 個整合父測試、場地資料 4 個、需求資料契約 3 個及 parser／Privacy Guard 3 個測試，共 27 passed、0 failed；最後一次約 11.8 秒。
 - 測試使用真正 PostgreSQL 與 `next start` 正式產物，經 HTTP 呼叫；沒有以資料庫／HTTP mock 代替。
 - 雙 SSE 訂閱的最後一次本機樣本：506ms。這只是一筆合成樣本，不是 p95、手機網路或負載效能承諾。
 - `npm run dev:local`：實際啟動後匿名入口回 201；Ctrl+C 關閉啟動的應用程序與資料庫。已修正 Windows pg_ctl 管線造成的額外等待及 Ctrl+C 關閉競爭。
@@ -31,9 +31,13 @@
 | 公開評論 | 新資料固定私人；逐筆公開後 pending，只有 approved 可列出；取消公開／刪除立即消失 |
 | 公開出口 | 固定欄位不含 user_id、憑證、同意設定或內部審核狀態 |
 | 內容邊界 | 拒絕 HTML、URL、控制字元、過長文字與多餘可見性欄位 |
+| 私密 Session 輸入 | 本人 GET／POST／DELETE；同房另一人與非成員無法讀取，body 不可冒名 |
+| Remembered 同意 | 未開個人化拒絕；開啟後可保存；關閉後 visibility 與 parsed result 降回 session |
+| 解析 envelope | 有限明示範例 parsed；模糊／混合未支援限制需釐清；非法 parser 候選 unavailable |
+| Privacy Guard | PublicState／SSE 不含私密原文與 tags；公開欄位及理由守門有壞輸入行為測試 |
 
 ## 尚未驗證
 
-前端畫面、兩個真實瀏覽器／兩支手機、正式部署、Supabase RLS、併發負載、管理者審核 API、檢舉／頻率限制、正式場地 ID 存在性、私密輸入資料層、個人偏好更新器、訓練候選出口、模型／RAG、推薦計分與行程、外部訂位、Owner 驗收。這批後端證據不能視為完整 MVP 通過。
+前端畫面、兩個真實瀏覽器／兩支手機、正式部署、Supabase RLS、併發負載、管理者審核 API、檢舉／頻率限制、正式場地 ID 存在性、個人偏好更新器、訓練候選出口、自管模型／RAG 整合、推薦計分與行程、外部訂位、Owner 驗收。這批後端證據不能視為完整 Phase 2 或 MVP 通過。
 
 重跑入口與前端欄位見 [BACKEND_API](BACKEND_API.md)。原始本機測試資料與資料庫日誌保留在 `.local/tests/`，不提交 Git。

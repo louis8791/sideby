@@ -2,9 +2,10 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { z } from 'zod';
 import {
   ApiError, consentUpdate, feedbackInput, feedbackPatch, id, sharedConditions, venueId, version,
-  type PublicState,
+  privateInput, type PublicState,
 } from './contracts';
 import * as feedback from './feedback';
+import * as privateInputs from './private-inputs';
 import * as rooms from './rooms';
 
 const headers = { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' };
@@ -135,7 +136,7 @@ export async function handle(request: Request): Promise<Response> {
       const input = await body(request, z.strictObject({ coupleId: id }));
       return json(await rooms.createSession(userId, input.coupleId));
     }
-    const match = path.match(/^\/api\/sessions\/([^/]+)(?:\/(shared|confirm|events))?$/);
+    const match = path.match(/^\/api\/sessions\/([^/]+)(?:\/(shared|confirm|events|private-inputs))?$/);
     if (match) {
       const sessionId = id.parse(match[1]), action = match[2];
       if (request.method === 'GET' && !action) return json(await rooms.publicState(userId, sessionId));
@@ -152,6 +153,17 @@ export async function handle(request: Request): Promise<Response> {
         const input = await body(request, z.strictObject({ version }));
         await rooms.confirm(userId, sessionId, input.version);
         return json(await rooms.publicState(userId, sessionId));
+      }
+      if (action === 'private-inputs') {
+        if (request.method === 'GET') return json(await privateInputs.getOwnPrivateInput(userId, sessionId));
+        if (request.method === 'POST') {
+          const input = await body(request, privateInput);
+          return json(await privateInputs.putOwnPrivateInput(userId, sessionId, input));
+        }
+        if (request.method === 'DELETE') {
+          await privateInputs.deleteOwnPrivateInput(userId, sessionId);
+          return new Response(null, { status: 204, headers });
+        }
       }
       throw new ApiError(405, 'METHOD_NOT_ALLOWED');
     }

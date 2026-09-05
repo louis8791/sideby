@@ -222,6 +222,8 @@ RAG 文件保存 venue_id、來源、更新時間及索引版本，私密對話�
 
 資料流：雙方裝置 → Session／Auth／Validation → 解析器 → 硬限制過濾 → 偏好與雙人計分 → 行程組合 → 程式驗證 → Privacy Guard → 公開回應。
 
+2026-09-05 Phase 2 後端第一刀：`session_inputs`、本人私密輸入 API、remembered 同意閘門、三態 parser envelope、有限規則基準及公開欄位 Privacy Guard 已實作。自管模型／RAG 與兩瀏覽器隱私 Runtime 仍未完成，不能把此狀態視為 Phase 2 overall 通過。
+
 API key 只放伺服器環境變數。展示使用 curated dataset 與預先建立的交通矩陣；不匯入 Google Maps／Places 衍生內容。唯一可長期保存的 Google 識別欄位是 optional `google_place_id`；Google 名稱、地址、評論、照片、搜尋結果與衍生標籤不進持久層或 RAG。Maps URL 以自有／授權名稱正確編碼並以 Place ID 優先定位，不含 API key。場地事實與主觀標籤要有來源、日期、情境、權利與審核；未知必要事實不能由模型補猜成可執行方案。
 
 ## 14. 非功能規格

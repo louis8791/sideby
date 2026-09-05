@@ -88,6 +88,15 @@
 
 私密資料可以影響過濾、排序與重排，但不得以原句、身分指向或可推理形式進入共同輸出。Private input、public explanation、shared realtime state 必須在資料模型與 API 層分開。
 
+## Phase 2 私密輸入契約（2026-09-05 後端第一刀已實作）
+
+- `GET／POST／DELETE /api/sessions/:id/private-inputs` 永遠以 Bearer 身分決定 owner，不接受 userId／role 冒名；GET 只讀本人，同房另一人沒有自己的輸入時同樣回 404。
+- 新輸入預設 `private_session`；`private_remembered` 必須已接受當期條款並開啟 `personalization_enabled`。撤回設定後，既有 remembered 輸入與已解析 visibility 降回 session scope。
+- 當前 parser 是明確標示的 `rule_baseline_v1`，只處理已列入的有限語句；未支援的混合限制與「有氣氛」等模糊語句必須回 needs_clarification。非法候選回 unavailable，不得標 parsed。
+- 自管分類器、生成模型與 RAG 尚未接入。規則基準通過不等於模型或 RAG 通過；`externalModelApiCalls` 固定為 0，且不得新增雲端 fallback。
+- PublicState／SSE 只走公開 allowlist 與 Privacy Guard 欄位出口；私密原文、tags、parser output、澄清問題與 userId 不得出現在共同狀態。修改、刪除或撤回 remembered 會增加不含內容的公開 revision 並清除既有確認，使並行舊版確認失敗。
+- CC 驗收入口為 `npm run phase2:check`，完整規則見 `docs/PHASE2_ACCEPTANCE.md`。沒有 RAG 整合與兩瀏覽器隱私證據時，Phase 2 overall 必須維持 NOT_READY。
+
 ## 場地評論與同意契約（2026-09-05，後端第一刀已實作）
 
 - 使用者可對場地保存私人補充文字、自訂分類、喜好度 1～5 分及想去／去過狀態，形成自己的私人場地清單。

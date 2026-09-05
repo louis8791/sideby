@@ -54,9 +54,22 @@ export const feedbackPatch = z.strictObject({
   visibility: z.enum(['private', 'public']).optional(),
 }).refine(value => Object.keys(value).length > 0);
 
+const privateText = z.string().trim().min(1).max(1000)
+  .refine(value => !/[\u0000-\u001f\u007f]/u.test(value));
+const privateTags = z.array(z.string().trim().min(1).max(30)
+  .refine(value => !/[\u0000-\u001f\u007f]/u.test(value)))
+  .max(12).refine(values => new Set(values).size === values.length);
+
+export const privateInput = z.strictObject({
+  rawText: privateText,
+  tags: privateTags.default([]),
+  visibility: z.enum(['private_session', 'private_remembered']).default('private_session'),
+});
+
 export { venueId };
 export type FeedbackInput = z.infer<typeof feedbackInput>;
 export type FeedbackPatch = z.infer<typeof feedbackPatch>;
+export type PrivateInput = z.infer<typeof privateInput>;
 
 export interface PublicState {
   sessionId: string;
