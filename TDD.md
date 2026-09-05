@@ -2,11 +2,11 @@
 
 ## 2026-09-05 單一 Repo 整合更新
 
-Google 本機接線：`frontend/src/lib/google-maps.server.ts` 使用官方 Places／Routes／Geocoding REST；`maps.functions.ts` 驗輸入並檢查 development／loopback／同 Origin。瀏覽器 loader 只用 `VITE_GOOGLE_MAPS_API_KEY`，其餘用不同 `GOOGLE_MAPS_SERVER_API_KEY`。Node 開發入口讀 `.env.local`，`maps:config` 僅檢查欄位，`/maps-check` 由使用者觸發真實公開地標查詢。無全域 Places／照片快取；照片保留作者歸屬；逾時／拒絕不洩漏 key／原始錯誤。2026-09-05 本機四項服務已單次驗收成功；離線 `test:maps`、首頁主流程、正式部署與手機仍分開驗收。Supabase token 附加僅在有瀏覽器配置時使用，私密函式的伺服器授權不移除。
+Google 接線：`frontend/src/lib/google-maps.server.ts` 使用官方 Places／Routes／Geocoding REST；`maps.functions.ts` 在 development 檢查 loopback＋同 Origin，在 production 只接受 `SIDEBY_PUBLIC_ORIGIN` 指定的同來源 HTTPS 請求。瀏覽器 loader 只用 `VITE_GOOGLE_MAPS_API_KEY`，其餘用不同 `GOOGLE_MAPS_SERVER_API_KEY`。無全域 Places／照片快取；照片保留作者歸屬；逾時／拒絕不洩漏 key／原始錯誤。2026-09-05 本機四項服務已單次驗收成功；正式網域與手機仍分開驗收。
 
 唯一主 Repo 為 `louis8791/sideby`。根 Next.js／PostgreSQL 管既有應用狀態；`frontend/` 為 TanStack Start／Vite＋Supabase／Gemini／Google Maps 來源程式，包含獨立伺服器功能，不能當成純靜態網頁。根 npm lockfile、前端 Bun lockfile 各自安裝；根 TypeScript 排除 frontend 及 .local。
 
-開發 `/api/*` 經前端 Vite 代理轉至根後端，保留 Host／Origin／Authorization／SSE；正式部署另配置同源反向代理。代理只驗連線，不自動改寫前端固定房號、行程或 Supabase 身分。入口、欄位與部署見 TEAM_INTEGRATION、BACKEND_API、DEPLOYMENT。
+開發 `/api/*` 經前端 Vite 代理轉至根後端；正式 TanStack Worker 入口也以 `SIDEBY_API_ORIGIN` 轉送同來源 `/api/*`，保留 Authorization／SSE、驗瀏覽器 Origin，並把 Origin 改為根 API 自身 Origin 供後端守門。未設定或非 HTTPS 目標即回 503。最新主畫面以根 API 的匿名 Bearer 身分完成房間、共享、私密、確認、生成、反應／重排、定案與回饋；Supabase 只是可選帳號功能，不是根 API 身分來源。
 
 本輪選 Gemini＋Google Maps，外部服務取代自行訓練／自管模型／RAG 的排程；不因匯入而宣稱已接根後端。下方自管／零 API／訓練工作包是歷史／延後參考，保留已有測試與資料守門。外部解析需有效同意、輸出驗證、私密出口隔離及誠實失敗；既有基準零呼叫不代表整合前端也零呼叫。
 
@@ -161,7 +161,7 @@ Gemini adapter 一律在伺服器執行，`GEMINI_API_KEY` 不得使用 `VITE_` 
 
 最小測試需證明：三用途不交叉、評論標籤未確認不落盤、同一確認冪等、另一方不可讀取原文／候選、PublicState／SSE／日誌零私密內容、禁止 Google 衍生輸入、非法模型輸出 fail closed、程式理由不被模型新增事實、API key 不進 client bundle。真實驗收另以兩個瀏覽器／兩支手機檢查送出一次只呼叫一次、確認流程、供應商失敗、刷新保存與公開畫面。
 
-2026-09-05 狀態：`private_preference_parse` 在匯入前端已有 Gemini JSON adapter 原始碼，但尚未完成根後端身分、主流程與真實服務 Runtime；`review_tag_suggestion`、`public_reason_rewrite` 尚未實作。本節是已核准契約，不是功能 PASS。
+2026-09-05 狀態：`private_preference_parse` 已接根後端匿名身分與主流程；模型正規化結果只能進既有 allowlist 解析器，不被保存或公開，原始文字仍由根後端保管。缺 `GEMINI_API_KEY` 時明示使用本機規則 fallback；真實模型成功／失敗尚未用有效金鑰驗收。`review_tag_suggestion`、`public_reason_rewrite` 尚未實作。
 
 ### 4.1 場地回饋、可見性與同意
 

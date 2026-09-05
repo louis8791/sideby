@@ -122,8 +122,24 @@ export function parseWithRuleBaseline(input: {
     attribute: 'quiet', target_min: 0.5, importance: 0.7, confidence: 1,
     scope: itemScope, source: 'conversation',
   });
-  if (/(不要走太多|少走(?:一點)?|不想走太多)/u.test(text)) avoids.push({
+  if (/(不要走太多|少走(?:一點)?路?|不想走太多)/u.test(text)) avoids.push({
     attribute: 'walking', target_max: 0.4, importance: 0.8, hard: false, scope: itemScope,
+  });
+  if (/浪漫/u.test(text)) preferences.push({
+    attribute: 'romantic', target_min: 0.5, importance: 0.7, confidence: 1,
+    scope: itemScope, source: 'conversation',
+  });
+  if (/(放鬆|輕鬆)/u.test(text)) preferences.push({
+    attribute: 'relaxing', target_min: 0.5, importance: 0.7, confidence: 1,
+    scope: itemScope, source: 'conversation',
+  });
+  if (/(互動|一起體驗|動手做)/u.test(text)) preferences.push({
+    attribute: 'interactive', target_min: 0.5, importance: 0.7, confidence: 1,
+    scope: itemScope, source: 'conversation',
+  });
+  if (/(新鮮|特別)/u.test(text)) preferences.push({
+    attribute: 'freshness', target_min: 0.5, importance: 0.6, confidence: 1,
+    scope: itemScope, source: 'conversation',
   });
   const hard = emptyHardConstraints();
   const walk = text.match(/(?:最多|不要超過)\s*(\d{1,3})\s*分鐘/u);
@@ -138,7 +154,8 @@ export function parseWithRuleBaseline(input: {
     .replace(/可愛/gu, '')
     .replace(/不要(?:太)?幼稚|不幼稚|幼稚感.{0,4}(?:低|少|不要)/gu, '')
     .replace(/想安靜聊天|想安靜|安靜聊天|能聊天/gu, '')
-    .replace(/不要走太多路?|少走(?:一點)?|不想走太多路?/gu, '')
+    .replace(/不要走太多路?|少走(?:一點)?路?|不想走太多路?/gu, '')
+    .replace(/浪漫|放鬆|輕鬆|互動|一起體驗|動手做|新鮮|特別/gu, '')
     .replace(/(?:最多|不要超過)\s*\d{1,3}\s*分鐘/gu, '')
     .replace(/(?:每人|一人)\s*(?:最多|上限)?\s*\d{2,6}\s*元?/gu, '')
     .replace(/想找|想去|希望|我|的地方|地方|有一點|可以|也|而且|但|今天|請|[\s，。！？、,.!?]/gu, '');

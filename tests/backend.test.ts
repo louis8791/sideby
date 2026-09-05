@@ -248,14 +248,17 @@ test('Phase 2 + Phase 3 + Phase 5 + Phase 6 backend: real PostgreSQL + built Nex
     const privateStream = await stream(privateB, privateMain);
     assert.equal((await privateStream.nextState()).version, 1);
     const saved = await call('POST', privatePath, privateA, {
-      rawText: privateCanary, tags: ['secret-desire-canary'], visibility: 'private_session',
+      rawText: privateCanary,
+      normalizedText: '明亮、可愛、不要幼稚、少走路、浪漫',
+      tags: ['secret-desire-canary'], visibility: 'private_session',
     });
     assert.equal(saved.status, 200);
     assert.equal(saved.data.rawText, privateCanary);
     assert.equal(saved.data.parse.status, 'parsed');
     assert.equal(saved.data.parse.externalModelApiCalls, 0);
-    assert.deepEqual(saved.data.parse.result.preferences.map((item: { attribute: string }) => item.attribute), ['bright', 'cute']);
+    assert.deepEqual(saved.data.parse.result.preferences.map((item: { attribute: string }) => item.attribute), ['bright', 'cute', 'romantic']);
     assert.deepEqual(saved.data.parse.result.avoid.map((item: { attribute: string }) => item.attribute), ['childish', 'walking']);
+    assert.ok(!JSON.stringify(saved.data).includes('normalizedText'));
     assert.deepEqual(Object.keys(saved.data).sort(), [
       'createdAt', 'inputId', 'parse', 'rawText', 'sessionId', 'tags', 'updatedAt', 'visibility',
     ]);

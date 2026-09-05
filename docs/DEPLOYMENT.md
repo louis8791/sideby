@@ -15,7 +15,8 @@
 | Next.js 後端 | DATABASE_URL、db/*.sql | 正式 DB 執行 npm run db:migrate；不會自動產生真實推薦場地。 |
 | 原前端 Supabase | URL、publishable key，需要時 service role | 見 frontend/.env.example；不等於根後端匿名身分。 |
 | Gemini | GEMINI_API_KEY，僅伺服器 | 原程式直接呼叫 Gemini；缺值不可用。需驗額度、同意、輸出及失敗狀態。 |
-| Google Maps | VITE_GOOGLE_MAPS_API_KEY、不同的 GOOGLE_MAPS_SERVER_API_KEY | 已改官方 API。本輪僅開放本機 development，同 Origin；配置見 GOOGLE_MAPS_LOCAL_SETUP。正式授權、濫用防護、部署 secrets 與真實 API 另驗。 |
+| Google Maps | VITE_GOOGLE_MAPS_API_KEY、不同的 GOOGLE_MAPS_SERVER_API_KEY、SIDEBY_PUBLIC_ORIGIN | 本機限 loopback 同 Origin；production 限設定的同來源 HTTPS。仍須限制 browser key 網站來源、server key API、配額與預算。 |
+| 單一公開網址 | SIDEBY_API_ORIGIN | 前端 Worker 把同來源 `/api/*` 轉送到此 HTTPS 根後端；缺值或非安全網址回 503。 |
 | 原前端資料 | frontend/drizzle/、supabase/、登入回呼、RLS | 不自動遷移到根 DB；資料、Storage 與雲端設定不隨 Git clone 出現。 |
 
 從範本複製設定後在本機或平台填入，實際 .env 不進 Git。瀏覽器值可被使用者看見；service role、Gemini、Google 伺服器金鑰不得加 VITE_ 前綴。本輪 Google 本機使用 frontend/.env.local，詳見 [Google 設定](GOOGLE_MAPS_LOCAL_SETUP.md)。
@@ -24,7 +25,9 @@
 
 前端是 TanStack Start／Nitro；此次 build 實際產生 cloudflare-module 的 `.output/server` 與 `.output/public`，包含 Worker 入口。選定部署平台後按實際產物配置執行環境，不能只上傳靜態目錄，也不能把此 Worker 產物直接當作 Node server。根後端另以 Next.js 執行並連 PostgreSQL。
 
-對外提供一個 HTTPS 入口：頁面及 TanStack server functions 交前端，/api/* 交根後端。反向代理保留合法 Host／Origin、Authorization、SSE；Vite 開發代理不會自動成為正式代理。不可用 wildcard CORS 或網址 token 取代。
+對外提供一個 HTTPS 入口：頁面及 TanStack server functions 交前端；`frontend/src/server.ts` 會在正式 Worker 將同來源 `/api/*` 轉送到 `SIDEBY_API_ORIGIN`，保留 Authorization／SSE，拒絕跨來源瀏覽器請求。Google server functions 另要求 `SIDEBY_PUBLIC_ORIGIN` 與公開網址完全一致。不可用 wildcard CORS 或網址 token 取代。
+
+前端正式環境至少設定：`SIDEBY_API_ORIGIN=https://<後端網域>`、`SIDEBY_PUBLIC_ORIGIN=https://<公開前端網域>`、兩把 Google key；要啟用 Gemini 再加 `GEMINI_API_KEY`。根後端另設定 `DATABASE_URL` 並執行 migration。不要在值尾端加路徑或 `/`，也不要提交任何真實 secret。
 
 正式部署另設定登入允許的回呼、Google browser key 來源限制與流量額度，先在測試環境驗證，再記錄公開網址、兩個元件 commit、資料版本及維運負責人。
 

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -9,7 +9,6 @@ import {
   Clock,
   Footprints,
   Heart,
-  Link2,
   Lock,
   MapPin,
   Navigation,
@@ -25,16 +24,28 @@ import {
 
 } from "lucide-react";
 import { AuthSheet } from "@/components/AuthSheet";
-import { ProfileMenu } from "@/components/ProfileMenu";
 import { DateMap, type MapStop } from "@/components/DateMap";
 import { DateSheet, TimeSheet, formatDateLabel } from "@/components/DateSheet";
 import { PlaceField } from "@/components/PlaceField";
+import { GoogleAttribution } from "@/components/GoogleAttribution";
 
 import { useSession } from "@/lib/use-session";
-import { computeTravelLegs, resolveVenues, type TravelLeg, type Venue } from "@/lib/maps.functions";
-import { GoogleAttribution } from "@/components/GoogleAttribution";
+import { isSupabaseConfigured } from "@/integrations/supabase/client";
+import { computeTravelLegs, getPlaceDetails, type TravelLeg, type Venue } from "@/lib/maps.functions";
 import { analyzePreferenceInput } from "@/lib/preferences.functions";
 import type { PreferenceProfile } from "@/lib/preference-types";
+import { trustedGooglePlaceIds } from "@/lib/venue-enrichment-policy";
+import {
+  createSidebyRoom,
+  joinSidebyRoom,
+  loadSidebyIdentity,
+  saveSidebyIdentity,
+  sidebyApi,
+  SidebyApiError,
+  type SidebyIdentity,
+  type SidebyItinerary,
+  type SidebyPublicState,
+} from "@/lib/sideby-api";
 
 
 
@@ -59,12 +70,18 @@ export const Route = createFileRoute("/")({
 
 type Screen = "room" | "shared" | "private" | "plans" | "final";
 type Stop = {
+  backendStopId?: string;
+  backendVenueId?: string;
   time: string;
   name: string;
   type: string;
   meta: string;
   color: string;
   query: string;
+  locked?: boolean;
+  mapsUrl?: string;
+  googlePlaceId?: string;
+  travelMinutes?: number;
 };
 type Plan = {
   id: string;
@@ -74,9 +91,107 @@ type Plan = {
   score: number;
   total: string;
   movement: string;
+  durationMinutes?: number;
   stops: Stop[];
   reason: string;
+  dataMode?: "approved_dataset" | "synthetic_demo";
 };
+
+const planColors = ["mint", "lilac", "yellow"];
+const stopColors = ["yellow", "mint", "lilac", "peach"];
+
+function clock(value: string) {
+  return new Intl.DateTimeFormat("zh-TW", { hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(value));
+}
+
+function fromSidebyItinerary(itinerary: SidebyItinerary, index: number): Plan {
+  return {
+    id: itinerary.itinerary_id,
+    title: itinerary.title,
+    subtitle: itinerary.public_reason,
+    color: planColors[index % planColors.length]!,
+    score: Math.round(itinerary.couple_score * 100),
+    total: `NT$ ${itinerary.total_cost.toLocaleString("zh-TW")}`,
+    movement: `移動 ${itinerary.travel_minutes} 分鐘`,
+    stops: itinerary.stops.map((stop, stopIndex) => ({
+      backendStopId: stop.stop_id,
+      backendVenueId: stop.venue_id,
+      time: clock(stop.arrival_at),
+      name: stop.venue_name,
+      type: stop.category,
+      meta: `${Math.max(1, Math.round((new Date(stop.leave_at).getTime() - new Date(stop.arrival_at).getTime()) / 60000))} 分鐘 · NT$${stop.estimated_cost}`,
+      color: stopColors[stopIndex % stopColors.length]!,
+      query: stop.venue_name,
+      locked: stop.locked,
+      mapsUrl: stop.google_maps_url,
+      ...(stop.google_place_id ? { googlePlaceId: stop.google_place_id } : {}),
+      travelMinutes: stop.travel_minutes,
+    })),
+    reason: itinerary.public_reason,
+    dataMode: itinerary.data_mode,
+    durationMinutes: itinerary.total_duration_minutes,
+  };
+}
+
+function durationLabel(minutes: number | undefined) {
+  if (!minutes) return "尚未計算";
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return `${hours ? `${hours} 小時` : ""}${hours && rest ? " " : ""}${rest ? `${rest} 分` : ""}`;
+}
+
+const backendErrors: Record<string, string> = {
+  INVITE_UNAVAILABLE: "邀請碼不存在或已過期。",
+  ROOM_FULL: "這個房間已經有兩個人。",
+  VERSION_CONFLICT: "另一半剛更新內容，已重新同步，請再試一次。",
+  PARTNER_REQUIRED: "需要另一半加入後才能繼續。",
+  SHARED_REQUIRED: "請先儲存共同條件。",
+  TERMS_REQUIRED: "請先接受本版服務條款。",
+  PRIVATE_INPUT_UNRESOLVED: "需求還不夠明確，請換一種說法。",
+  SESSION_NOT_READY: "兩人都要完成私密需求並確認最新版。",
+  NO_FEASIBLE_ITINERARIES: "目前條件找不到三套安全可行行程。",
+  RECOMMENDATION_DATA_UNAVAILABLE: "目前沒有可用且版本一致的推薦資料。",
+  NETWORK_UNAVAILABLE: "目前連不上 Sideby，沒有顯示假成功。",
+};
+
+function canonicalPreference(profile: PreferenceProfile) {
+  const source = [
+    ...profile.moods,
+    ...profile.preferred_place_types,
+    ...profile.preferred_activities,
+    ...profile.soft_preferences,
+    ...profile.hard_exclusions,
+    ...profile.other_constraints,
+  ].join("、");
+  const values = [
+    /明亮|採光/u.test(source) && "明亮",
+    /可愛/u.test(source) && "可愛",
+    /幼稚/u.test(source) && "不要太幼稚",
+    /安靜|聊天/u.test(source) && "想安靜聊天",
+    (profile.walking_preference === "low" || /少走|不想走|走太多/u.test(source)) && "不要走太多路",
+    /浪漫/u.test(source) && "浪漫",
+    /放鬆|輕鬆|療癒/u.test(source) && "放鬆",
+    /互動|體驗|動手做/u.test(source) && "一起體驗",
+    /新鮮|特別/u.test(source) && "新鮮",
+  ].filter((value): value is string => Boolean(value));
+  return [...new Set(values)].join("、");
+}
+
+function localPreferenceProfile(moods: string[], freeText: string, hardNo: string): PreferenceProfile {
+  const source = `${freeText}、${hardNo}`;
+  return {
+    moods,
+    preferred_place_types: [],
+    preferred_activities: [],
+    soft_preferences: freeText.trim() ? [freeText.trim()] : [],
+    hard_exclusions: hardNo.trim() ? [hardNo.trim()] : [],
+    energy_level: "unspecified",
+    walking_preference: /少走|不想走|走太多/u.test(source) ? "low" : "unspecified",
+    indoor_outdoor: "unspecified",
+    food_preferences: [],
+    other_constraints: [],
+  };
+}
 
 const INITIAL_PLANS: Plan[] = [
   {
@@ -213,7 +328,65 @@ const INITIAL_PLANS: Plan[] = [
   },
 ];
 
-const MOODS = ["明亮", "可愛", "安靜", "浪漫", "放鬆", "有趣"];
+const PREF_CATEGORIES: { key: string; title: string; initial: number; options: string[] }[] = [
+  {
+    key: "vibe",
+    title: "今天想要的氛圍",
+    initial: 6,
+    options: [
+      "浪漫",
+      "放鬆",
+      "安靜",
+      "有趣",
+      "有質感",
+      "療癒",
+      "有儀式感",
+      "新鮮感",
+      "熱鬧",
+      "私密感",
+      "輕鬆隨性",
+      "特別一點",
+    ],
+  },
+  {
+    key: "state",
+    title: "今天的狀態",
+    initial: 6,
+    options: [
+      "有點累",
+      "精神很好",
+      "不想動腦",
+      "想聊天",
+      "想放空",
+      "想走走",
+      "想做點事情",
+      "想被照顧",
+    ],
+  },
+  {
+    key: "action",
+    title: "想要的互動",
+    initial: 6,
+    options: [
+      "好好聊天",
+      "一起體驗",
+      "一起吃東西",
+      "散步",
+      "看展 / 看表演",
+      "一起拍照",
+      "動手做東西",
+      "找新店",
+      "小酌",
+      "看夜景",
+    ],
+  },
+];
+
+const VISIBILITY_OPTIONS = [
+  { value: "private_session", label: "只限本次", desc: "這次配對結束後不作為長期偏好" },
+  { value: "private_remembered", label: "讓 AI 之後也記得", desc: "之後推薦時可以參考" },
+];
+
 
 function FlowHeader({
   kicker,
@@ -247,9 +420,10 @@ function VenueDetails({ venue }: { venue: Venue }) {
       {venue.photoUri && (
         <figure>
           <img className="venue-photo" src={venue.photoUri} alt={`${venue.name} 實景照片`} loading="lazy" />
-          <figcaption>{venue.photoAttributions?.map((author, i) => (
-            <span key={i}>{i > 0 && " · "}{author.uri && /^(https:\/\/|\/\/)/.test(author.uri)
-              ? <a href={author.uri} target="_blank" rel="noreferrer">{author.displayName}</a> : author.displayName}</span>
+          <figcaption>{venue.photoAttributions?.map((author, index) => (
+            <span key={index}>{index > 0 && " · "}{author.uri && /^(https:\/\/|\/\/)/.test(author.uri)
+              ? <a href={author.uri} target="_blank" rel="noreferrer">{author.displayName}</a>
+              : author.displayName}</span>
           ))}</figcaption>
         </figure>
       )}
@@ -308,12 +482,31 @@ function TravelChips({ leg }: { leg: TravelLeg | undefined }) {
 function Home() {
 
   const { user } = useSession();
+  const authAvailable = isSupabaseConfigured();
   const [authOpen, setAuthOpen] = useState(false);
   const [screen, setScreen] = useState<Screen>("room");
-  const [role] = useState("A");
-  const [inviteCode, setInviteCode] = useState("842716");
+  const [identity, setIdentity] = useState<SidebyIdentity | null>(null);
+  const [publicState, setPublicState] = useState<SidebyPublicState | null>(null);
   const [joinCode, setJoinCode] = useState("");
   const [partnerJoined, setPartnerJoined] = useState(false);
+  const [roomLoading, setRoomLoading] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [joining, setJoining] = useState(false);
+  const [savingShared, setSavingShared] = useState(false);
+  const [runtimeMode, setRuntimeMode] = useState<"standard" | "synthetic_demo" | "unavailable">("unavailable");
+
+  useEffect(() => setIdentity(loadSidebyIdentity()), []);
+  useEffect(() => {
+    void sidebyApi<{ mode: "standard" | "synthetic_demo" }>(null, "GET", "/api/runtime")
+      .then((value) => setRuntimeMode(value.mode))
+      .catch(() => setRuntimeMode("unavailable"));
+  }, []);
+
+  const room = identity
+    ? { inviteCode: identity.inviteCode ?? "", memberCount: publicState?.members.length ?? 1 }
+    : null;
+  const role = identity?.role ?? "A";
+
 
   const todayISO = useMemo(() => {
     const d = new Date();
@@ -337,9 +530,11 @@ function Home() {
   const [transport, setTransport] = useState<string[]>(["步行", "捷運"]);
 
   const [visibility, setVisibility] = useState("private_session");
-  const [moods, setMoods] = useState<string[]>(["明亮", "放鬆"]);
+  const [moods, setMoods] = useState<string[]>(["放鬆"]);
+  const [expandedCats, setExpandedCats] = useState<string[]>([]);
   const [rawText, setRawText] = useState("");
   const [hardNo, setHardNo] = useState("");
+  const [externalAiConsent, setExternalAiConsent] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [aiError, setAiError] = useState(false);
   const [preferenceProfile, setPreferenceProfile] = useState<PreferenceProfile | null>(null);
@@ -348,17 +543,54 @@ function Home() {
 
   const [selectedPlanId, setSelectedPlanId] = useState("A");
   const [lockedStops, setLockedStops] = useState<string[]>([]);
+  const [learnedStops, setLearnedStops] = useState<Record<string, string>>({});
   const [plans, setPlans] = useState<Plan[]>(INITIAL_PLANS);
+  const [plansReady, setPlansReady] = useState(false);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [finalized, setFinalized] = useState(false);
+  const [finalStatus, setFinalStatus] = useState<"idle" | "saving" | "pending_partner" | "choice_conflict" | "finalized">("idle");
+
+  const refreshSideby = useCallback(async () => {
+    if (!identity) return;
+    const [nextState, result] = await Promise.all([
+      sidebyApi<SidebyPublicState>(identity, "GET", `/api/sessions/${identity.sessionId}`),
+      sidebyApi<{ itineraries: SidebyItinerary[]; finalizedItineraryId: string | null }>(
+        identity,
+        "GET",
+        `/api/sessions/${identity.sessionId}/itineraries`,
+      ),
+    ]);
+    setPublicState(nextState);
+    setPartnerJoined(nextState.members.length >= 2);
+    if (result.itineraries.length) {
+      const nextPlans = result.itineraries.map(fromSidebyItinerary);
+      setPlans(nextPlans);
+      setPlansReady(true);
+      setLockedStops(nextPlans.flatMap((plan) => plan.stops.filter((stop) => stop.locked).map((stop) => stop.name)));
+      setSelectedPlanId((current) => nextPlans.some((plan) => plan.id === current) ? current : nextPlans[0]!.id);
+    }
+    setFinalized(Boolean(result.finalizedItineraryId));
+  }, [identity]);
+
+  useEffect(() => {
+    if (!identity) return;
+    setRoomLoading(true);
+    void refreshSideby().catch(() => toast.error("Sideby 後端暫時無法同步。"))
+      .finally(() => setRoomLoading(false));
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") void refreshSideby().catch(() => undefined);
+    }, 1500);
+    return () => window.clearInterval(timer);
+  }, [identity, refreshSideby]);
 
   const currentPlan = useMemo(
     () => plans.find((p) => p.id === selectedPlanId) ?? plans[0]!,
     [plans, selectedPlanId],
   );
+  const planLabel = (id: string) => String.fromCharCode(65 + Math.max(0, plans.findIndex((plan) => plan.id === id)));
 
   // ---- Real Google Places / Routes data for the selected itinerary ----
-  const lookupVenues = useServerFn(resolveVenues);
+  const lookupPlaceDetails = useServerFn(getPlaceDetails);
   const lookupLegs = useServerFn(computeTravelLegs);
   const [venues, setVenues] = useState<Record<string, Venue>>({});
   const [legs, setLegs] = useState<TravelLeg[]>([]);
@@ -382,25 +614,23 @@ function Home() {
     );
   }, [location]);
 
-  const stopQueries = useMemo(
-    () => currentPlan.stops.map((s) => s.query).join("|"),
+  const stopPlaceIds = useMemo(
+    () => trustedGooglePlaceIds(currentPlan.stops),
     [currentPlan],
   );
 
   useEffect(() => {
-    if (screen !== "final" && screen !== "plans") return;
+    if (!plansReady || (screen !== "final" && screen !== "plans")) return;
+    if (stopPlaceIds.length === 0) {
+      setVenues({});
+      setMapsError(false);
+      return;
+    }
     let cancelled = false;
-    const queries = stopQueries.split("|").filter(Boolean);
-    lookupVenues({ data: { queries } })
-      .then((res) => {
+    Promise.all(stopPlaceIds.map((placeId) => lookupPlaceDetails({ data: { placeId } })))
+      .then((results) => {
         if (cancelled) return;
-        setVenues((prev) => {
-          const next = { ...prev };
-          res.venues.forEach((v) => {
-            next[v.query] = v;
-          });
-          return next;
-        });
+        setVenues(Object.fromEntries(results.map(({ venue }) => [venue.placeId, venue])));
       })
       .catch(() => {
         if (!cancelled) setMapsError(true);
@@ -408,7 +638,7 @@ function Home() {
     return () => {
       cancelled = true;
     };
-  }, [screen, stopQueries, lookupVenues]);
+  }, [screen, stopPlaceIds, lookupPlaceDetails, plansReady]);
 
   const mapStops = useMemo<MapStop[]>(() => {
     const list: MapStop[] = [];
@@ -421,7 +651,7 @@ function Home() {
         isOrigin: true,
       });
     currentPlan.stops.forEach((stop, index) => {
-      const venue = venues[stop.query];
+      const venue = stop.googlePlaceId ? venues[stop.googlePlaceId] : undefined;
       if (venue)
         list.push({
           label: venue.name,
@@ -468,52 +698,190 @@ function Home() {
 
 
 
-  const createRoom = () => {
-    setInviteCode(String(Math.floor(100000 + Math.random() * 899999)));
-    setPartnerJoined(false);
-    toast.success("房間已建立，邀請連結可以分享了");
-    go("shared");
-  };
-
-  const copyInvite = async () => {
-    const origin = typeof window === "undefined" ? "" : window.location.origin;
-    await navigator.clipboard?.writeText(`${origin}/room/${inviteCode}`).catch(() => null);
-    toast.success("邀請連結已複製");
-  };
-
-  const joinRoom = () => {
-    if (joinCode.length >= 4) {
-      setInviteCode(joinCode);
-      setPartnerJoined(true);
-      toast.success("已加入雙人房間");
-      go("shared");
-    } else {
-      toast.error("請輸入邀請碼");
+  const handleCreateRoom = async () => {
+    setCreating(true);
+    try {
+      const next = await createSidebyRoom();
+      saveSidebyIdentity(next);
+      setIdentity(next);
+      setPlansReady(false);
+      toast.success("空間已建立，把邀請碼傳給另一半吧");
+    } catch (error) {
+      const code = error instanceof SidebyApiError ? error.code : "SERVICE_UNAVAILABLE";
+      toast.error(backendErrors[code] ?? "建立空間時發生問題，請再試一次");
+    } finally {
+      setCreating(false);
     }
   };
 
+  const copyInvite = async () => {
+    if (!room?.inviteCode) return;
+    await navigator.clipboard?.writeText(room.inviteCode).catch(() => null);
+    toast.success("邀請碼已複製");
+  };
+
+  const handleJoinRoom = async () => {
+    if (joinCode.trim().length === 0) return;
+    setJoining(true);
+    try {
+      const next = await joinSidebyRoom(joinCode.trim());
+      saveSidebyIdentity(next);
+      setIdentity(next);
+      setPlansReady(false);
+      setJoinCode("");
+      toast.success("已加入你們共同的 SideBy 空間");
+    } catch (error) {
+      const code = error instanceof SidebyApiError ? error.code : "SERVICE_UNAVAILABLE";
+      toast.error(backendErrors[code] ?? "加入時發生問題，請再試一次");
+    } finally {
+      setJoining(false);
+    }
+  };
+
+  const saveSharedConditions = async () => {
+    if (!identity || !publicState) {
+      toast.error("請先建立或加入共同空間。");
+      return;
+    }
+    if (!meetPlace) {
+      toast.error("請從搜尋結果選擇集合地點。");
+      return;
+    }
+    setSavingShared(true);
+    try {
+      const transportMap: Record<string, "walk" | "transit" | "car" | "bike"> = {
+        步行: "walk", 捷運: "transit", 機車: "bike", 汽車: "car",
+      };
+      await sidebyApi(identity, "PUT", `/api/sessions/${identity.sessionId}/shared`, {
+        version: publicState.version,
+        shared: {
+          mode,
+          startsAt: `${dateISO}T${startTime}:00+08:00`,
+          endsAt: `${dateISO}T${endTime}:00+08:00`,
+          meetingPoint: {
+            label: meetPlace.name,
+            latitude: meetPlace.lat,
+            longitude: meetPlace.lng,
+            matrixKey: runtimeMode === "synthetic_demo" ? "meeting_test" : "meeting_user",
+          },
+          budgetTwdTotal: Number(budget),
+          transport: transport.map((item) => transportMap[item]).filter(Boolean),
+          stops: 3,
+          outdoorAllowed: true,
+          bookingAllowed: false,
+        },
+      });
+      await refreshSideby();
+      toast.success("共同條件已同步給另一半。");
+      go("private");
+    } catch (error) {
+      const code = error instanceof SidebyApiError ? error.code : "SERVICE_UNAVAILABLE";
+      toast.error(backendErrors[code] ?? `共同條件無法儲存（${code}）。`);
+    } finally {
+      setSavingShared(false);
+    }
+  };
+
+
+  const confirmAndGenerate = async () => {
+    if (!identity) return false;
+    const latest = await sidebyApi<SidebyPublicState>(identity, "GET", `/api/sessions/${identity.sessionId}`);
+    const confirmed = await sidebyApi<SidebyPublicState>(
+      identity,
+      "POST",
+      `/api/sessions/${identity.sessionId}/confirm`,
+      { version: latest.version },
+    );
+    setPublicState(confirmed);
+    if (confirmed.status !== "ready") {
+      toast.success("你的需求已安全保存，等待另一半完成並確認最新版。");
+      return false;
+    }
+    const result = await sidebyApi<{ itineraries: SidebyItinerary[] }>(
+      identity,
+      "POST",
+      `/api/sessions/${identity.sessionId}/generate`,
+      { version: confirmed.version },
+    );
+    const nextPlans = result.itineraries.map(fromSidebyItinerary);
+    setPlans(nextPlans);
+    setPlansReady(true);
+    setLockedStops(nextPlans.flatMap((plan) => plan.stops.filter((stop) => stop.locked).map((stop) => stop.name)));
+    setSelectedPlanId(nextPlans[0]!.id);
+    toast.success("兩人的條件已確認，完成三套配對方案。");
+    return true;
+  };
+
   const submitPrivate = async () => {
+    if (!identity) {
+      toast.error("請先建立或加入共同空間。");
+      return;
+    }
     setGenerating(true);
     setAiError(false);
     try {
-      const result = await runPreferenceAnalysis({
-        data: { moods, freeText: rawText, hardNo, visibility },
+      let profile: PreferenceProfile | null = null;
+      if (externalAiConsent) {
+        try {
+          const result = await runPreferenceAnalysis({
+            data: { moods, freeText: rawText, hardNo, visibility },
+          });
+          profile = result.profile;
+          setPreferenceProfile(profile);
+        } catch {
+          setPreferenceProfile(null);
+          toast.info("Gemini 暫時不可用，改用本機安全規則解析。");
+        }
+      } else {
+        setPreferenceProfile(null);
+        toast.info("未授權外部 AI，本次只使用本機安全規則解析。");
+      }
+      const remembered = visibility === "private_remembered";
+      await sidebyApi(identity, "PUT", "/api/me/consents", {
+        termsVersion: "2026-09-05-v1",
+        acceptTerms: true,
+        personalizationEnabled: remembered,
+        modelImprovementOptIn: false,
       });
-      setPreferenceProfile(result.profile);
-      setPartnerJoined(true);
-      toast.success("AI 已完成新一輪配對");
+      const privateText = [
+        rawText.trim(),
+        moods.length ? `選擇：${moods.join("、")}` : "",
+        hardNo.trim() ? `絕對不要${hardNo.trim()}` : "",
+      ].filter(Boolean).join("。");
+      const normalizedText = canonicalPreference(profile ?? localPreferenceProfile(moods, rawText, hardNo));
+      const saved = await sidebyApi<{ parse?: { status?: string } }>(
+        identity,
+        "POST",
+        `/api/sessions/${identity.sessionId}/private-inputs`,
+        {
+          rawText: privateText,
+          ...(normalizedText ? { normalizedText } : {}),
+          tags: [],
+          visibility: remembered ? "private_remembered" : "private_session",
+        },
+      );
+      if (saved.parse?.status !== "parsed") throw new SidebyApiError("PRIVATE_INPUT_UNRESOLVED");
+      await confirmAndGenerate();
       go("plans");
-    } catch {
+    } catch (error) {
       setAiError(true);
+      const code = error instanceof SidebyApiError ? error.code : "SERVICE_UNAVAILABLE";
+      toast.error(backendErrors[code] ?? "AI 或 Sideby 後端暫時無法完成分析。");
     } finally {
       setGenerating(false);
     }
   };
 
 
-  const toggleLock = (stop: Stop) => {
-    const locked = lockedStops.includes(stop.name);
-    setLockedStops((prev) => (locked ? prev.filter((n) => n !== stop.name) : [...prev, stop.name]));
+  const toggleLock = async (stop: Stop) => {
+    if (!identity || !publicState || !stop.backendStopId) return;
+    await sidebyApi(identity, "POST", `/api/itineraries/${selectedPlanId}/reactions`, {
+      version: publicState.version,
+      stopId: stop.backendStopId,
+      reaction: "like",
+    });
+    await refreshSideby();
+    toast.success("已記下喜歡；兩人都喜歡這站後才會鎖定。");
   };
 
   const toggleFavorite = (plan: Plan) => {
@@ -522,34 +890,57 @@ function Home() {
     toast.success(already ? "已取消收藏" : "已收藏這套方案");
   };
 
-  const replaceStop = (stop: Stop) => {
-    const replacement: Stop =
-      stop.type === "展覽"
-        ? {
-            ...stop,
-            name: "陶作坊 台北",
-            type: "雙人手作",
-            meta: "90 分鐘 · NT$880",
-            color: "lilac",
-            query: "陶作坊 台北",
-          }
-        : {
-            ...stop,
-            name: "大稻埕碼頭",
-            type: "散步",
-            meta: "35 分鐘 · 免費",
-            color: "mint",
-            query: "大稻埕碼頭 台北",
-          };
-
-    setPlans((prev) =>
-      prev.map((p) =>
-        p.id !== selectedPlanId
-          ? p
-          : { ...p, stops: p.stops.map((s) => (s.name !== stop.name ? s : replacement)) },
-      ),
+  const replaceStop = async (stop: Stop) => {
+    if (!identity || !publicState || !stop.backendStopId) return;
+    await sidebyApi(identity, "POST", `/api/itineraries/${selectedPlanId}/reactions`, {
+      version: publicState.version,
+      stopId: stop.backendStopId,
+      reaction: "replace",
+    });
+    const result = await sidebyApi<{ itinerary: SidebyItinerary }>(
+      identity,
+      "POST",
+      `/api/itineraries/${selectedPlanId}/replan`,
+      { version: publicState.version },
     );
-    toast.success("只替換這一站，其餘行程已保留");
+    setPlans((current) => current.map((plan, index) => plan.id === selectedPlanId
+      ? fromSidebyItinerary(result.itinerary, index)
+      : plan));
+    toast.success("已保留鎖定站點，只重新安排這一站。");
+  };
+
+  const finalizePlan = async () => {
+    if (!identity || !publicState) return;
+    setFinalStatus("saving");
+    const result = await sidebyApi<{ status: "pending_partner" | "choice_conflict" | "finalized" }>(
+      identity,
+      "POST",
+      `/api/sessions/${identity.sessionId}/finalize`,
+      { version: publicState.version, itineraryId: selectedPlanId },
+    );
+    setFinalStatus(result.status);
+    setFinalized(result.status === "finalized");
+    toast.success(result.status === "pending_partner"
+      ? "已選這套，等待另一半選擇同一方案。"
+      : result.status === "choice_conflict"
+        ? "你們選了不同方案，請再一起確認。"
+        : "兩人選擇一致，行程已正式定案！");
+  };
+
+  const learnTooDark = async (stop: Stop) => {
+    if (!identity || !publicState || !stop.backendStopId) return;
+    const result = await sidebyApi<{ longTermPreferenceVersion: number | null }>(
+      identity,
+      "POST",
+      `/api/itineraries/${selectedPlanId}/preference-feedback`,
+      { version: publicState.version, stopId: stop.backendStopId, signal: "too_dark" },
+    );
+    setLearnedStops((current) => ({
+      ...current,
+      [stop.backendStopId!]: result.longTermPreferenceVersion
+        ? `已更新長期偏好 v${result.longTermPreferenceVersion}`
+        : "已套用本次偏好",
+    }));
   };
 
   const progress = { room: 20, shared: 40, private: 60, plans: 80, final: 100 }[screen];
@@ -564,26 +955,36 @@ function Home() {
       <header className="topbar">
         <div className="brand">
           <span className="brand-mark">✦</span>
-          <span>SideBy</span>
+          <span className="brand-word">SideBy</span>
         </div>
         <div className="top-status">
           <span className="status-dot" />
-          雙人房間已開啟 <span className="code-pill">{inviteCode}</span>
+          {room
+            ? room.memberCount >= 2
+              ? "兩個人的空間"
+              : "等另一半加入"
+            : "還沒有共同空間"}
+          {room && <span className="code-pill">{room.inviteCode}</span>}
         </div>
+
         <div className="top-actions">
           <button className="icon-btn" aria-label="房間成員">
             <Users size={18} />
           </button>
           {user ? (
-            <ProfileMenu user={user} />
-          ) : (
+            <Link to="/account" className="avatar-btn" aria-label="個人中心">
+              {(user.email ?? "?").trim().charAt(0).toUpperCase()}
+            </Link>
+          ) : authAvailable ? (
             <button className="btn btn-black login-btn" onClick={() => setAuthOpen(true)}>
               登入
             </button>
+          ) : (
+            <span className="code-pill">免登入展示</span>
           )}
         </div>
       </header>
-      <AuthSheet open={authOpen} onClose={() => setAuthOpen(false)} />
+      {authAvailable && <AuthSheet open={authOpen} onClose={() => setAuthOpen(false)} />}
       <DateSheet
         open={datePickerOpen}
         value={dateISO}
@@ -634,7 +1035,7 @@ function Home() {
           <div className="progress-track">
             <span style={{ width: `${progress}%` }} />
           </div>
-          <span className="progress-label">{screen === "final" ? "已完成" : "一起規劃中"}</span>
+          <span className="progress-label">{finalized ? "已完成" : screen === "final" ? "待雙方確認" : "一起規劃中"}</span>
         </div>
 
         {screen === "room" && (
@@ -650,21 +1051,26 @@ function Home() {
                 <p className="hero-lede">
                   不必為了「去哪裡」來回討論。說出你們想要的感覺，讓 AI 幫你們找到今晚剛剛好的默契。
                 </p>
-                <div className="hero-actions">
-                  <button className="btn btn-black" onClick={createRoom}>
-                    建立新的約會房間 <ArrowRight size={17} />
-                  </button>
-                  <button className="text-action" onClick={() => setJoinCode("842716")}>
-                    我有邀請碼 <Link2 size={16} />
-                  </button>
-                </div>
+                {room ? (
+                  <div className="hero-actions">
+                    <button className="btn btn-black" onClick={() => go(publicState?.shared ? "private" : "shared")}>
+                      {publicState?.shared ? "填寫我的私密需求" : "開始安排這次約會"} <ArrowRight size={17} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="hero-actions">
+                    <button className="btn btn-black" onClick={handleCreateRoom} disabled={creating}>
+                      {creating ? "正在建立…" : "建立我們的空間"} <ArrowRight size={17} />
+                    </button>
+                  </div>
+                )}
                 <div className="proof-line">
                   <span className="avatar-stack">
                     <i>A</i>
                     <i>B</i>
                   </span>
                   <span>
-                    兩個人，剛剛好。<strong>不用註冊也能開始</strong>
+                    兩個人，剛剛好。<strong>一個空間，兩個人共用</strong>
                   </span>
                 </div>
               </div>
@@ -692,26 +1098,59 @@ function Home() {
               </div>
             </section>
 
-            <section className="join-strip">
-              <div>
-                <span className="eyebrow">JOIN YOUR PARTNER</span>
-                <h2>另一半已經建立房間？</h2>
-              </div>
-              <div className="join-form">
-                <input
-                  className="field-input"
-                  value={joinCode}
-                  onChange={(e) => setJoinCode(e.target.value)}
-                  placeholder="輸入 6 位邀請碼"
-                  maxLength={6}
-                />
-                <button className="btn btn-lilac" onClick={joinRoom}>
-                  加入房間
-                </button>
-              </div>
-            </section>
+            {roomLoading ? (
+              <section className="join-strip">
+                <p className="join-hint">正在確認你們的空間…</p>
+              </section>
+            ) : room ? (
+              <section className="join-strip">
+                <div>
+                  <span className="eyebrow">YOUR SIDEBY SPACE</span>
+                  <h2>{room.memberCount >= 2 ? "你們已經在同一個空間" : "邀請另一半加入"}</h2>
+                  <p className="join-hint">
+                    {room.memberCount >= 2
+                      ? "兩個人的空間已經配對完成，之後的約會紀錄都會一起留在這裡。"
+                      : "把這組邀請碼傳給另一半，對方輸入後就會加入你們共同的 SideBy 空間。"}
+                  </p>
+                </div>
+                <div className="join-form">
+                  <span className="invite-code">{room.inviteCode}</span>
+                  <button className="btn btn-lilac" onClick={copyInvite}>
+                    複製邀請碼
+                  </button>
+                </div>
+              </section>
+            ) : (
+              <section className="join-strip">
+                <div>
+                  <span className="eyebrow">JOIN YOUR PARTNER</span>
+                  <h2>加入另一半的空間</h2>
+                  <p className="join-hint">
+                    另一半已經建立 SideBy 空間了嗎？輸入邀請碼就可以加入。
+                  </p>
+                </div>
+                <div className="join-form">
+                  <input
+                    className="field-input"
+                    value={joinCode}
+                    onChange={(e) => setJoinCode(e.target.value)}
+                    placeholder="輸入邀請碼"
+                    autoCapitalize="characters"
+                    maxLength={12}
+                  />
+                  <button
+                    className="btn btn-lilac"
+                    onClick={handleJoinRoom}
+                    disabled={joining || joinCode.trim().length === 0}
+                  >
+                    {joining ? "加入中…" : "加入空間"}
+                  </button>
+                </div>
+              </section>
+            )}
           </>
         )}
+
 
         {screen === "shared" && (
           <section className="flow-section">
@@ -807,8 +1246,8 @@ function Home() {
                     ))}
                   </div>
                 </label>
-                <button className="btn btn-black wide" onClick={() => go("private")}>
-                  確認共同條件 <ArrowRight size={17} />
+                <button className="btn btn-black wide" onClick={saveSharedConditions} disabled={savingShared}>
+                  {savingShared ? "正在同步…" : "確認共同條件"} <ArrowRight size={17} />
                 </button>
               </div>
               <aside className="side-note">
@@ -841,76 +1280,124 @@ function Home() {
             />
             <div className="private-layout">
               <div className="private-card">
-                <div className="privacy-banner">
-                  <Lock size={18} />
+                <div className="privacy-note">
+                  <Lock size={15} />
                   <div>
-                    <strong>私密輸入已加密</strong>
-                    <span>只有 AI 會使用這段內容</span>
+                    <strong>這段內容只用於本次配對</strong>
+                    <span>另一半不會看到原始內容；只有你另行同意時才會送至 Gemini。</span>
                   </div>
-                  <span className="toggle-on">ON</span>
                 </div>
-                <div className="field-label">
-                  今天想要什麼感覺？<small>可複選</small>
+
+                <div className="pref-block">
+                  <div className="block-head">
+                    <h4>今天想要什麼感覺？</h4>
+                    <small>可複選</small>
+                  </div>
+                  {PREF_CATEGORIES.map((cat) => {
+                    const expanded = expandedCats.includes(cat.key);
+                    const shown = expanded ? cat.options : cat.options.slice(0, cat.initial);
+                    const hidden = cat.options.length - cat.initial;
+                    return (
+                      <div className="pref-cat" key={cat.key}>
+                        <div className="pref-cat-title">{cat.title}</div>
+                        <div className="chip-grid">
+                          {shown.map((m) => (
+                            <button
+                              key={m}
+                              type="button"
+                              className={`mood-chip ${moods.includes(m) ? "selected" : ""}`}
+                              onClick={() =>
+                                setMoods((prev) =>
+                                  prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m],
+                                )
+                              }
+                            >
+                              {moods.includes(m) && <Check size={13} />}
+                              {m}
+                            </button>
+                          ))}
+                          {hidden > 0 && (
+                            <button
+                              type="button"
+                              className="chip-more"
+                              onClick={() =>
+                                setExpandedCats((prev) =>
+                                  expanded ? prev.filter((k) => k !== cat.key) : [...prev, cat.key],
+                                )
+                              }
+                            >
+                              {expanded ? "收起" : `更多選擇 +${hidden}`}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="chip-grid">
-                  {MOODS.map((m) => (
-                    <button
-                      key={m}
-                      className={`mood-chip ${moods.includes(m) ? "selected" : ""}`}
-                      onClick={() =>
-                        setMoods((prev) =>
-                          prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m],
-                        )
-                      }
-                    >
-                      {moods.includes(m) && <Check size={14} />}
-                      {m}
-                    </button>
-                  ))}
-                </div>
-                <label>
-                  <span>
-                    你可以直接說 <small>選填</small>
-                  </span>
+
+                <div className="pref-block">
+                  <div className="block-head">
+                    <h4>還有什麼想告訴 AI？</h4>
+                    <small>選填</small>
+                  </div>
+                  <p className="block-help">不用整理成條件，直接說就好。</p>
                   <textarea
                     className="field-input"
                     value={rawText}
                     onChange={(e) => setRawText(e.target.value)}
-                    placeholder="例如：想找明亮一點的咖啡廳，可愛但不要太幼稚。今天有點累，不想走太多路。"
+                    placeholder="例如：今天有點累，不想走太多路。想找可以坐久一點、氣氛舒服的地方。"
                   />
-                </label>
-                <div className="privacy-options">
-                  <span>這段內容：</span>
-                  <button
-                    className={visibility === "private_session" ? "selected" : ""}
-                    onClick={() => setVisibility("private_session")}
-                  >
-                    {visibility === "private_session" ? "●" : "○"} 只限本次
-                  </button>
-                  <button
-                    className={visibility === "private_remembered" ? "selected" : ""}
-                    onClick={() => setVisibility("private_remembered")}
-                  >
-                    {visibility === "private_remembered" ? "●" : "○"} 讓 AI 之後也記得
-                  </button>
-                  <button
-                    className={visibility === "shared" ? "selected" : ""}
-                    onClick={() => setVisibility("shared")}
-                  >
-                    {visibility === "shared" ? "●" : "○"} 可以讓另一半看到
-                  </button>
                 </div>
-                <label>
-                  <span>
-                    絕對不要 <small>Hard no</small>
-                  </span>
+
+                <div className="pref-block">
+                  <div className="block-head">
+                    <h4>這段內容可以怎麼用？</h4>
+                  </div>
+                  <div className="visibility-list" role="radiogroup">
+                    {VISIBILITY_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={visibility === opt.value}
+                        className={`visibility-option ${visibility === opt.value ? "selected" : ""}`}
+                        onClick={() => setVisibility(opt.value)}
+                      >
+                        <span className="vo-dot" />
+                        <span className="vo-text">
+                          <strong>{opt.label}</strong>
+                          <small>{opt.desc}</small>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pref-block hardno-block">
+                  <div className="block-head">
+                    <h4>絕對不要</h4>
+                    <small>AI 一定會避開</small>
+                  </div>
                   <input
                     className="field-input"
                     value={hardNo}
                     onChange={(e) => setHardNo(e.target.value)}
-                    placeholder="輸入不想去的類型，例如：火鍋、劇烈運動"
+                    placeholder="例如：火鍋、戶外、排隊名店、劇烈運動"
                   />
+                </div>
+
+                <label className="privacy-note">
+                  <input
+                    type="checkbox"
+                    checked={externalAiConsent}
+                    onChange={(event) => setExternalAiConsent(event.target.checked)}
+                  />
+                  <span>
+                    <strong>允許本次內容送至 Gemini 解析</strong>
+                    <small>未勾選仍可配對，系統只用本機規則；此選項不代表同意公開或訓練。</small>
+                  </span>
                 </label>
+
                 <button
                   className="btn btn-black wide"
                   onClick={submitPrivate}
@@ -963,6 +1450,19 @@ function Home() {
               title="找到 3 種適合你們的走法"
               desc="每套都是完整路線，不只是三個地點。滑一滑，看看哪一種最像你們。"
             />
+            {!plansReady ? (
+              <div className="ai-error">
+                <span>{publicState?.members.length === 2
+                  ? "另一半更新需求後，請確認最新版並產生行程。"
+                  : "你的需求已保存，等待另一半加入並完成輸入。"}</span>
+                <button className="btn btn-black" onClick={() => void confirmAndGenerate().catch((error) => {
+                  const code = error instanceof SidebyApiError ? error.code : "SERVICE_UNAVAILABLE";
+                  toast.error(backendErrors[code] ?? `目前無法產生行程（${code}）。`);
+                })}>
+                  同步最新版並產生
+                </button>
+              </div>
+            ) : <>
             <div className="plans-grid">
               {plans.map((plan) => (
                 <article
@@ -971,7 +1471,7 @@ function Home() {
                   onClick={() => setSelectedPlanId(plan.id)}
                 >
                   <div className={`plan-banner ${plan.color}`}>
-                    <span className="plan-letter">{plan.id}</span>
+                    <span className="plan-letter">{planLabel(plan.id)}</span>
                     <span className="plan-score">
                       <strong>{plan.score}</strong> 適合度
                     </span>
@@ -1025,12 +1525,13 @@ function Home() {
             <div className="plans-bottom">
               <span>
                 <span className="sync-dot" />
-                另一半正在看 <strong>方案 {selectedPlanId}</strong>
+                另一半正在看 <strong>方案 {planLabel(selectedPlanId)}</strong>
               </span>
               <button className="btn btn-black" onClick={() => go("final")}>
                 查看完整行程 <ArrowRight size={17} />
               </button>
             </div>
+            </>}
           </section>
         )}
 
@@ -1040,9 +1541,11 @@ function Home() {
               <ArrowLeft size={17} /> 回到方案比較
             </button>
             <FlowHeader
-              kicker={`方案 ${currentPlan.id} / FINAL ROUTE`}
+              kicker={`方案 ${planLabel(currentPlan.id)} / FINAL ROUTE`}
               title="今晚，就照這條走。"
-              desc="你們已經選好方向，這是一條可以直接出發的路線。"
+              desc={currentPlan.dataMode === "synthetic_demo"
+                ? "這是合成展示資料，用來驗證完整雙人流程；不是現實世界推薦。"
+                : "你們已經選好方向，這是一條可以直接出發的路線。"}
             />
             <div className="final-layout">
               <div className="final-timeline card-surface">
@@ -1073,7 +1576,7 @@ function Home() {
                   </div>
                 )}
                 {currentPlan.stops.map((stop, index) => {
-                  const venue = venues[stop.query];
+                  const venue = stop.googlePlaceId ? venues[stop.googlePlaceId] : undefined;
                   return (
                     <div className="timeline-row" key={stop.name}>
                       <div className="time-col">{stop.time}</div>
@@ -1087,20 +1590,39 @@ function Home() {
                           <p>{stop.meta}</p>
                         </div>
                         {venue && <VenueDetails venue={venue} />}
-                        {index < currentPlan.stops.length - 1 && (
-                          <TravelChips leg={legFor(index)} />
-                        )}
+                        {index < currentPlan.stops.length - 1 && (currentPlan.dataMode === "synthetic_demo" ? (
+                          <div className="travel-line"><span>合成交通矩陣：{stop.travelMinutes ?? 0} 分鐘</span></div>
+                        ) : <TravelChips leg={legFor(index)} />)}
                       </div>
                       <div className="stop-actions">
-                        <button
+                        {currentPlan.dataMode !== "synthetic_demo" && !venue && stop.mapsUrl && (
+                          <a className="replace-stop" href={stop.mapsUrl} target="_blank" rel="noreferrer">在 Google Maps 查看</a>
+                        )}
+                        {!finalized && <button
                           className={`lock-stop ${lockedStops.includes(stop.name) ? "locked" : ""}`}
-                          onClick={() => toggleLock(stop)}
+                          disabled={lockedStops.includes(stop.name)}
+                          onClick={() => void toggleLock(stop).catch((error) => {
+                            const code = error instanceof SidebyApiError ? error.code : "SERVICE_UNAVAILABLE";
+                            toast.error(backendErrors[code] ?? `目前無法記錄喜歡（${code}）。`);
+                          })}
                         >
-                          {lockedStops.includes(stop.name) ? "已鎖定" : "鎖定這站"}
-                        </button>
-                        {!lockedStops.includes(stop.name) && index > 0 && (
-                          <button className="replace-stop" onClick={() => replaceStop(stop)}>
+                          {lockedStops.includes(stop.name) ? "雙方已鎖定" : "喜歡這站"}
+                        </button>}
+                        {!finalized && !lockedStops.includes(stop.name) && index > 0 && (
+                          <button className="replace-stop" onClick={() => void replaceStop(stop).catch((error) => {
+                            const code = error instanceof SidebyApiError ? error.code : "SERVICE_UNAVAILABLE";
+                            toast.error(backendErrors[code] ?? `目前無法替換（${code}）。`);
+                          })}>
                             替換
+                          </button>
+                        )}
+                        {finalized && stop.backendStopId && (
+                          <button className="replace-stop" disabled={Boolean(learnedStops[stop.backendStopId])}
+                            onClick={() => void learnTooDark(stop).catch((error) => {
+                              const code = error instanceof SidebyApiError ? error.code : "SERVICE_UNAVAILABLE";
+                              toast.error(backendErrors[code] ?? `目前無法更新偏好（${code}）。`);
+                            })}>
+                            {learnedStops[stop.backendStopId] ?? "這間太暗"}
                           </button>
                         )}
                       </div>
@@ -1109,32 +1631,44 @@ function Home() {
                 })}
                 <div className="final-summary">
                   <span>
-                    <strong>3 小時 55 分</strong>總時間
+                    <strong>{durationLabel(currentPlan.durationMinutes)}</strong>總時間
                   </span>
                   <span>
                     <strong>{currentPlan.total}</strong>預估總額
                   </span>
                   <span>
-                    <strong>捷運＋步行</strong>交通
+                    <strong>{currentPlan.movement}</strong>交通
                   </span>
                 </div>
                 {mapsError && (
                   <p className="venue-address">實際場館資料暫時取不到，稍後會自動重試。</p>
                 )}
               </div>
-              <DateMap stops={mapStops} />
+              {currentPlan.dataMode === "synthetic_demo" ? (
+                <aside className="map-card live-map">
+                  <div className="map-status"><MapPin size={15} /> 合成展示場地不對應真實商家，因此不顯示真實地圖。</div>
+                  <div className="map-label">資料來源：Sideby synthetic demo</div>
+                </aside>
+              ) : <DateMap stops={mapStops} />}
             </div>
 
             <div className="final-actions">
+              {finalStatus === "pending_partner" && (
+                <p className="venue-address">你已選擇方案 {planLabel(selectedPlanId)}，等待另一半確認同一套。</p>
+              )}
+              {finalStatus === "choice_conflict" && (
+                <p className="venue-address">你們目前選了不同方案，請回到方案比較重新選擇。</p>
+              )}
               <button
                 className="btn btn-black"
-                disabled={finalized}
-                onClick={() => {
-                  setFinalized(true);
-                  toast.success("行程已確認，祝你們約會愉快！");
-                }}
+                disabled={finalized || finalStatus === "saving"}
+                onClick={() => void finalizePlan().catch((error) => {
+                  setFinalStatus("idle");
+                  const code = error instanceof SidebyApiError ? error.code : "SERVICE_UNAVAILABLE";
+                  toast.error(backendErrors[code] ?? `目前無法定案（${code}）。`);
+                })}
               >
-                {finalized ? "已確認這條路線" : "確認這條路線"} {!finalized && <Heart size={17} />}
+                {finalized ? "雙方已確認這條路線" : finalStatus === "saving" ? "正在確認…" : "確認這條路線"} {!finalized && finalStatus !== "saving" && <Heart size={17} />}
               </button>
               <button
                 className="btn btn-outline"

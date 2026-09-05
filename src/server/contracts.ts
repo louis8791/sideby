@@ -73,6 +73,7 @@ const privateTags = z.array(z.string().trim().min(1).max(30)
 
 export const privateInput = z.strictObject({
   rawText: privateText,
+  normalizedText: privateText.optional(),
   tags: privateTags.default([]),
   visibility: z.enum(['private_session', 'private_remembered']).default('private_session'),
 });

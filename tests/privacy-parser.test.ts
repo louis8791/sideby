@@ -16,6 +16,19 @@ test('supported private wording becomes a schema-safe calculable query', () => {
   assert.equal(parsed.externalModelApiCalls, 0);
 });
 
+test('allowlisted Gemini-normalized wording stays calculable', () => {
+  const parsed = parseWithRuleBaseline({
+    sessionId: '00000000-0000-4000-8000-000000000001', mode: 'future',
+    visibility: 'private_session', rawText: '浪漫、放鬆、一起體驗、新鮮。',
+  });
+  assert.equal(parsed.status, 'parsed');
+  if (parsed.status !== 'parsed') return;
+  assert.deepEqual(parsed.result.preferences.map(item => item.attribute), [
+    'romantic', 'relaxing', 'interactive', 'freshness',
+  ]);
+  assert.equal(parsed.externalModelApiCalls, 0);
+});
+
 test('ambiguous wording requests clarification and invalid parser output fails closed', () => {
   const ambiguous = parseWithRuleBaseline({
     sessionId: '00000000-0000-4000-8000-000000000001', mode: 'future',

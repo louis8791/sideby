@@ -2,7 +2,7 @@
 
 ## 2026-09-05 本輪範圍更新
 
-Google 地圖本機入口為 `/maps-check`：不依賴 Supabase／Gemini，可填自己的兩把金鑰再人工啟動查詢；Maps JavaScript、Places (New)、Routes 與獨立 Geocoding 直接連 Google。2026-09-05 已在本機完成四項單次真實服務驗收；空值、配額／授權失敗、未知交通仍不得假裝成功。公開部署、首頁雙人流程與手機尚未驗收；細節見 `docs/GOOGLE_MAPS_LOCAL_SETUP.md`。
+Google 地圖入口為 `/maps-check`：不依賴 Supabase／Gemini，可填自己的兩把金鑰再人工啟動查詢；Maps JavaScript、Places (New)、Routes 與獨立 Geocoding 直接連 Google。2026-09-05 已在本機完成四項單次真實服務驗收；正式環境新增 `SIDEBY_PUBLIC_ORIGIN` 同來源 HTTPS 閘門，但尚未部署或驗收公開網域。空值、配額／授權失敗、未知交通仍不得假裝成功；細節見 `docs/GOOGLE_MAPS_LOCAL_SETUP.md`。
 
 使用者已指定 `louis8791/sideby` 為三人唯一共同 Repo：Lovable 前端在 `frontend/`，現有後端／資料庫維持根目錄路徑。採 Gemini＋Google Maps API 型 MVP，不排訓練、自管模型或 RAG；需求句作人工核准後的回歸驗收。下方舊模型、零 API 及訓練章節保留為歷史／未來參考，本輪以此更新與 `docs/TEAM_INTEGRATION.md` 為準。
 
@@ -10,7 +10,7 @@ Google 地圖本機入口為 `/maps-check`：不依賴 Supabase／Gemini，可�
 
 舊 `phase3-itineraries` 的 19 檔推薦候選已在遠端 archive branch／commit `63cfe6c` 保存。尚未決定採用，也不構成目前產品完成證據；正式納入前須依本 PRD 的現行 Gemini＋Google API cut、隱私與資料邊界逐項審查。
 
-目標是正式網址能完成雙人核心流程，並提供可重建程式碼與環境說明。私密原文仍互不可見，硬限制、權限與定案由後端驗證。匯入前端不代表 Supabase、Gemini、Google Maps、匿名房間與定案已接通；必須另做實際服務與雙裝置驗收。
+目標是正式網址能完成雙人核心流程，並提供可重建程式碼與環境說明。最新 Lovable 主畫面已接根後端的匿名房間、邀請碼、共享條件、私密需求、雙方確認、合成三套行程、反應／重排、定案與本人偏好回饋；私密原文仍互不可見，硬限制、權限與定案由後端驗證。這是本機整合證據，不等於 Supabase、真實 Gemini、真實場地、公開部署或雙裝置已驗收。
 
 ### Gemini MVP 三個接點（2026-09-05 Owner 決定）
 
@@ -20,7 +20,7 @@ Google 地圖本機入口為 `/maps-check`：不依賴 Supabase／Gemini，可�
 
 三個接點都只在使用者明確送出或合法推薦完成後各呼叫一次；不隨輸入按鍵、地圖操作或輪詢呼叫。API key 僅放伺服器。供應商失敗時顯示真實錯誤，或以明確標示的程式安全理由降級，不以固定方案冒充 AI 成功。
 
-免費／未付費 Gemini API 只用合成或非敏感展示內容；真實私密偏好須使用連結有效帳務的 API 專案，並在送出前完成外部處理告知與同意。依 Google [Gemini API Terms](https://ai.google.dev/gemini-api/terms)／[Billing](https://ai.google.dev/gemini-api/docs/billing) 於 2026-09-05 查核；正式部署前須重新確認。當前只有匯入前端的需求 JSON adapter 原始碼，尚未完成主流程真實 API 驗收；評論標籤與安全理由改寫仍待實作。
+免費／未付費 Gemini API 只用合成或非敏感展示內容；真實私密偏好須使用連結有效帳務的 API 專案，並在送出前完成外部處理告知與同意。依 Google [Gemini API Terms](https://ai.google.dev/gemini-api/terms)／[Billing](https://ai.google.dev/gemini-api/docs/billing) 於 2026-09-05 查核；正式部署前須重新確認。需求 JSON adapter 已接主流程，缺金鑰時明示本機規則 fallback；真實 Gemini 尚未驗收，評論標籤與安全理由改寫仍待實作。
 
 ## 1. 產品摘要
 

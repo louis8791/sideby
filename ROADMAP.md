@@ -2,13 +2,13 @@
 
 ## 2026-09-05 本輪最新路徑
 
-本輪新增 Google 本機接線子項（不新增 Phase）：官方 Maps JavaScript／Places (New)／Routes／Geocoding、私密設定範本與 `/maps-check` 已實作，2026-09-05 已在本機單次真實驗收四項 PASS。這不代表帳務餘額、正式部署、首頁雙人流程或手機通過。操作與證據見 `docs/GOOGLE_MAPS_LOCAL_SETUP.md`、`docs/GOOGLE_MAPS_VERIFICATION.md`。
+本輪新增 Google 接線子項（不新增 Phase）：官方 Maps JavaScript／Places (New)／Routes／Geocoding、私密設定範本與 `/maps-check` 已實作，2026-09-05 已在本機單次真實驗收四項 PASS。production 已加 `SIDEBY_PUBLIC_ORIGIN` 同來源 HTTPS 閘門，但尚未部署或驗收公開網域。操作與證據見 `docs/GOOGLE_MAPS_LOCAL_SETUP.md`、`docs/GOOGLE_MAPS_VERIFICATION.md`。
 
 使用者指定主 Repo `louis8791/sideby`。`frontend/` 已匯入隊友的 Lovable 前端，根目錄保留既有後端；兩者仍是獨立執行元件。最新分工為使用者主責後端、一人支援後端、一人持續前端細修。黑客松可保留固定邀請碼與範例行程，只要清楚標示 demo／synthetic 且不掩蓋真實失敗；Manus 只增指定元件。
 
-本輪採 Gemini＋Google Maps 的 API 型 MVP；訓練、自管生成、Embedding 與 RAG 均為 `DEFERRED`，不屬目前主線前置條件。進階需求句只作人工核准後的回歸驗收。既有後端規則／隱私測試仍需通過；前端原始碼匯入、建置成功及 `/api` 代理連通都不代表畫面按鈕已串上根後端，也不代表真實 Gemini／Google Maps 已驗收。最新分工與驗收界線見 `docs/TEAM_INTEGRATION.md`。
+本輪採 Gemini＋Google Maps 的 API 型 MVP；訓練、自管生成、Embedding 與 RAG 均為 `DEFERRED`，不屬目前主線前置條件。進階需求句只作人工核准後的回歸驗收。最新 Lovable 主畫面已串根後端核心流程並通過本機 synthetic runtime；這不代表真實 Gemini、真實場地、兩支手機或公開網域已驗收。最新分工與驗收界線見 `docs/TEAM_INTEGRATION.md`。
 
-Owner 已將 Gemini MVP 固定為三個接點，不新增頂層 Phase：私密需求送出後產生偏好 JSON；約會後評論產生待本人確認的候選標籤；合法推薦完成後只改寫 public allowlist 安全理由。三者只在明確送出／完成事件呼叫，不在 keypress、地圖或輪詢呼叫；API key 僅在伺服器。依 Google [Gemini API Terms](https://ai.google.dev/gemini-api/terms)／[Billing](https://ai.google.dev/gemini-api/docs/billing)，免費／未付費 API 只用合成或非敏感展示，真實私密輸入須改用連結有效帳務的 API 專案並完成告知／同意。評論與理由兩項目前仍未實作，需求 adapter 也尚未完成主流程 Runtime，不得因文件完成改標 PASS。
+Owner 已將 Gemini MVP 固定為三個接點，不新增頂層 Phase：私密需求送出後產生偏好 JSON；約會後評論產生待本人確認的候選標籤；合法推薦完成後只改寫 public allowlist 安全理由。三者只在明確送出／完成事件呼叫，不在 keypress、地圖或輪詢呼叫；API key 僅在伺服器。依 Google [Gemini API Terms](https://ai.google.dev/gemini-api/terms)／[Billing](https://ai.google.dev/gemini-api/docs/billing)，免費／未付費 API 只用合成或非敏感展示，真實私密輸入須改用連結有效帳務的 API 專案並完成告知／同意。需求 adapter 已接主流程但尚未用真實金鑰驗收；評論與理由兩項仍未實作。
 
 現場協作入口：`docs/TEAM_INTEGRATION.md`。所有人從同一主 Repo 的最新 `main` 開自己的 feature 分支；前端負責 `frontend/` 與應用 API 串接，後端負責根 API、資料、權限及決策規則。本輪不增加新的頂層 Phase，維持下列八階段。
 
@@ -31,20 +31,20 @@ Owner 已將 Gemini MVP 固定為三個接點，不新增頂層 Phase：私密�
 - `部分完成`：已有可執行交付或相應測試，但仍缺必要功能或較高層驗收。
 - `未開始`：只有需求、schema、fixture 或測試計畫，沒有對應可執行功能。
 
-2026-09-05 已驗證的共同基線至少到 `main` parent `9c77595`，本文件自己的最新 commit 以 Git 為準。根後端已有匿名房間、私密輸入、合成三套推薦、reaction／locked／局部重排／定案與本人 `too_dark` 偏好更新；整體檢查為後端 39 項、Maps 11 項及前端 typecheck／build 通過。`frontend/` 已匯入且可建置，固定邀請碼與範例行程依 Owner 決策可保留作展示。Google 四項本機檢查已通過；真實 Gemini、展示所需資料流、兩支實體手機、正式部署及 Owner 驗收仍未完成。
+2026-09-05 本輪工作以 `main` 的 `d54d038` 為基底並匯入隊友前端 `c9b4925`。根後端已有匿名房間、私密輸入、合成三套推薦、reaction／locked／局部重排／定案與本人 `too_dark` 偏好更新；最新 Lovable 主畫面已用同一匿名身分串接這些 API。`npm run check:all` 通過 44 項根測試、14 項 Maps／代理測試、前端 typecheck 與 client／SSR／Cloudflare build；另有前端代理 Runtime PASS。Google 四項本機真實檢查已通過；真實 Gemini、真實場地、兩支實體手機、正式部署及 Owner 驗收仍未完成。
 
 舊 `phase3-itineraries` 的 19 檔候選已以遠端 `archive/phase3-itineraries-checkpoint-20260905`／`63cfe6c` 保存，狀態為 `PRESERVED_NOT_ADOPTED`。它不能直接刪除，也不能因被保存就視為 main 已完成；後端支援者若要取用，須逐項比對後另開採用 commit。
 
 | Phase | 名稱 | 目前狀態 | 主要依賴 | 可平行資訊 |
 |---|---|---|---|---|
 | 1 | 契約、資料治理與驗收基線 | 完成（文件／契約層） | 無 | Phase 2～4 可依契約並行 |
-| 2 | 匿名雙人房間與共享狀態 | 部分完成 | Phase 1 | 前端串接可與 Phase 3、4 並行 |
-| 3 | 條款、私密輸入與 Gemini 需求解析 | 部分完成（後端基準＋前端 adapter 原始碼；主流程 Runtime 未驗） | Phase 1、2 | 既有規則基準可作 fallback／對照 |
-| 4 | 場地資料與 Google Maps 整合基礎 | 部分完成（本機四 API PASS；正式整合未驗） | Phase 1 | 資料政策與外部服務接線可分工 |
+| 2 | 匿名雙人房間與共享狀態 | 部分完成（主畫面本機串接；雙手機／正式網域待驗） | Phase 1 | 前端串接可與 Phase 3、4 並行 |
+| 3 | 條款、私密輸入與 Gemini 需求解析 | 部分完成（主流程＋規則 fallback；真實 Gemini 未驗） | Phase 1、2 | 既有規則基準可作 fallback／對照 |
+| 4 | 場地資料與 Google Maps 整合基礎 | 部分完成（本機四 API PASS；production 守門已建，公開部署未驗） | Phase 1 | 資料政策與外部服務接線可分工 |
 | 5 | 雙人推薦與三套可執行行程 | 部分完成（合成資料後端；Gemini 安全理由待接） | Phase 2～4 | 公開理由只能在合法行程後並行 |
 | 6 | 局部重排、私人清單與回饋治理 | 部分完成（Gemini 評論候選標籤待接） | Phase 1、2；重排依 Phase 5 | 私人清單／內容治理可先行 |
-| 7 | 手機整合、外部跳轉與誠實降級 | 部分完成（前端已匯入，主流程未串接） | Phase 2～6 | 前端負責串接，後端提供契約與修正 |
-| 8 | 端到端、效能、隱私與 Owner 驗收 | 部分完成（底層技術證據） | Phase 7 | 底層證據不能取代完整驗收 |
+| 7 | 手機整合、外部跳轉與誠實降級 | 部分完成（主畫面本機 synthetic 流程已串） | Phase 2～6 | 前端負責串接，後端提供契約與修正 |
+| 8 | 端到端、效能、隱私與 Owner 驗收 | 部分完成（自動＋本機 Runtime 證據） | Phase 7 | 底層證據不能取代完整驗收 |
 
 ## Phase 1 — 契約、資料治理與驗收基線
 
@@ -96,7 +96,7 @@ Owner 已將 Gemini MVP 固定為三個接點，不新增頂層 Phase：私密�
 
 ### 目前狀態
 
-`部分完成（後端已實作，展示資料流待核對）`。根後端已有匿名身分、邀請、兩人上限、共享條件、版本、確認、GET／SSE 與重連，並有 PostgreSQL／HTTP 測試。前端開發代理已證明可轉送同源 API、Bearer 與 SSE；固定邀請碼依黑客松 cut 可保留，但若展示雙人同步，仍須連到真實後端狀態。兩支實體手機、跨網路重連、正式 HTTPS、憑證撤銷／刪除及濫用防護尚未驗收。
+`部分完成（主畫面本機串接）`。根後端已有匿名身分、邀請、兩人上限、共享條件、版本、確認、GET／SSE 與重連，並有 PostgreSQL／HTTP 測試。最新主畫面以根 Bearer 身分建立／加入真正房間並輪詢同步共享狀態；正式 proxy 另保留 Authorization／SSE。兩支實體手機、跨網路重連、正式 HTTPS、憑證撤銷／刪除及濫用防護尚未驗收。
 
 ### 相依／可平行
 
@@ -126,7 +126,7 @@ Owner 已將 Gemini MVP 固定為三個接點，不新增頂層 Phase：私密�
 
 ### 目前狀態
 
-`部分完成（後端基準已實作，Gemini 尚未接線）`。根後端已有私密輸入 migration／本人 API、同意與撤回降級、三態 envelope、有限規則解析及 Privacy Guard。匯入前端含 Gemini 相關程式，但尚未依根後端身分、同意與 schema 契約接合，也未使用真實憑證驗證成功／失敗路徑。15 筆／5 群組合成句只作回歸資料，不是模型訓練或真實需求研究證據。
+`部分完成（主流程已接；真實 Gemini 未驗）`。根後端已有私密輸入 migration／本人 API、同意與撤回降級、三態 envelope、有限規則解析及 Privacy Guard。前端需求 adapter 已接根身分／Session，Gemini 正規化文字只進後端 allowlist 解析器，不保存或公開；缺金鑰時畫面明示規則 fallback。尚未用有效 Gemini 憑證驗成功、逾時、額度與非法輸出。15 筆／5 群組合成句只作回歸資料，不是模型訓練或真實需求研究證據。
 
 ### 相依／可平行
 
@@ -156,7 +156,7 @@ Owner 已將 Gemini MVP 固定為三個接點，不新增頂層 Phase：私密�
 
 ### 目前狀態
 
-`部分完成（本機四 API PASS；正式整合未驗）`。已有 venue-record schema、政府 draft 匯入、來源／權利／審核政策守門、版本化場地／交通矩陣資料表、optional `google_place_id`、Maps URL builder 與合成測試。2026-09-05 `/maps-check` 已用真實服務通過 Maps、Places、Routes、Geocoding；尚未驗正式網域／伺服器限制、首頁流程、根後端資料邊界、失敗路徑與手機行為。資料缺少時推薦 API 仍須回 `RECOMMENDATION_DATA_UNAVAILABLE`。Embedding／RAG／Recall@K 已移到延後工作，不是本輪完成條件。
+`部分完成（本機四 API PASS；production 守門已建）`。已有 venue-record schema、來源／權利／審核政策守門、版本化場地／交通矩陣、optional `google_place_id` 與 Maps URL builder。2026-09-05 `/maps-check` 已用真實服務通過四 API；production 只允許設定的同來源 HTTPS 網域。主畫面只有根場地資料帶明確 Place ID 才取 Google 即時詳情；合成名稱不做文字搜尋、不誤配真實商家，也不回存 Google 資料。正式網域、配額與手機仍未驗。
 
 ### 相依／可平行
 
@@ -184,7 +184,7 @@ Owner 已將 Gemini MVP 固定為三個接點，不新增頂層 Phase：私密�
 
 ### 目前狀態
 
-`部分完成（合成資料後端）`。根後端已有確定性硬限制、UserFit／CoupleScore、三套差異組合、作用中場地／交通版本、`generate`／strict `itineraries`、版本失效及 Privacy Guard；整合後的根後端測試總數為 42 項。資料仍是明確 `synthetic_demo`，匯入前端的行程卡仍使用自己的固定資料，尚未串接根推薦 API。fairness 最低門檻、真實服務資料、正式前端 Runtime、三案例與 Owner 均未完成，overall 維持 `NOT_READY`。
+`部分完成（合成推薦已接主畫面）`。根後端已有確定性硬限制、UserFit／CoupleScore、三套差異組合、作用中場地／交通版本、`generate`／strict `itineraries`、版本失效及 Privacy Guard；前端已顯示根 API 的 A／B／C 三套行程、實際時長與交通，未生成前不顯示固定方案成功。資料仍明示 `synthetic_demo`；fairness 最低門檻、真實服務資料、三案例與 Owner 均未完成。
 
 ### 相依／可平行
 
@@ -215,7 +215,7 @@ Owner 已將 Gemini MVP 固定為三個接點，不新增頂層 Phase：私密�
 
 ### 目前狀態
 
-`部分完成（後端）`。根後端已有 reaction、雙方 locked、保留 stop 身分與順序的局部重排、全路線重驗、雙人 finalize，以及不可變 `too_dark` 事件。當次只改回報者；個人化有效才遞增本人長期版本，重送冪等且不進公共出口。這些 API 尚未由匯入前端完整串接；三案例 Runtime、兩支實體手機、管理審核、檢舉／隱藏、頻率限制、前端私人清單、Owner 與 training candidates 仍未完成，overall 維持 `NOT_READY`。
+`部分完成（後端＋主畫面核心互動）`。根後端已有 reaction、雙方 locked、保留 stop 身分與順序的局部重排、全路線重驗、雙人 finalize，以及不可變 `too_dark` 事件；前端已接反應、重排、定案狀態與本人偏好回饋。三案例 Runtime、兩支實體手機、管理審核、檢舉／隱藏、頻率限制、前端完整私人清單、Owner 與 training candidates 仍未完成。
 
 ### 相依／可平行
 
@@ -243,7 +243,7 @@ Owner 已將 Gemini MVP 固定為三個接點，不新增頂層 Phase：私密�
 
 ### 目前狀態
 
-`部分完成（前端細修中，展示資料流待核對）`。`frontend/` 已納入主 Repo，獨立安裝、型別檢查、client／SSR build 及開發 `/api` 代理通過；獨立 `/maps-check` 也已用真實 Google 四項服務通過。固定邀請碼與固定行程可保留為明示 demo／synthetic，不列為黑客松阻斷；真實 Gemini、必要資料流、失敗狀態、兩支實體手機及 Owner 驗收仍未完成。
+`部分完成（主畫面本機 synthetic 流程已串）`。`frontend/` 已納入主 Repo，匿名建立／加入房間、共享條件、本人私密需求、雙方確認、三套後端行程、反應／重排、finalize 與本人偏好回饋已接根 API；production Worker 也有同源 `/api` proxy。合成場地不會用名稱誤配真實 Google 商家，畫面明示 synthetic 且不顯示真實商家評分／照片。真實 Gemini、真實場地、兩支實體手機、正式網域及 Owner 驗收仍未完成。
 
 ### 相依／可平行
 
@@ -273,7 +273,7 @@ Owner 已將 Gemini MVP 固定為三個接點，不新增頂層 Phase：私密�
 
 ### 目前狀態
 
-`部分完成（底層技術證據）`。現有 schema、後端測試、前端 build、代理 smoke 與 `/maps-check` 真實 Google 四項本機 PASS 可作底層證據，但沒有證明匯入前端已完成根 API 串接。正式整合版尚未跑通真實 Gemini、完整雙人主流程、三案例、兩支實體手機、p50／p95、正式部署或 Owner sign-off，因此不得沿用底層檢查或舊合成頁的「完整主流程」結論。
+`部分完成（自動＋本機 Runtime 證據）`。`npm run check:all` 全綠，前端代理另驗 Authorization／SSE／跨來源拒絕；本機兩個瀏覽器頁面已走過合成建立／加入、共享、兩人私密確認、三套行程與結果頁。這仍不是兩支實體手機、真實 Gemini、真實場地、三案例效能、正式部署或 Owner sign-off，因此不得稱 Accepted MVP。
 
 ### 相依／可平行
 
@@ -289,7 +289,7 @@ Owner 已將 Gemini MVP 固定為三個接點，不新增頂層 Phase：私密�
 
 ## 下一刀
 
-先審查並匯入隊友最新前端，再依 `docs/TEAM_INTEGRATION.md` 接三個 Gemini 用途：第一優先讓私密需求 adapter 走唯一身分／Session 並完成 schema 與真實 API 驗收；第二優先加入評論候選標籤與本人確認；第三優先在合法行程後加入 public allowlist 安全理由改寫。每一項都先補 fail-closed、隱私與呼叫次數測試，再做雙瀏覽器／手機 Runtime。固定邀請碼／範例可保留且須標示 demo／synthetic；截止前最後時段只修阻斷、部署與演示備援，不再擴大模型用途。
+先把整合分支合回最新 `main`，再選定後端 PostgreSQL／Node 部署與前端 Cloudflare 部署，填 `SIDEBY_API_ORIGIN`、`SIDEBY_PUBLIC_ORIGIN` 及平台 secrets；用公開網址完成兩支手機的房間、隱私、生成、定案與刷新驗收。Gemini 有有效金鑰後先驗私密需求單次呼叫及 fallback；評論候選標籤與安全理由改寫若時間不足維持 `PLANNED`，不得用文件冒充完成。
 
 ## 橫向品質門檻
 

@@ -8,6 +8,13 @@
       "when": 1788576028712,
       "tag": "0000_create_profiles_and_date_records",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788592809810,
+      "tag": "0001_create_couple_rooms",
+      "breakpoints": true
     }
   ]
 }

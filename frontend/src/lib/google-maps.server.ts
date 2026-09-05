@@ -17,13 +17,33 @@ type Place = {
   photos?: Array<{ name: string; authorAttributions?: Attribution[] }>;
 };
 
-export function assertLocalMapsRequest(request: Request, mode: string | undefined) {
+export function assertLocalMapsRequest(
+  request: Request,
+  mode: string | undefined,
+  configuredPublicOrigin?: string,
+) {
   const url = new URL(request.url);
-  // ponytail: local-only until authenticated quotas and production abuse controls are reviewed.
-  if (mode !== "development" || !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)) {
-    throw new Error("Google 接線目前僅開放本機開發；正式部署須另驗權限與用量限制");
+  const origin = request.headers.get("origin");
+  if (mode === "development") {
+    if (!["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)) {
+      throw new Error("Google 開發接線只接受本機網址");
+    }
+    if (origin !== url.origin) throw new Error("Google 查詢只接受同來源頁面");
+    return;
   }
-  if (request.headers.get("origin") !== url.origin) throw new Error("Google 查詢只接受同來源的本機頁面");
+
+  let publicOrigin: URL;
+  try {
+    publicOrigin = new URL(configuredPublicOrigin ?? "");
+  } catch {
+    throw new Error("正式環境尚未設定 SIDEBY_PUBLIC_ORIGIN");
+  }
+  if (publicOrigin.protocol !== "https:" || publicOrigin.origin !== configuredPublicOrigin) {
+    throw new Error("SIDEBY_PUBLIC_ORIGIN 必須是單一 HTTPS Origin，不可包含路徑");
+  }
+  if (url.origin !== publicOrigin.origin || origin !== publicOrigin.origin) {
+    throw new Error("Google 查詢只接受已核准的公開網域");
+  }
 }
 
 async function googleJson<T>(url: string, init: RequestInit = {}, queryKey = false): Promise<T> {

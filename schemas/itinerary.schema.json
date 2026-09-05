@@ -231,6 +231,10 @@
         "google_maps_url": {
           "type": "string",
           "format": "uri"
+        },
+        "google_place_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,300}$"
         }
       }
     },

@@ -2,10 +2,63 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { assertLocalMapsRequest, autocomplete, searchVenue, resolveVenueQueries, placeDetails, computeLeg, travelLegs, geocode } from '../src/lib/google-maps.server.ts';
+import { trustedGooglePlaceIds } from '../src/lib/venue-enrichment-policy.ts';
+import { proxySidebyApi } from '../src/lib/api-proxy.server.ts';
 
 const KEY = 'synthetic-server-key-for-offline-tests';
 const point = { label: 'synthetic point', lat: 25, lng: 121 };
 const place = { id: 'example-id', displayName: { text: 'Synthetic venue' }, formattedAddress: 'Synthetic address', location: { latitude: 25, longitude: 121 } };
+
+test('venue enrichment ignores names and accepts only explicit Place IDs', () => {
+  assert.deepEqual(trustedGooglePlaceIds([
+    { name: '合成場地 1' },
+    { name: '同名真實商家' },
+  ]), []);
+  assert.deepEqual(trustedGooglePlaceIds([
+    { googlePlaceId: 'place-1' },
+    { googlePlaceId: 'place-1' },
+    { googlePlaceId: 'place-2' },
+  ]), ['place-1', 'place-2']);
+});
+
+test('production API proxy keeps one public origin and fails closed', async t => {
+  const originalOrigin = process.env.SIDEBY_API_ORIGIN;
+  delete process.env.SIDEBY_API_ORIGIN;
+  t.after(() => {
+    if (originalOrigin === undefined) delete process.env.SIDEBY_API_ORIGIN;
+    else process.env.SIDEBY_API_ORIGIN = originalOrigin;
+  });
+
+  assert.equal((await proxySidebyApi(new Request('https://sideby.example/api/runtime'), {})).status, 503);
+  const calls = [];
+  const fetchMock = t.mock.method(globalThis, 'fetch', async (url, init) => {
+    calls.push({ url: String(url), init });
+    return Response.json({ mode: 'synthetic_demo' });
+  });
+  const denied = await proxySidebyApi(new Request('https://sideby.example/api/runtime', {
+    headers: { origin: 'https://attacker.example' },
+  }), { SIDEBY_API_ORIGIN: 'https://api.sideby.example' });
+  assert.equal(denied.status, 403);
+  assert.equal(fetchMock.mock.callCount(), 0);
+
+  const response = await proxySidebyApi(new Request('https://sideby.example/api/runtime?check=1', {
+    headers: { origin: 'https://sideby.example', authorization: 'Bearer synthetic-token' },
+  }), { SIDEBY_API_ORIGIN: 'https://api.sideby.example' });
+  assert.equal(response.status, 200);
+  assert.equal(calls[0].url, 'https://api.sideby.example/api/runtime?check=1');
+  assert.equal(calls[0].init.headers.get('authorization'), 'Bearer synthetic-token');
+  assert.equal(calls[0].init.headers.get('origin'), 'https://api.sideby.example');
+  assert.equal(calls[0].init.headers.get('x-forwarded-host'), 'sideby.example');
+});
+
+test('private Gemini use requires explicit user consent and never logs provider bodies', () => {
+  const page = readFileSync(new URL('../src/routes/index.tsx', import.meta.url), 'utf8');
+  const provider = readFileSync(new URL('../src/lib/preference-ai.server.ts', import.meta.url), 'utf8');
+  assert.match(page, /if \(externalAiConsent\)/);
+  assert.match(page, /允許本次內容送至 Gemini 解析/);
+  assert.match(page, /未授權外部 AI/);
+  assert.doesNotMatch(provider, /await res\.text\(\)/);
+});
 
 test('Google direct integration (offline; no real Google calls)', async t => {
   const original = process.env.GOOGLE_MAPS_SERVER_API_KEY;
@@ -24,13 +77,33 @@ test('Google direct integration (offline; no real Google calls)', async t => {
     assert.equal(fetchMock.mock.callCount(), 0);
     process.env.GOOGLE_MAPS_SERVER_API_KEY = KEY;
   });
-  await t.test('local and same-origin guard rejects production, public host and cross-origin', () => {
+  await t.test('same-origin guard allows local development and only the configured production origin', () => {
     const request = (host, origin = host) => new Request(`${host}/_serverFn/example`, { headers: { origin } });
     assert.doesNotThrow(() => assertLocalMapsRequest(request('http://127.0.0.1:5173'), 'development'));
     assert.throws(() => assertLocalMapsRequest(request('http://127.0.0.1:5173'), 'production'));
     assert.throws(() => assertLocalMapsRequest(request('https://public.example'), 'development'));
     assert.throws(() => assertLocalMapsRequest(request('http://127.0.0.1:5173', 'https://other.example'), 'development'));
     assert.throws(() => assertLocalMapsRequest(new Request('http://localhost:5173/'), 'development'));
+    assert.doesNotThrow(() => assertLocalMapsRequest(
+      request('https://sideby.example'),
+      'production',
+      'https://sideby.example',
+    ));
+    assert.throws(() => assertLocalMapsRequest(
+      request('https://sideby.example', 'https://attacker.example'),
+      'production',
+      'https://sideby.example',
+    ));
+    assert.throws(() => assertLocalMapsRequest(
+      request('https://other.example'),
+      'production',
+      'https://sideby.example',
+    ));
+    assert.throws(() => assertLocalMapsRequest(
+      request('https://sideby.example'),
+      'production',
+      'http://sideby.example',
+    ));
   });
   await t.test('Places search uses official endpoint, header key and bounded field mask', async () => {
     response = { places: [place] };

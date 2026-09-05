@@ -44,7 +44,7 @@ npm run frontend:dev
 
 後端建立專案內獨立 PostgreSQL；無合成種子模式用 npm run dev:local。前端雲端功能須自行設定 frontend/.env；未配置時登入、Gemini、地圖可能不可用，見 [部署說明](docs/DEPLOYMENT.md)。
 
-前端開發 /api/* 已代理到根後端；頁面按鈕仍須逐項接真實 API，不能把代理通過視為功能全通。
+前端開發及正式 Worker 的 `/api/*` 都可代理到根後端。主畫面已接匿名房間、共享／私密需求、確認、合成三套行程、反應／重排、定案與本人偏好回饋；正式環境仍須填部署值並另做雙手機驗收。
 
 ## 驗證
 
@@ -57,8 +57,8 @@ npm run check:all
 ## 能力與未完成項
 
 - 既有後端包含匿名雙人房間、公開同步、本人私密輸入、同意設定、有限規則解析、合成三套行程、反應／鎖定／重排／定案與本人偏好更新。
-- 新前端原始碼含 Supabase、Gemini 與 Google Maps 接法。本輪採 API 型 MVP，不排模型訓練／自管模型／RAG；需求句作核准後的回歸驗收。
-- 前端固定房間碼／行程、Supabase 身分與根後端狀態尚待接合；兩支手機、真實雲端服務、公開部署及 Owner 驗收仍未完成。
+- 新前端保留 Lovable 畫面、可選 Supabase 帳號、Gemini 與 Google Maps 接法；核心黑客松流程在未配置 Supabase 時仍可用根後端匿名身分執行。
+- 本機 synthetic 雙人流程已接合；真實 Gemini、真實場地、兩支手機、公開部署及 Owner 驗收仍未完成。
 - 私密原文不得進對方 API、SSE、公開理由、共用歷史或一般日誌。雲端解析須告知與同意；Google 展示資料不自動進自有訓練／RAG。
 
 權威文件：[AGENTS](AGENTS.md)、[PRD](PRD.md)、[TDD](TDD.md)、[ROADMAP](ROADMAP.md)。舊模型／RAG 章節保留為歷史與未來參考，最新決策以各文件開頭及 TEAM_INTEGRATION 為準。

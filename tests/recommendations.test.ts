@@ -39,6 +39,21 @@ test('sponsorship never changes CoupleScore', () => {
   assert.ok(sponsored.every(item => item.sponsored_content));
 });
 
+test('Google detail enrichment requires an explicit Place ID from the venue record', () => {
+  const synthetic = composeItineraries({ sessionId, version: 3, shared, parserOutputs, venues, legs });
+  assert.ok(synthetic.every(item => item.stops.every(stop => stop.google_place_id === undefined)));
+
+  const identifiedVenues = venues.map((item, index) => ({
+    ...item,
+    record: { ...item.record, google_place_id: `place_${index + 1}` },
+  }));
+  const identified = composeItineraries({
+    sessionId, version: 3, shared, parserOutputs, venues: identifiedVenues, legs,
+  });
+  assert.ok(identified.every(item => item.stops.every(stop =>
+    stop.google_place_id === `place_${Number(stop.venue_id.replace('venue_test_', ''))}`)));
+});
+
 test('missing routes, unresolved input and impossible budget fail closed', () => {
   assert.deepEqual(composeItineraries({ sessionId, version: 3, shared, parserOutputs, venues, legs: [] }), []);
   assert.deepEqual(composeItineraries({ sessionId, version: 3, shared: { ...shared, budgetTwdTotal: 1 }, parserOutputs, venues, legs }), []);

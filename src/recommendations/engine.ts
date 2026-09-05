@@ -41,7 +41,7 @@ export interface PublicItinerary {
     stop_id: string; order_no: number; venue_id: string; venue_name: string; category: string; district: string;
     arrival_at: string; leave_at: string; travel_mode: z.infer<typeof travelMode>;
     travel_minutes: number; estimated_cost: number; locked: boolean;
-    booking_status: Slot['bookingStatus']; booking_url: null; google_maps_url: string;
+    booking_status: Slot['bookingStatus']; booking_url: null; google_maps_url: string; google_place_id?: string;
   }>;
   total_cost: number; total_duration_minutes: number; travel_minutes: number; couple_score: number;
   score_breakdown: { min_fit: number; mean_fit: number; context_fit: number; novelty: number; route_efficiency: number };
@@ -65,7 +65,7 @@ export const publicItinerarySchema = z.strictObject({
     arrival_at: z.iso.datetime(), leave_at: z.iso.datetime(), travel_mode: travelMode,
     travel_minutes: z.number().int().min(0), estimated_cost: z.number().min(0),
     locked: z.boolean(), booking_status: executionSlotSchema.shape.bookingStatus, booking_url: z.null(),
-    google_maps_url: z.url(),
+    google_maps_url: z.url(), google_place_id: z.string().regex(/^[A-Za-z0-9_-]{1,300}$/).optional(),
   })).min(2).max(4),
   total_cost: z.number().min(0), total_duration_minutes: z.number().int().min(1),
   travel_minutes: z.number().int().min(0), couple_score: z.number().min(0).max(1),
@@ -278,6 +278,7 @@ export function composeItineraries(input: {
         travel_mode: leg.mode, travel_minutes: leg.minutes, estimated_cost: venueCost(candidate.venue),
         locked: required.has(candidate.venue.venueId), booking_status: candidate.slot.bookingStatus, booking_url: null,
         google_maps_url: googleMapsUrl(candidate.venue.name, candidate.venue.google_place_id),
+        ...(candidate.venue.google_place_id ? { google_place_id: candidate.venue.google_place_id } : {}),
       }], candidate.venue.venueId, leave, nextCost, travel + leg.minutes);
     }
   };

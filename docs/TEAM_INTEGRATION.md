@@ -36,7 +36,7 @@
 
 ## Lovable 同步邊界
 
-匯入來源：leeshim-gif/sideby，commit e094875f89139ad02b8b3d98483aebe131a12bbd。原 Repo 保留；本 Repo 未匯入實際 .env、.lovable/project.json 或來源的 Git 歷史。
+本輪最新匯入來源：leeshim-gif/sideby，commit `c9b4925`（Polished mobile spacing）。原 Repo 保留；本 Repo 未匯入實際 `.env`、`.lovable/project.json` 或來源的 Git 歷史。
 
 原 Lovable 仍連著隊友 Repo。本次不會把它自動改接 louis8791/sideby/frontend/，也沒有雙 Repo 自動同步。共同開發以主 Repo 的分支為準；若繼續使用原 Lovable，其變更只是外部候選，需審查差異後帶入，不得覆蓋主 Repo 的新修改。
 
@@ -44,7 +44,7 @@
 
 ## 本機與驗收
 
-Google 地圖已取消 Lovable gateway 依賴；各人填自己的 `frontend/.env.local`，依 [Google 本機設定](GOOGLE_MAPS_LOCAL_SETUP.md) 開 `/maps-check`，不需要先配置 Supabase／Gemini。2026-09-05 本機 Maps、Places、Routes、Geocoding 已單次真實驗收通過；正式部署、首頁雙人流程與手機仍另驗。
+Google 地圖已取消 Lovable gateway 依賴；各人填自己的 `frontend/.env.local`，依 [Google 本機設定](GOOGLE_MAPS_LOCAL_SETUP.md) 開 `/maps-check`，不需要先配置 Supabase／Gemini。2026-09-05 本機 Maps、Places、Routes、Geocoding 已單次真實驗收通過；production 已有限定公開 Origin 的守門，但正式部署與手機仍另驗。
 
 根目錄先執行 npm ci、npm run frontend:install。後端終端用 npm run demo:local（3000，明示 synthetic_demo），正常無種子模式為 npm run dev:local；前端終端用 npm run frontend:dev（5173）。
 
@@ -52,9 +52,9 @@ Google 地圖已取消 Lovable gateway 依賴；各人填自己的 `frontend/.en
 
 npm run check:all 驗證後端及前端建置。正式部署另見 [DEPLOYMENT](DEPLOYMENT.md)，Vite 開發代理不會自動上線。
 
-## 下一刀與證據界線
+## 當前整合與證據界線
 
-匯入前端可保留固定邀請碼與 INITIAL_PLANS 作黑客松展示，不列為本輪阻斷；兩者要清楚標示 demo／synthetic，不能在 API 失敗時冒充新生成成功。目錄合併及 `/api` 代理仍不代表按鈕已接上根後端；UI 細修穩定後，再由後端支援者與前端成員共同核對必要串接。
+最新 Lovable 主畫面已接根後端的建立／加入房間、共享條件、私密需求、確認、三套合成行程、反應／重排、定案與本人偏好回饋。固定範例不會在生成失敗時冒充新結果；合成場地明示 synthetic，沒有明確 `google_place_id` 就不取真實 Google 商家資料。這只證明本機整合，不等於真實 Gemini、真實場地、公開部署或雙手機通過。
 
 ## 截止前 16 小時分工
 

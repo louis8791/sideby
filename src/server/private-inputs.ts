@@ -53,7 +53,8 @@ export async function putOwnPrivateInput(userId: string, sessionId: string, inpu
     await requireConsent(client, userId, input.visibility === 'private_remembered');
     const session = await sessionForMember(client, userId, sessionId, true);
     const parserOutput = parseWithRuleBaseline({
-      sessionId, mode: session.shared?.mode ?? null, visibility: input.visibility, rawText: input.rawText,
+      sessionId, mode: session.shared?.mode ?? null, visibility: input.visibility,
+      rawText: input.normalizedText ?? input.rawText,
     });
     const result = await client.query(`INSERT INTO session_inputs(
       id,session_id,user_id,raw_text,tags,visibility,parse_status,parser_output)

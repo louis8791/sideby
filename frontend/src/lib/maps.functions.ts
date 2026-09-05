@@ -5,7 +5,11 @@ import { assertLocalMapsRequest, autocomplete, geocode, placeDetails, resolveVen
 export type { Venue, TravelLeg, PlaceSuggestion } from "./google-maps.server";
 
 const localMaps = createMiddleware({ type: "function" }).server(async ({ next }) => {
-  assertLocalMapsRequest(getRequest(), process.env["NODE_ENV"]);
+  assertLocalMapsRequest(
+    getRequest(),
+    process.env["NODE_ENV"],
+    process.env["SIDEBY_PUBLIC_ORIGIN"],
+  );
   return next();
 });
 const point = z.object({ label: z.string().min(1).max(80), lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) });

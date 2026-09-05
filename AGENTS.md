@@ -2,7 +2,7 @@
 
 ## 2026-09-05 最新共同開發決策（優先於下方歷史模型規劃）
 
-- Google 本機接線改走官方服務，不依賴 Lovable gateway；操作見 `docs/GOOGLE_MAPS_LOCAL_SETUP.md`。2026-09-05 已在本機 `/maps-check` 驗收 Maps JavaScript、Places (New)、Routes、Geocoding 四項成功；這只證明該電腦的單次開發環境，帳務餘額、正式部署、首頁雙人流程與手機仍待驗。開發 web services 僅限 loopback＋同 Origin；不能將此開發閘門當正式授權。
+- Google 接線改走官方服務，不依賴 Lovable gateway；操作見 `docs/GOOGLE_MAPS_LOCAL_SETUP.md`。2026-09-05 已在本機 `/maps-check` 驗收 Maps JavaScript、Places (New)、Routes、Geocoding 四項成功。正式環境只允許 `SIDEBY_PUBLIC_ORIGIN` 指定的同來源 HTTPS 網域；帳務餘額、公開部署與手機仍須另驗，不能沿用本機 PASS。
 - 金鑰例外澄清：受網站來源限制的 `VITE_GOOGLE_MAPS_API_KEY` 必須交給 Maps JavaScript，屬瀏覽器可見設定；不同的 `GOOGLE_MAPS_SERVER_API_KEY` 僅放伺服器，用 Places／Routes／Geocoding，禁止 VITE_、Git、日誌及回應。此項優先於下方「所有 API key 不下放瀏覽器」舊概括句。
 
 - 使用者指定 `louis8791/sideby` 為唯一主 Repo；Lovable 程式已匯入 `frontend/`，根後端保留 `app/api/`、`src/`、`db/`。共同操作入口為 `docs/TEAM_INTEGRATION.md`，部署依 `docs/DEPLOYMENT.md`。
@@ -11,7 +11,7 @@
 - 根後端的 `rule_baseline_v1` 與零外部呼叫結果仍是既有基準；不得把其通過宣稱為 frontend 的 Gemini／Google Maps 已驗收。
 - Google 即時查詢／展示已獲本次方向授權；既有自有資料政策繼續阻擋 Google 評論、照片及衍生標籤進共用 RAG／訓練，不由匯入程式碼推定所有保存行為合法。
 - 前端與後端是同一 Repo 的兩個執行元件，lockfile 與編譯範圍分開。原 Lovable 連線仍在隊友 Repo，沒有自動改接此子目錄；共同修改以本 Repo feature 分支為準。
-- Supabase 身分、本地畫面 state、固定房號與範例行程不是根 API 的成員／定案來源。架構匯入、代理連通、完整功能串接與實機驗收分開回報。
+- 最新 Lovable 主畫面已接根 API 的匿名房間、邀請碼、共享條件、本人私密需求、雙方確認、三套合成行程、反應／重排、finalize 與本人偏好回饋；根後端仍是房間、權限與定案唯一來源。Supabase 未配置時採明示免登入黑客松流程，不把本地 state 當後端成功。正式公開部署、兩支實體手機與 Owner 驗收仍分開回報。
 - 黑客松展示可保留固定邀請碼與範例行程；兩者須標示為 demo／synthetic，且外部服務或 API 失敗時不得把範例冒充成新生成結果。固定邀請碼不阻擋本輪，但正式產品前須改為真正房間流程。
 - Owner 用語「CP 寫寫」代表：完成本輪內容、同步 Obsidian 的 AGENTS／PRD／TDD／ROADMAP，再 commit 並 push；執行前仍須排除金鑰、私密資料與不屬本輪的其他人改動。
 - 舊 `phase3-itineraries` 成果已保存於遠端 `archive/phase3-itineraries-checkpoint-20260905` commit `63cfe6c`。它是待審候選，不是 main 已採用功能；不得直接刪除或整包合併，須逐項比對現行 main。
@@ -70,7 +70,7 @@
 - 生成與 Embedding 的型號、版本、量化、維度、執行工具、硬體與授權尚待確認；不得沿用封存版的雲端模型設定或因本機已有模型就擅自選用。
 - 正式專案根目錄為 `E:\sideby`。專案專用模型、索引與執行環境須置於其下明確子目錄，模型權重、索引與私密資料不提交 Git。
 - 2026-09-05 Owner 將自管分類器／生成模型評測與場地 RAG 延後；它們不阻擋本輪黑客松 Phase 1／2 驗收，必須標 `DEFERRED`，不得改寫為 PASS。未來若恢復，仍依本節與 Roadmap Phase 3／4 獨立驗收。
-- 2026-09-05 Owner 已選定上述三個 Gemini 接點；目前只有匯入前端的私密需求 JSON adapter 原始碼，尚未證明主流程、真實 API 或隱私 Runtime。評論候選標籤與安全理由改寫均為 `PLANNED`，不得因本文件完成改標 PASS。
+- 2026-09-05 Owner 已選定上述三個 Gemini 接點；私密需求 adapter 已接入主畫面，輸出只作後端 allowlist 規則的正規化提示，後端仍保存原文且不公開正規化內容。缺 `GEMINI_API_KEY` 時畫面明示使用本機規則 fallback；真實 Gemini 尚未驗收。評論候選標籤與安全理由改寫仍為 `PLANNED`。
 
 ## 黑客松訓練契約（需求資料契約已實作，訓練待執行）
 

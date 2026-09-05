@@ -121,8 +121,8 @@ export async function analyzePreferences(input: PreferenceInput): Promise<Prefer
   });
 
   if (!res.ok) {
-    // Never surface raw provider output to the client.
-    console.error("[preference-ai] provider error", res.status, await res.text());
+    // Never read, log or surface raw provider output.
+    console.error("[preference-ai] provider error", res.status);
     throw new Error("AI analysis failed");
   }
 

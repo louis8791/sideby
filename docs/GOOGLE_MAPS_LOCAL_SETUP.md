@@ -70,7 +70,7 @@ npm run frontend:dev
 ## 實作與公開部署界線
 
 - 直接使用 Google 官方 Places／Routes／Geocoding 端點；地圖由 Maps JavaScript 載入。前端 Node 開發指令讀取自己的 `.env`／`.env.local`，既有程序環境優先；不要在根 `.env` 填前端金鑰。
-- Web service 僅允許 development、loopback hostname 與同 Origin 請求。目前 production 預設拒絕；不能直接把此開發伺服器開到網際網路。正式部署要先接應用授權、用量／濫用防護、部署端 secrets，再另行驗收；不透過把 NODE_ENV 改 development 來繞過。
+- Web service 在 development 僅允許 loopback hostname 與同 Origin；production 只允許 `SIDEBY_PUBLIC_ORIGIN` 指定的同來源 HTTPS 網域。正式部署仍要設定 Google key 限制、配額／預算與平台 secrets，再另行驗收；不透過把 `NODE_ENV` 改為 development 來繞過。
 - Google 資料只即時展示，不保存在全域 venue cache、資料庫、檔案或共用 RAG／訓練。照片作者歸屬隨照片傳遞並顯示；搜尋／卡片保留 Google Maps 歸屬。地圖虛線只表示站點順序，不冒充實際道路導航。
 - 首頁原有登入、Gemini、固定邀請碼與三套範例行程並未因接地圖自動完成整合；本次沒有修改 DB、私密授權或根 API。Supabase 未設定時略過的只是可選 token 附加，私密伺服器函式仍檢查 requireSupabaseAuth。
 - 正式公開前仍要驗公開條款／隱私告知、Google 內容保存及歸屬、配額、失敗 UX、雙人與手機流程。
