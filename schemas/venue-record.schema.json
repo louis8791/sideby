@@ -20,6 +20,10 @@
       "type": "string",
       "pattern": "^venue_[a-z0-9_-]{1,120}$"
     },
+    "google_place_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,300}$"
+    },
     "name": {
       "type": "string",
       "minLength": 1,

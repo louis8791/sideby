@@ -1,6 +1,6 @@
-# Phase 1B＋Phase 2 後端串接契約
+# Sideby 後端串接契約
 
-2026-09-05：已實作房間／公開條件骨架、私密 Session 輸入、有限規則解析，以及版本化同意、私人場地清單與待審公開評論後端。自管模型／RAG、偏好更新器、內容管理、推薦與 UI 尚未接入。
+2026-09-05：已實作房間／公開條件、私密 Session 輸入、有限規則解析、版本化同意、私人場地清單，以及 Phase 5 確定性推薦後端第一刀。推薦測試使用合成核准場地；Phase 4 真實場地／RAG、偏好更新器、內容管理與 UI 尚未接入。
 
 ## 啟動與驗證
 
@@ -51,6 +51,8 @@ npm test
 | GET `/api/sessions/:id/private-inputs` | 無 | 200，本人的私密輸入；無資料、非成員或對方沒有自己的投影為 404 |
 | POST `/api/sessions/:id/private-inputs` | 見下方 | 200，新增或取代本人的私密輸入與 parser envelope |
 | DELETE `/api/sessions/:id/private-inputs` | 無 | 204，刪除本人的私密輸入 |
+| POST `/api/sessions/:id/generate` | `{ "version": 3 }` | 200，當期三套公開安全行程；不足三套則失敗 |
+| GET `/api/sessions/:id/itineraries` | 無 | 200，只回當前 Session version 的行程 |
 | GET `/api/me/consents` | 無 | 200，目前條款版本與兩項設定 |
 | PUT `/api/me/consents` | 見下方 | 200，持久化後的條款與設定 |
 | GET `/api/me/venues/:venueId/feedback` | 無 | 200，本人的私人回饋；無資料或非本人為 404 |
@@ -180,7 +182,8 @@ PUT 固定建立 private，不能夾帶 visibility。取得 `feedbackId` 後，�
     "meetingPoint": {
       "label": "合成範例集合點",
       "latitude": 25.04,
-      "longitude": 121.52
+      "longitude": 121.52,
+      "matrixKey": "meeting_example"
     },
     "budgetTwdTotal": 1800,
     "transport": ["walk", "transit"],
@@ -197,6 +200,17 @@ PUT 固定建立 private，不能夾帶 visibility。取得 `feedbackId` 後，�
 - `budgetTwdTotal` 是兩人合計新臺幣整數，輸入範圍 0–100000。後續行程仍須另驗算，不代表支出可行性已驗證。
 - `transport`：不重複的 `walk`／`transit`／`car`／`bike`，至少一種。
 - `stops`：2–4 站；`outdoorAllowed` 是是否容許戶外，`bookingAllowed` 是是否容許需要訂位／購票的安排，不代表已查到空位。
+- Phase 5 生成可另外送 `maxLegTravelMinutes`、`maxTotalTravelMinutes`、`dietaryRequirements`、`allergensToAvoid`、`accessibilityRequirements`、`participantMinAge`、`hardNoCategories`。這些都是公開共同硬限制；`matrixKey` 對應團隊核准的交通矩陣集合點，沒有對應資料時不估算直線距離冒充路線。
+
+## 三套行程生成
+
+生成前必須有兩位成員、共同條件、兩份 parsed 私密輸入，以及雙方對目前 version 的確認。後端只讀唯一 active 的 venue dataset 與 travel matrix；場地仍會通過 `assessVenue` 的來源、權利、審核、價格及營業守門。
+
+硬限制先於計分。時間、營業、保守價格、訂位、交通、步行／總移動、飲食、過敏、無障礙、年齡、Hard No 與戶外／天氣任一不合即排除。必要事實未知、路線缺少、資料版本未啟用或不足三套實質差異時，不產生部分或固定假結果。
+
+CoupleScore 固定使用 `45% × min(A,B) + 25% × mean(A,B) + 15% × context + 10% × novelty + 5% × route efficiency`。贊助只影響 `sponsored_content` 標示，不參與分數。每套 2～4 站，包含時間、保守估計費用、移動、score breakdown、中性公開理由、資料驗證狀態及以自有／授權名稱產生的 Google Maps click-out；optional `google_place_id` 只用於 `query_place_id`，URL 不含 API key。
+
+Session 共同條件或私密輸入修改後 version 增加；GET 不再回傳舊 version 的行程，過期 generate 回 `VERSION_CONFLICT`。目前資料寫入沒有公開管理 API，測試直接載入合成 venue record／execution slot／travel matrix；正式匯入器與真實資料仍待完成。
 
 ## 公開狀態、版本與確認
 
@@ -260,8 +274,12 @@ data: {"code":"UNAUTHENTICATED"}
 | 409 | PARTNER_REQUIRED | 等另一人加入 |
 | 409 | TERMS_REQUIRED | 先接受目前條款版本 |
 | 409 | PERSONALIZATION_REQUIRED | private_remembered 前先開啟個人化設定 |
+| 409 | SESSION_NOT_READY | 等兩人完成輸入並確認目前版本 |
+| 422 | PRIVATE_INPUT_UNRESOLVED | 兩份私密需求尚未完成或仍需釐清 |
+| 422 | NO_FEASIBLE_ITINERARIES | 硬限制及差異規則後不足三套，不自動放寬 |
 | 413 | BODY_TOO_LARGE | JSON 超過 8 KiB |
 | 415 | JSON_REQUIRED | 設定 application/json |
 | 503 | SERVICE_UNAVAILABLE | 服務／資料庫未就緒，顯示錯誤並退避 |
+| 503 | RECOMMENDATION_DATA_UNAVAILABLE | 核准場地資料集或交通矩陣未啟用 |
 
-尚未實作的 generate、itineraries、公開評論檢舉／管理等路由不會回傳假成功。目前只可串接上表，其他功能按 Roadmap 後續接入。
+尚未實作的局部重排、finalize、公開評論檢舉／管理等路由不會回傳假成功。目前只可串接上表，其他功能按 Roadmap 後續接入。

@@ -2,13 +2,13 @@
 
 > 一款把兩個人的喜好、限制與不方便直說的需求，整理成三套可直接出發的完整約會行程的雙人共決策產品。
 
-本 repository 包含 Sideby MVP 規格與可執行後端：匿名雙人房間、公開條件、版本確認、SSE、私密輸入、版本化同意與有限規則解析。前端 UI、自管模型／RAG 與完整推薦尚未整合。
+本 repository 包含 Sideby MVP 規格與可執行後端：匿名雙人房間、公開條件、版本確認、SSE、私密輸入、版本化同意、有限規則解析，以及 Phase 5 確定性硬限制／CoupleScore／三套行程生成。前端 UI、自管模型／RAG 與真實場地資料尚未整合。
 
 ## 啟動後端
 
 需要 Node.js 22.13+。在 repo 根目錄執行 `npm ci`、`npm run dev:local`，即會啟動本機 PostgreSQL 與 Next.js API（http://127.0.0.1:3000）。目前首頁沒有 UI。完整欄位、同步、錯誤及環境說明見 [後端串接契約](docs/BACKEND_API.md)。
 
-驗證：執行 `npm test`，它會先正式建置，再以獨立 PostgreSQL 與正式 HTTP 服務測試後端、場地資料、需求資料契約、parser 與 Privacy Guard。2026-09-05 共 27 tests passed；真實需求表、自管模型／RAG、兩個獨立瀏覽器與公開部署仍待驗收。
+驗證：執行 `npm test`，它會先正式建置，再以獨立 PostgreSQL 與正式 HTTP 服務測試後端、場地資料、需求資料契約、parser、Privacy Guard 與推薦引擎。2026-09-05 共 32 tests passed；真實需求表、自管模型／RAG、至少 12 筆核准真實場地、交通矩陣、兩個獨立瀏覽器與公開部署仍待驗收。
 
 ## 版本與提交紀錄
 

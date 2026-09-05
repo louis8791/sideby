@@ -120,6 +120,7 @@
         "venue_id",
         "venue_name",
         "category",
+        "district",
         "arrival_at",
         "leave_at",
         "travel_mode",
@@ -127,6 +128,7 @@
         "estimated_cost",
         "locked",
         "booking_status"
+        ,"google_maps_url"
       ],
       "properties": {
         "stop_id": {
@@ -146,6 +148,10 @@
           "minLength": 1
         },
         "category": {
+          "type": "string",
+          "minLength": 1
+        },
+        "district": {
           "type": "string",
           "minLength": 1
         },
@@ -193,6 +199,10 @@
             "string",
             "null"
           ],
+          "format": "uri"
+        },
+        "google_maps_url": {
+          "type": "string",
           "format": "uri"
         }
       }

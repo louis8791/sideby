@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { z } from 'zod';
 import { importGovernmentRow } from '../src/venues/government-import';
 import { assessVenue } from '../src/venues/policy';
+import { googleMapsUrl } from '../src/venues/maps';
 import type { VenueRecord } from '../src/venues/schema';
 import { venueRecordSchema } from '../src/venues/schema';
 
@@ -95,4 +96,16 @@ test('generated JSON Schema stays parseable', async () => {
   assert.equal(schema.type, 'object');
   assert.ok(schema.properties.venueId);
   assert.deepEqual(schema, z.toJSONSchema(venueRecordSchema, { target: 'draft-7' }));
+});
+
+test('Google Maps click-out encodes owned names, prefers optional Place ID and has no API key', () => {
+  const withId = new URL(googleMapsUrl('自有 場地＆咖啡', 'ChIJ_test-123'));
+  assert.equal(withId.origin, 'https://www.google.com');
+  assert.equal(withId.searchParams.get('api'), '1');
+  assert.equal(withId.searchParams.get('query'), '自有 場地＆咖啡');
+  assert.equal(withId.searchParams.get('query_place_id'), 'ChIJ_test-123');
+  assert.equal(withId.searchParams.has('key'), false);
+  const withoutId = new URL(googleMapsUrl('授權場地'));
+  assert.equal(withoutId.searchParams.get('query'), '授權場地');
+  assert.equal(withoutId.searchParams.has('query_place_id'), false);
 });

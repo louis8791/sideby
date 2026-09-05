@@ -5,6 +5,7 @@ import {
   privateInput, type PublicState,
 } from './contracts';
 import * as feedback from './feedback';
+import * as itineraries from './itineraries';
 import * as privateInputs from './private-inputs';
 import * as rooms from './rooms';
 
@@ -136,7 +137,7 @@ export async function handle(request: Request): Promise<Response> {
       const input = await body(request, z.strictObject({ coupleId: id }));
       return json(await rooms.createSession(userId, input.coupleId));
     }
-    const match = path.match(/^\/api\/sessions\/([^/]+)(?:\/(shared|confirm|events|private-inputs))?$/);
+    const match = path.match(/^\/api\/sessions\/([^/]+)(?:\/(shared|confirm|events|private-inputs|generate|itineraries))?$/);
     if (match) {
       const sessionId = id.parse(match[1]), action = match[2];
       if (request.method === 'GET' && !action) return json(await rooms.publicState(userId, sessionId));
@@ -153,6 +154,13 @@ export async function handle(request: Request): Promise<Response> {
         const input = await body(request, z.strictObject({ version }));
         await rooms.confirm(userId, sessionId, input.version);
         return json(await rooms.publicState(userId, sessionId));
+      }
+      if (request.method === 'POST' && action === 'generate') {
+        const input = await body(request, z.strictObject({ version }));
+        return json(await itineraries.generate(userId, sessionId, input.version));
+      }
+      if (request.method === 'GET' && action === 'itineraries') {
+        return json(await itineraries.list(userId, sessionId));
       }
       if (action === 'private-inputs') {
         if (request.method === 'GET') return json(await privateInputs.getOwnPrivateInput(userId, sessionId));
