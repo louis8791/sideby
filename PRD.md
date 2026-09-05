@@ -8,6 +8,8 @@ Sideby 現有偏好 UI 共 34 個可選項（12 氛圍＋8 狀態＋10 互動＋
 
 Google API 金鑰繼續用於使用者當下的地圖、Places、Routes 與 Geocoding 顯示，不作大量永久建庫。Sideby 只保存可重用的 Place ID；Google 名稱、地址、照片、評論、評分與搜尋結果不進場地資料、訓練或 RAG。
 
+PR #11 已合併並部署。Railway PostgreSQL 現有 1,121 筆可追溯 draft 候選，另有每日 00:00 UTC 更新排程；這不改變「未核准不得進推薦」的產品規則，production active 仍保留 9 筆 `synthetic_demo`。
+
 ## 2026-09-05 公開部署狀態
 
 PR #4 已合併至 `main`（`16cfd04`）。Railway PostgreSQL 與根 Next.js 已公開，`/api/runtime` 回 200／`standard`；Cloudflare Worker `https://louis8791-sideby-frontend.louis8791.workers.dev` 已設定正式 API／public origins 與 Google server secret，首頁、地圖檢查頁、同源 API 與匿名身分建立已通過公開 HTTPS 驗證。47 根＋15 Maps／proxy 測試及 GitHub checks 全綠。

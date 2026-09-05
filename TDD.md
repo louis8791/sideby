@@ -6,6 +6,7 @@
 - `src/venues/tourism-open-data.ts` 下載交通部景點與餐飲 JSON，移除 BOM、只保留臺北／新北，正規化為既有 `VenueRecord`，再走 `assessVenue` 唯一政策出口。政府來源不建立 attributes，缺街道地址時明示「開放資料未提供街道地址」，非法座標或 schema／policy 失敗即拒絕。
 - `npm run venues:refresh-government` 為 dry-run；加 `-- --apply` 才以既有 `DATABASE_URL` 寫入 staging。資料庫使用 advisory transaction lock；內容 hash 相同時回用既有 run，批次失敗 rollback，不修改 `venue_datasets.active`。
 - 自動測試覆蓋城市篩選、缺值明示、錯誤拒絕、無 Google 欄位、draft／零主觀標籤、PostgreSQL transaction、冪等與 active dataset 保留。正式 activation 仍須人工核准、execution slots、交通資料與三案例 Runtime。
+- PR #11 `0452445` 已部署 Railway；migration 009 成功，正式 DB 首次寫入 1,121 筆，第二次相同內容回 `reused=true` 且 run ID 相同。獨立 `venue-refresh-daily` Cron 服務用 PostgreSQL reference，每日 00:00 UTC 執行同一命令並在完成後退出。
 
 ## 2026-09-05 公開 Worker／Railway 執行契約
 

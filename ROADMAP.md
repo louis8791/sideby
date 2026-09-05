@@ -3,6 +3,7 @@
 ## 2026-09-06 地點更新進度
 
 - 已完成：交通部觀光署每日景點／餐飲 JSON 下載、臺北／新北篩選、VenueRecord 正規化、政策守門、PostgreSQL staging、來源／版本／hash／數量紀錄、transaction rollback 與冪等重跑。
+- 已完成：PR #11 合併與 Railway production 套用；migration 009、1,121 筆 draft、17 筆拒絕、相同內容冪等回用及公開 API 200 已驗證。`venue-refresh-daily` 每日 00:00 UTC 自動更新。
 - 最新單次來源盤點：全臺 9,818、臺北／新北 1,138、可進 draft staging 1,121、拒絕 17；不是 Sideby 自有大數據，也不是 1,121 個已核准可執行地點。
 - 下一刀：從候選庫選出首批至少 12 筆真實場地，人工補價格、營業、停留、室內外／冷氣與主觀屬性證據，再建立 execution slots／交通資料並跑三案例 Runtime。Gate 通過前 production 保留 9 個 `synthetic_demo`。
 - 偏好 UI 目前 34 項，原 30 項仍有 19 項缺正式推薦映射；偏好擴充另開一刀，不能為了增加數字而讓未定義標籤進排序。
