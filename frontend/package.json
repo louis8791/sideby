@@ -8,7 +8,8 @@
     "test:maps": "node --experimental-strip-types --test tests/google-maps.test.mjs",
     "build": "vite build",
     "build:dev": "vite build --mode development",
-    "preview": "vite preview",
+    "preview": "wrangler dev --config .output/server/wrangler.json --ip 127.0.0.1",
+    "deploy": "wrangler deploy --config .output/server/wrangler.json --keep-vars",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write ."
@@ -92,6 +93,7 @@
     "prettier": "^3.7.3",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.1",
-    "vite": "8.1.5"
+    "vite": "8.1.5",
+    "wrangler": "4.129.0"
   }
 }

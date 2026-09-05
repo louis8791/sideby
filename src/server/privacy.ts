@@ -4,6 +4,7 @@ const forbiddenPublicKeys = new Set([
   'rawText', 'raw_text', 'structuredInput', 'structured_input', 'parserOutput', 'parser_output',
   'clarification', 'clarificationQuestion', 'clarification_question', 'userId', 'user_id',
   'token', 'tokenHash', 'token_hash', 'inviteCode', 'invite_code',
+  'environment',
 ]);
 
 function inspect(value: unknown): void {

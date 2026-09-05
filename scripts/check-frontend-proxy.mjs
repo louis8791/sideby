@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-// Run against the local frontend while both dev servers are running.
+// Run against Vite or the built Cloudflare Worker while the demo backend is running.
 // This creates one anonymous identity and test room; no provider credentials are used.
 const base = new URL(process.argv[2] || 'http://127.0.0.1:5173');
 assert.ok(['127.0.0.1', 'localhost'].includes(base.hostname) && base.protocol === 'http:');
@@ -23,7 +23,14 @@ async function call(path, body, token, requestOrigin = origin) {
 const runtime = await call('/api/runtime');
 assert.equal(runtime.status, 200, 'runtime must come from the backend');
 assert.equal((await runtime.json()).mode, 'synthetic_demo', 'use demo:local, not a real data environment');
-assert.equal((await call('/api/auth/anonymous', {}, undefined, 'https://invalid.example')).status, 403);
+for (let attempt = 0; attempt < 3; attempt++) {
+  const denied = await call('/api/auth/anonymous', {}, undefined, 'https://invalid.example');
+  assert.equal(denied.status, 403);
+  assert.equal((await denied.json()).error.code, 'ORIGIN_DENIED');
+  const alive = await call('/api/runtime');
+  assert.equal(alive.status, 200, 'worker must survive rejected POST bodies');
+  assert.equal((await alive.json()).mode, 'synthetic_demo');
+}
 const identity = await call('/api/auth/anonymous', {});
 assert.equal(identity.status, 201);
 const { token } = await identity.json();
@@ -48,4 +55,15 @@ try {
 } finally {
   await reader.cancel();
 }
-console.log('PASS: frontend proxy forwards API, Authorization and SSE; cross-origin writes remain denied.');
+const home = await fetch(origin, { signal: AbortSignal.timeout(8000) });
+assert.equal(home.status, 200, 'homepage must still render after API and SSE requests');
+const html = await home.text();
+assert.match(html, /sideby/iu);
+const assets = [...new Set([...html.matchAll(/(?:src|href)="(\/assets\/[^"<>]+)"/gu)].map(match => match[1]))];
+for (const path of assets) {
+  const asset = await fetch(origin + path, { signal: AbortSignal.timeout(8000) });
+  assert.equal(asset.status, 200, `built asset must be available: ${path}`);
+  assert.match(asset.headers.get('content-type') ?? '', /javascript|css/iu);
+  await asset.arrayBuffer();
+}
+console.log(`PASS: API, Authorization, SSE, repeated cross-origin denial, homepage and ${assets.length} built assets.`);

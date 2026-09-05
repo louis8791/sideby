@@ -210,10 +210,16 @@ export async function replan(userId: string, itineraryId: string, expectedVersio
       itineraryId,
       lockedStopIdsByVenue: Object.fromEntries(locked.map(stop => [stop.venue_id, stop.stop_id])),
       lockedOrderByVenue: Object.fromEntries(locked.map(stop => [stop.venue_id, stop.order_no])),
+      lockedSlotIdsByVenue: Object.fromEntries(locked.flatMap(stop => stop.execution_slot_id
+        ? [[stop.venue_id, stop.execution_slot_id]] : [])),
     }), context.privateTexts);
     if (replanned.length !== 1) throw new ApiError(422, 'NO_FEASIBLE_REPLAN');
     const lockedBefore = new Set(locked.map(stop => `${stop.stop_id}:${stop.venue_id}:${stop.order_no}`));
     if ([...lockedBefore].some(key => !replanned[0].stops.some(stop => `${stop.stop_id}:${stop.venue_id}:${stop.order_no}` === key && stop.locked))) {
+      throw new ApiError(500, 'LOCKED_STOP_CHANGED');
+    }
+    if (locked.some(before => before.execution_slot_id && !replanned[0].stops.some(after =>
+      after.stop_id === before.stop_id && after.execution_slot_id === before.execution_slot_id))) {
       throw new ApiError(500, 'LOCKED_STOP_CHANGED');
     }
     await client.query('UPDATE session_itineraries SET payload=$2 WHERE id=$1', [itineraryId, replanned[0]]);

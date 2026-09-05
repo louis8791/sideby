@@ -263,10 +263,20 @@
           "minimum": 0
         },
         "outdoor_allowed": {
+          "description": "Shared outdoor permission; specific area and cooling requirements are independent in environment.",
           "type": [
             "boolean",
             "null"
           ]
+        },
+        "environment": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["setting", "airConditioning"],
+          "properties": {
+            "setting": { "enum": ["indoor", "outdoor", null] },
+            "airConditioning": { "enum": ["required", "excluded", null] }
+          }
         },
         "booking_required": {
           "type": [

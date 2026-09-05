@@ -23,7 +23,14 @@ const avoid = z.strictObject({
   hard: z.boolean(),
   scope,
 });
+export const environmentRequirements = z.strictObject({
+  setting: z.enum(['indoor', 'outdoor']).nullable(),
+  airConditioning: z.enum(['required', 'excluded']).nullable(),
+});
+export type EnvironmentRequirements = z.infer<typeof environmentRequirements>;
+
 const hardConstraints = z.strictObject({
+  environment: environmentRequirements.optional(),
   date: z.iso.date().nullable(),
   start_time: z.string().regex(/^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/).nullable(),
   end_time: z.string().regex(/^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/).nullable(),
@@ -94,12 +101,33 @@ export function acceptParserOutput(candidate: unknown): ParserEnvelope {
 
 export function parseWithRuleBaseline(input: {
   sessionId: string; mode: 'now' | 'future' | null; visibility: Visibility; rawText: string;
+  environment?: EnvironmentRequirements;
 }): ParserEnvelope {
   if (!input.mode) return {
     status: 'unavailable', engine: 'rule_baseline_v1', result: null, clarification: null,
     code: 'SHARED_REQUIRED', externalModelApiCalls: 0,
   };
-  const text = input.rawText;
+  // Only whole, explicit labels are consumed; negated or ambiguous sentences remain unresolved.
+  const environment = environmentRequirements.parse(input.environment ?? { setting: null, airConditioning: null });
+  let environmentConflict = false;
+  const text = input.rawText.split(/[、，。,.]/u).filter(part => {
+    const label = part.trim();
+    const setting = label === '室內' ? 'indoor' : ['戶外', '戶外（含戶外區）'].includes(label) ? 'outdoor' : null;
+    const cooling = label === '冷氣' ? 'required' : label === '無冷氣' ? 'excluded' : null;
+    if (setting) {
+      environmentConflict ||= environment.setting !== null && environment.setting !== setting;
+      environment.setting = setting;
+    }
+    if (cooling) {
+      environmentConflict ||= environment.airConditioning !== null && environment.airConditioning !== cooling;
+      environment.airConditioning = cooling;
+    }
+    return !setting && !cooling;
+  }).join('。');
+  if (environmentConflict) return {
+    status: 'needs_clarification', engine: 'rule_baseline_v1', result: null,
+    clarification: '環境條件互相衝突，請在室內／戶外、冷氣／無冷氣各選一項或不限。', externalModelApiCalls: 0,
+  };
   if (/有氣氛/u.test(text) && !/(浪漫|放鬆|熱鬧)/u.test(text)) return {
     status: 'needs_clarification', engine: 'rule_baseline_v1', result: null,
     clarification: '「有氣氛」是偏向浪漫、放鬆，還是熱鬧？', externalModelApiCalls: 0,
@@ -142,6 +170,7 @@ export function parseWithRuleBaseline(input: {
     scope: itemScope, source: 'conversation',
   });
   const hard = emptyHardConstraints();
+  hard.environment = environment;
   const walk = text.match(/(?:最多|不要超過)\s*(\d{1,3})\s*分鐘/u);
   if (walk) hard.max_walk_minutes = Number(walk[1]);
   const budget = text.match(/(?:每人|一人)\s*(?:最多|上限)?\s*(\d{2,6})\s*元?/u);
@@ -163,7 +192,8 @@ export function parseWithRuleBaseline(input: {
     status: 'needs_clarification', engine: 'rule_baseline_v1', result: null,
     clarification: '目前規則無法安全解析完整句子，請把每項需求分開說明。', externalModelApiCalls: 0,
   };
-  if (!preferences.length && !avoids.length && hard.max_walk_minutes === null && hard.absolute_budget === null) {
+  if (!preferences.length && !avoids.length && hard.max_walk_minutes === null && hard.absolute_budget === null
+    && environment.setting === null && environment.airConditioning === null) {
     return {
       status: 'needs_clarification', engine: 'rule_baseline_v1', result: null,
       clarification: '請補充想要或不想要的氣氛、活動，或可量化限制。', externalModelApiCalls: 0,

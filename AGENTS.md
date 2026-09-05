@@ -1,5 +1,20 @@
 # Sideby 專案規則
 
+## 2026-09-05 部署 Runtime 守門
+
+- 前端正式產物是 Nitro Cloudflare Worker；`frontend/` 的 `npm run preview` 使用固定版本 Wrangler 4.129.0 執行 `.output/server/wrangler.json`，不是 Node／純靜態 preview。`npm run deploy` 使用同一產物並保留平台 vars。
+- API proxy 拒絕帶 body 的請求時，須以串流完整讀至 EOF 後回原 403／503；不緩衝、不轉送、不記錄拒絕內容，不能只取消 body。Node 測試加上真正 workerd 的連續拒絕／正常請求、SSE、首頁與資源驗收，禁止放寬來源檢查掩蓋錯誤。
+- 本機 47 根測試＋15 Maps／proxy 測試與 Worker Runtime 已通過；公開 Railway／PostgreSQL／Cloudflare 仍待部署授權與實際 HTTPS 驗收。登入、OAuth 授權、帳務與秘密由 Owner 操作，不索取值；詳見交接及部署文件。
+
+## 2026-09-05 環境選項、持續發展與需求證據
+
+- 雙方使用相同的 34 個選項：既有氛圍 12、狀態 8、互動 10，新增環境 4；完整清單與目前映射見 PRD。不得把「畫面可選」寫成「全部已參與推薦」。既有 30 項僅 11 項有本機明確映射，其餘 19 項待補語意契約與回歸測試。
+- 新增戶外（包含店家戶外區）、室內、冷氣、無冷氣。室內外與冷氣各自單選／不限，屬本次每站必須滿足的硬限制；不能把無冷氣解讀為冷氣不限，也不能由室內推定有冷氣。
+- 實際使用區域由 `executionSlot` 管理：同店室內與露臺是不同 slot；戶外區須被實際排入，冷氣未知不得冒名 false。雙方衝突或資料不足時維持安全失敗，不公開誰提出限制。鎖站重排須保留新行程的 execution slot。
+- 對外持續發展主張限定於可核對的私人清單、版本化同意、本人有限回饋、互動重排、版本化合法場地資料與可分工的同一 Repo。一般自動學習、RAG、跨城市、商家平台、穩定帳號復原與商業驗證仍待開發，不冒稱已完成。
+- 公開量化證據見 `docs/DEMAND_EVIDENCE.md` 與 `docs/demand-evidence.json`：每筆保留來源、年份、地域、樣本、分母、推論限制。不同樣本不可合併成總樣本或轉成 Sideby 採用率；這是公開統計整理，不是 Sideby 自有大數據。
+- 本次變更先保留於 `feat/environment-preferences-and-evidence`；未 commit／push 不代表 main、遠端或既有 sprint worktree 已更新。部署仍依原交接入口，不索取密碼或 API key。
+
 ## 2026-09-05 最新共同開發決策（優先於下方歷史模型規劃）
 
 - 跨對話唯一接續入口為 `docs/NEXT_SESSION_HANDOFF.md`；下一個 Agent 先核對該檔記載的 main hash、未完成部署、秘密設定與驗收邊界，不從舊 Run Note 猜現在狀態。

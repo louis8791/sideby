@@ -1,5 +1,22 @@
 # Sideby — MVP TDD
 
+## 2026-09-05 Worker 執行契約
+
+- `frontend/package.json` 固定 Wrangler 4.129.0；preview／deploy 均讀 Nitro `.output/server/wrangler.json`，保留 generated `no_bundle` 與 assets。deploy 加 `--keep-vars`，避免重部署清掉 Dashboard 的一般環境變數；server secrets 仍由平台保存。
+- 帶 body 的 API 請求在 Origin／設定檢查早退時，`rejectRequest` 以 `pipeTo(new WritableStream())` 完整消耗串流，不轉送／記錄內容；cancel-only 在本機 workerd 仍會造成下一請求 500 與 ProxyWorker 結束，不可當修復。
+- `google-maps.test.mjs` 驗 403／503 早退讀到 EOF 且零 outbound fetch；`check-frontend-proxy.mjs` 真正驗重複拒絕後仍可 API／Bearer／SSE，最後首頁與建置資源仍可讀。2026-09-05：47 根＋15 Maps／proxy 測試、前端 typecheck／build 及本機 workerd 通過；正式 Cloudflare Runtime 仍待驗。
+
+## 2026-09-05 環境契約與可延續架構
+
+- `POST /private-inputs` 可帶 `environment: {setting: indoor|outdoor|null, airConditioning: required|excluded|null}`。前端將明確選項直接傳後端；這兩欄不送 Gemini 解讀，不受其正規化遺失影響。API 嚴格檢查列舉與額外欄位。
+- 唯一私密權威為 `parser_output.result.hard_constraints.environment`，沿用 session_inputs 的 JSONB，不增加 DB migration。舊 envelope 未帶此欄等同不限。API 回給本人，公開狀態／SSE 不可含 environment；修改仍使雙方確認失效。
+- 規則解析只接受完整環境標籤，不將「不要冷氣」等否定句當成「冷氣」。文字與結構化欄位矛盾要求澄清；雙方各自合法但交集為空則無可行行程，不洩露哪一方的限制。
+- `executionSlotSchema` 的 `outdoor` 描述實際使用區域；新增可選 `areaName`、`airConditioned: boolean|null`。未知／舊值缺漏不補成 false。同一 venue 可有多個區域 slot，每一候選必須由同一 slot 同時滿足環境、開放時段與天氣。戶外天氣必須 verified_suitable。
+- 新生成的 public stop 帶 `execution_slot_id` 與 `area_name`；兩欄在 schema 保持 optional 以相容舊行程。這是公開場地資訊，不回傳個人的篩選理由。局部重排以 slot ID 保留已鎖定區域；舊行程無 slot ID 僅保留原有 venue／順序契約，不能宣稱區域已鎖。
+- 持續發展沿用既有分層：私人清單／同意／回饋 API、本人偏好投影、合法場地 gate、版本化候選與交通矩陣、雙人版本確認。新增偏好先補 schema、語意、可信資料及行為測試，不以模型補值當事實。既有候選讀取上限與組合搜尋尚未完成規模測試。
+- 公開需求研究只存摘要與統計指標於 `docs/demand-evidence.json`，不下載個人受訪紀錄、不混入場地資料或推薦訓練。來源與推論分欄，數值不得視為 Sideby 實績。
+- 驗收涵蓋完整標籤解析、雙方衝突、四種室內外／冷氣組合、未知資料拒絕、同店不跨區借條件、鎖區重排、舊 envelope 相容與私密 HTTP／SSE。產品語意與完整 34 項清單以 PRD 為準。
+
 ## 2026-09-05 單一 Repo 整合更新
 
 跨對話接續先讀 `docs/NEXT_SESSION_HANDOFF.md`，再用目前 Git、環境欄位存在性、測試與 Runtime 重驗；交接記錄不是部署或外部服務成功證據。

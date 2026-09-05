@@ -119,7 +119,7 @@ function fromSidebyItinerary(itinerary: SidebyItinerary, index: number): Plan {
       time: clock(stop.arrival_at),
       name: stop.venue_name,
       type: stop.category,
-      meta: `${Math.max(1, Math.round((new Date(stop.leave_at).getTime() - new Date(stop.arrival_at).getTime()) / 60000))} 分鐘 · NT$${stop.estimated_cost}`,
+      meta: `${Math.max(1, Math.round((new Date(stop.leave_at).getTime() - new Date(stop.arrival_at).getTime()) / 60000))} 分鐘 · NT$${stop.estimated_cost}${stop.area_name ? ` · ${stop.area_name}` : ""}`,
       color: stopColors[stopIndex % stopColors.length]!,
       query: stop.venue_name,
       locked: stop.locked,
@@ -531,6 +531,8 @@ function Home() {
 
   const [visibility, setVisibility] = useState("private_session");
   const [moods, setMoods] = useState<string[]>(["放鬆"]);
+  const [setting, setSetting] = useState<"indoor" | "outdoor" | null>(null);
+  const [airConditioning, setAirConditioning] = useState<"required" | "excluded" | null>(null);
   const [expandedCats, setExpandedCats] = useState<string[]>([]);
   const [rawText, setRawText] = useState("");
   const [hardNo, setHardNo] = useState("");
@@ -843,18 +845,25 @@ function Home() {
         personalizationEnabled: remembered,
         modelImprovementOptIn: false,
       });
+      const environmentLabels = [
+        setting === "indoor" ? "室內" : setting === "outdoor" ? "戶外（含戶外區）" : "",
+        airConditioning === "required" ? "冷氣" : airConditioning === "excluded" ? "無冷氣" : "",
+      ].filter(Boolean);
       const privateText = [
         rawText.trim(),
         moods.length ? `選擇：${moods.join("、")}` : "",
         hardNo.trim() ? `絕對不要${hardNo.trim()}` : "",
+        environmentLabels.join("、"),
       ].filter(Boolean).join("。");
-      const normalizedText = canonicalPreference(profile ?? localPreferenceProfile(moods, rawText, hardNo));
+      const normalizedText = [canonicalPreference(profile ?? localPreferenceProfile(moods, rawText, hardNo)),
+        ...environmentLabels].filter(Boolean).join("、");
       const saved = await sidebyApi<{ parse?: { status?: string } }>(
         identity,
         "POST",
         `/api/sessions/${identity.sessionId}/private-inputs`,
         {
           rawText: privateText,
+          environment: { setting, airConditioning },
           ...(normalizedText ? { normalizedText } : {}),
           tags: [],
           visibility: remembered ? "private_remembered" : "private_session",
@@ -1333,6 +1342,36 @@ function Home() {
                       </div>
                     );
                   })}
+                </div>
+
+                <div className="pref-block">
+                  <div className="block-head">
+                    <h4>環境條件</h4>
+                    <small>每組單選，可不限</small>
+                  </div>
+                  <p className="block-help">每一站的實際使用區域都須符合。戶外包含店內的戶外區；冷氣不明不算符合。雙方條件衝突時需重新選擇。</p>
+                  <div className="pref-cat">
+                    <div className="pref-cat-title">室內／戶外</div>
+                    <div className="chip-grid" role="group" aria-label="室內或戶外">
+                      {([{ value: null, label: "不限室內外" }, { value: "indoor", label: "室內" },
+                        { value: "outdoor", label: "戶外（含戶外區）" }] as const).map(option => (
+                        <button key={option.label} type="button" aria-pressed={setting === option.value}
+                          className={`mood-chip ${setting === option.value ? "selected" : ""}`}
+                          onClick={() => setSetting(option.value)}>{option.label}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="pref-cat">
+                    <div className="pref-cat-title">冷氣需求</div>
+                    <div className="chip-grid" role="group" aria-label="冷氣需求">
+                      {([{ value: null, label: "不限冷氣" }, { value: "required", label: "冷氣" },
+                        { value: "excluded", label: "無冷氣" }] as const).map(option => (
+                        <button key={option.label} type="button" aria-pressed={airConditioning === option.value}
+                          className={`mood-chip ${airConditioning === option.value ? "selected" : ""}`}
+                          onClick={() => setAirConditioning(option.value)}>{option.label}</button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="pref-block">
