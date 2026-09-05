@@ -1,0 +1,24 @@
+[
+  {
+    "datasetVersion": "synthetic-example-1",
+    "datasetName": "政府觀光開放資料（合成範例）",
+    "datasetUrl": "https://example.gov.tw/open-data/example",
+    "dataOwner": "sideby-team",
+    "licenseName": "政府資料開放授權條款（合成欄位示例）",
+    "licenseUrl": "https://example.gov.tw/license/example",
+    "recordId": "demo-001",
+    "name": "河畔文化館（合成範例）",
+    "address": "新北市板橋區範例路1號",
+    "district": "板橋區",
+    "latitude": 25.012,
+    "longitude": 121.461,
+    "category": "cultural",
+    "description": "提供展覽與公共休憩空間。",
+    "phone": null,
+    "website": null,
+    "openingHours": "週二至週日 10:00–18:00（來源記載，尚未核對現況）",
+    "checkedAt": "2026-09-05T10:00:00+08:00",
+    "licenseVerified": true,
+    "descriptionReuseAllowed": true
+  }
+]

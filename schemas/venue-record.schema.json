@@ -1,0 +1,591 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "datasetVersion": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "dataOwner": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "venueId": {
+      "type": "string",
+      "pattern": "^venue_[a-z0-9_-]+$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "cafe",
+        "restaurant",
+        "exhibition",
+        "workshop",
+        "park",
+        "walk",
+        "entertainment",
+        "cultural",
+        "market",
+        "other"
+      ]
+    },
+    "location": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "district": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "latitude": {
+          "type": "number",
+          "minimum": 24.6,
+          "maximum": 25.4
+        },
+        "longitude": {
+          "type": "number",
+          "minimum": 121.2,
+          "maximum": 122.1
+        }
+      },
+      "required": [
+        "address",
+        "district",
+        "latitude",
+        "longitude"
+      ],
+      "additionalProperties": false
+    },
+    "facts": {
+      "type": "object",
+      "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "phone": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "website": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uri"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "price": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "unknown",
+                "source_reported",
+                "verified_current"
+              ]
+            },
+            "minTwd": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "maxTwd": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "basis": {
+              "type": "string",
+              "enum": [
+                "person",
+                "couple",
+                "entry",
+                "unknown"
+              ]
+            },
+            "evidenceRefs": {
+              "maxItems": 20,
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "status",
+            "minTwd",
+            "maxTwd",
+            "basis",
+            "evidenceRefs"
+          ],
+          "additionalProperties": false
+        },
+        "openingHours": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "unknown",
+                "source_reported",
+                "verified_current"
+              ]
+            },
+            "rawText": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "evidenceRefs": {
+              "maxItems": 20,
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "status",
+            "rawText",
+            "evidenceRefs"
+          ],
+          "additionalProperties": false
+        },
+        "facilities": {
+          "maxItems": 30,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        }
+      },
+      "required": [
+        "description",
+        "phone",
+        "website",
+        "price",
+        "openingHours",
+        "facilities"
+      ],
+      "additionalProperties": false
+    },
+    "sources": {
+      "minItems": 1,
+      "maxItems": 50,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "evidenceId": {
+            "type": "string",
+            "pattern": "^evidence_[a-z0-9_-]+$"
+          },
+          "sourceType": {
+            "type": "string",
+            "enum": [
+              "government_open_data",
+              "merchant_official",
+              "team_observation",
+              "owned_photo",
+              "consented_feedback"
+            ]
+          },
+          "sourceName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "sourceUrl": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sourceRecordId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "checkedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "observedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "licenseName": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "licenseUrl": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rightsStatus": {
+            "type": "string",
+            "enum": [
+              "open_license_verified",
+              "owned",
+              "permission_recorded",
+              "reference_only",
+              "pending"
+            ]
+          },
+          "allowInRag": {
+            "type": "boolean"
+          },
+          "evidenceSummary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "evidenceId",
+          "sourceType",
+          "sourceName",
+          "sourceUrl",
+          "sourceRecordId",
+          "checkedAt",
+          "observedAt",
+          "licenseName",
+          "licenseUrl",
+          "rightsStatus",
+          "allowInRag",
+          "evidenceSummary"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "attributes": {
+      "maxItems": 100,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "attribute": {
+            "type": "string",
+            "enum": [
+              "bright",
+              "quiet",
+              "cute",
+              "childish",
+              "romantic",
+              "formal",
+              "interactive",
+              "relaxing",
+              "freshness",
+              "walking",
+              "food_variety"
+            ]
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scaleVersion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "evidenceQuality": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "uncertainty": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "general",
+              "contextual",
+              "personal"
+            ]
+          },
+          "context": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "timeOfDay": {
+                    "type": "string",
+                    "enum": [
+                      "morning",
+                      "afternoon",
+                      "evening",
+                      "night",
+                      "unknown"
+                    ]
+                  },
+                  "dayType": {
+                    "type": "string",
+                    "enum": [
+                      "weekday",
+                      "weekend",
+                      "holiday",
+                      "unknown"
+                    ]
+                  },
+                  "area": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 120
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "timeOfDay",
+                  "dayType",
+                  "area"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "proposed",
+              "approved",
+              "disputed",
+              "stale",
+              "unknown"
+            ]
+          },
+          "evidenceRefs": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^evidence_[a-z0-9_-]+$"
+            }
+          },
+          "reviewedBy": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reviewedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "attribute",
+          "value",
+          "scaleVersion",
+          "evidenceQuality",
+          "uncertainty",
+          "scope",
+          "context",
+          "status",
+          "evidenceRefs",
+          "reviewedBy",
+          "reviewedAt"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "review": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "approved",
+            "rejected",
+            "stale"
+          ]
+        },
+        "reviewedBy": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reviewedAt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "status",
+        "reviewedBy",
+        "reviewedAt"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "datasetVersion",
+    "dataOwner",
+    "venueId",
+    "name",
+    "category",
+    "location",
+    "facts",
+    "sources",
+    "attributes",
+    "review"
+  ],
+  "additionalProperties": false
+}
