@@ -44,6 +44,8 @@
 
 ## 本機與驗收
 
+Google 地圖已取消 Lovable gateway 依賴；各人填自己的 `frontend/.env.local`，依 [Google 本機設定](GOOGLE_MAPS_LOCAL_SETUP.md) 開 `/maps-check`，不需要先配置 Supabase／Gemini。此次只到憑證輸入；真實 Google 與正式部署、首頁雙人流程仍另驗。
+
 根目錄先執行 npm ci、npm run frontend:install。後端終端用 npm run demo:local（3000，明示 synthetic_demo），正常無種子模式為 npm run dev:local；前端終端用 npm run frontend:dev（5173）。
 
 設定欄位見 frontend/.env.example；空值代表未設定。開發 /api/* 代理到 127.0.0.1:3000，保留 Authorization、Host、Origin 與 SSE；後端仍檢查來源。改後端埠時以 SIDEBY_API_ORIGIN 對齊。不同電腦的 127.0.0.1 不相通。

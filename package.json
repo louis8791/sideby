@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "maps:config": "node scripts/check-google-config.mjs",
+    "test:maps": "npm --prefix frontend run test:maps",
     "dev": "next dev --hostname 127.0.0.1",
     "dev:local": "tsx scripts/local.ts",
     "demo:local": "tsx scripts/local.ts --demo",
@@ -14,7 +16,7 @@
     "frontend:build": "npm --prefix frontend run build",
     "frontend:typecheck": "npm --prefix frontend run typecheck",
     "test:frontend-proxy": "node scripts/check-frontend-proxy.mjs",
-    "check:all": "npm test && npm run frontend:typecheck && npm run frontend:build",
+    "check:all": "npm test && npm run test:maps && npm run frontend:typecheck && npm run frontend:build",
     "workspace:check": "tsx scripts/workspace.ts",
     "test:workspace": "tsx --test tests/workspace.test.ts",
     "schemas:venues": "tsx scripts/generate-venue-schema.ts",

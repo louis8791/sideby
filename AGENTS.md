@@ -2,6 +2,9 @@
 
 ## 2026-09-05 最新共同開發決策（優先於下方歷史模型規劃）
 
+- Google 本機接線改走官方服務，不依賴 Lovable gateway；操作見 `docs/GOOGLE_MAPS_LOCAL_SETUP.md`。本輪只到 Owner 輸入憑證，真實 Google／帳務／正式部署仍待驗收。開發 web services 僅限 loopback＋同 Origin；不能將此開發閘門當正式授權。
+- 金鑰例外澄清：受網站來源限制的 `VITE_GOOGLE_MAPS_API_KEY` 必須交給 Maps JavaScript，屬瀏覽器可見設定；不同的 `GOOGLE_MAPS_SERVER_API_KEY` 僅放伺服器，用 Places／Routes／Geocoding，禁止 VITE_、Git、日誌及回應。此項優先於下方「所有 API key 不下放瀏覽器」舊概括句。
+
 - 使用者指定 `louis8791/sideby` 為唯一主 Repo；Lovable 程式已匯入 `frontend/`，根後端保留 `app/api/`、`src/`、`db/`。共同操作入口為 `docs/TEAM_INTEGRATION.md`，部署依 `docs/DEPLOYMENT.md`。
 - 本輪採 Gemini＋Google Maps API 型 MVP，不排模型訓練／自管生成／Embedding／RAG。下方相關舊禁止及訓練工作包是歷史／延後參考，不阻擋本輪；權限、硬限制、來源與隱私守門保持必要。
 - 外部 API 只按已配置服務執行，不把失敗默默切成假成功。私密資料送模型須告知與同意；不得公開原文、憑證或原始供應商錯誤。

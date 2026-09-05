@@ -2,6 +2,8 @@
 
 ## 2026-09-05 本輪最新路徑
 
+本輪新增 Google 本機接線子項（不新增 Phase）：官方 Maps JavaScript／Places (New)／Routes／Geocoding、私密設定範本與 `/maps-check` 已實作；憑證／帳務輸入、真實服務及正式部署為待辦，不標整體 PASS。操作見 `docs/GOOGLE_MAPS_LOCAL_SETUP.md`；其他工作同時進行的 Roadmap 重整不由本次覆蓋。
+
 使用者指定主 Repo `louis8791/sideby`。本輪先完成同 Repo 的 `frontend/`、根後端、獨立 lockfile／建置與共同文件，再依序接建房／加入、私密輸入、確認、Gemini／Google Maps、生成／定案，最後驗雙裝置及正式網址。Manus 只增指定元件。
 
 不排訓練、自管生成、Embedding 或 RAG；進階需求句改作核准後的回歸驗收。下方八階段與舊自管／零 API 工作包保留歷史對照，相關項目為 DEFERRED，不能當作 API 型 MVP 的必要訓練前置。既有後端規則／隱私測試仍需通過，前端匯入與代理不代表主流程串接完成。最新分工與驗收界線見 `docs/TEAM_INTEGRATION.md`。

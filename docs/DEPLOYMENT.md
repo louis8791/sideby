@@ -15,10 +15,10 @@
 | Next.js 後端 | DATABASE_URL、db/*.sql | 正式 DB 執行 npm run db:migrate；不會自動產生真實推薦場地。 |
 | 原前端 Supabase | URL、publishable key，需要時 service role | 見 frontend/.env.example；不等於根後端匿名身分。 |
 | Gemini | GEMINI_API_KEY，僅伺服器 | 原程式直接呼叫 Gemini；缺值不可用。需驗額度、同意、輸出及失敗狀態。 |
-| Google Maps | 限制用途的 browser key、原 gateway 的 LOVABLE_API_KEY／GOOGLE_MAPS_API_KEY | 原 gateway 憑證的外部部署可用性待驗，不能假定一般 Google key 可直接取代。 |
+| Google Maps | VITE_GOOGLE_MAPS_API_KEY、不同的 GOOGLE_MAPS_SERVER_API_KEY | 已改官方 API。本輪僅開放本機 development，同 Origin；配置見 GOOGLE_MAPS_LOCAL_SETUP。正式授權、濫用防護、部署 secrets 與真實 API 另驗。 |
 | 原前端資料 | frontend/drizzle/、supabase/、登入回呼、RLS | 不自動遷移到根 DB；資料、Storage 與雲端設定不隨 Git clone 出現。 |
 
-從範本複製設定後在本機或平台填入，實際 .env 不進 Git。瀏覽器值可被使用者看見；service role、Gemini、gateway 憑證不得加 VITE_ 前綴。
+從範本複製設定後在本機或平台填入，實際 .env 不進 Git。瀏覽器值可被使用者看見；service role、Gemini、Google 伺服器金鑰不得加 VITE_ 前綴。本輪 Google 本機使用 frontend/.env.local，詳見 [Google 設定](GOOGLE_MAPS_LOCAL_SETUP.md)。
 
 ## 正式入口
 
