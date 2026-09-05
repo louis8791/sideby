@@ -223,13 +223,14 @@ function minutes(km: number, speedKmh: number, fixed: number) {
   return Math.min(240, Math.max(1, Math.ceil(km / speedKmh * 60 + fixed)));
 }
 
-function travelLegs(fromKey: string, from: { latitude: number; longitude: number }, targets: ApprovedVenue[]) {
+type LocatedVenue = { venueId: string; latitude: number; longitude: number };
+function travelLegs(fromKey: string, from: { latitude: number; longitude: number }, targets: LocatedVenue[], matrixVersion = approvedMatrixVersion) {
   return targets.flatMap(to => {
     const km = distanceKm(from, to);
     return [
-      { matrixVersion: approvedMatrixVersion, fromKey, toKey: to.venueId, mode: 'bus' as const, minutes: minutes(km, 22, 8) },
-      { matrixVersion: approvedMatrixVersion, fromKey, toKey: to.venueId, mode: 'car' as const, minutes: minutes(km, 35, 5) },
-      { matrixVersion: approvedMatrixVersion, fromKey, toKey: to.venueId, mode: 'scooter' as const, minutes: minutes(km, 30, 5) },
+      { matrixVersion, fromKey, toKey: to.venueId, mode: 'bus' as const, minutes: minutes(km, 22, 8) },
+      { matrixVersion, fromKey, toKey: to.venueId, mode: 'car' as const, minutes: minutes(km, 35, 5) },
+      { matrixVersion, fromKey, toKey: to.venueId, mode: 'scooter' as const, minutes: minutes(km, 30, 5) },
     ];
   });
 }
@@ -238,8 +239,14 @@ export function approvedTravelLegs() {
   return venues.flatMap(from => travelLegs(from.venueId, from, venues.filter(to => to.venueId !== from.venueId)));
 }
 
-export function approvedMeetingLegs(matrixKey: string, point: { latitude: number; longitude: number }) {
-  return travelLegs(matrixKey, point, venues);
+export function approvedMeetingLegs(matrixKey: string, point: { latitude: number; longitude: number }, records?: VenueRecord[]) {
+  return travelLegs(matrixKey, point, records ? records.map(record => ({ venueId: record.venueId, ...record.location })) : venues);
+}
+
+export function estimatedDatasetLegs(records: VenueRecord[], matrixVersion: string, neighborLimit = Number.POSITIVE_INFINITY) {
+  const targets = records.map(record => ({ venueId: record.venueId, ...record.location }));
+  return targets.flatMap(from => travelLegs(from.venueId, from, targets.filter(to => to.venueId !== from.venueId)
+    .sort((a, b) => distanceKm(from, a) - distanceKm(from, b)).slice(0, neighborLimit), matrixVersion));
 }
 
 export function approvedSourceRecordIds() {

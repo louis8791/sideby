@@ -5,6 +5,7 @@ import {
   ApiError, CURRENT_TERMS_VERSION, type FeedbackInput, type FeedbackPatch,
 } from './contracts';
 import { publicProjection } from './privacy';
+import { lockLearningChanges, revokeLearningCandidatesForUser, revokeLearningCandidatesForFeedback } from './learning';
 
 async function requireTerms(client: PoolClient, userId: string) {
   const accepted = await client.query(
@@ -38,6 +39,7 @@ export async function updateConsents(
   input: { termsVersion: string; personalizationEnabled: boolean; modelImprovementOptIn: boolean },
 ) {
   return transaction(async client => {
+    await lockLearningChanges(client);
     await client.query(`INSERT INTO terms_acceptances(user_id,terms_version) VALUES ($1,$2)
       ON CONFLICT (user_id,terms_version) DO NOTHING`, [userId, input.termsVersion]);
     const result = await client.query(`INSERT INTO consent_preferences(
@@ -52,6 +54,7 @@ export async function updateConsents(
       'SELECT accepted_at FROM terms_acceptances WHERE user_id=$1 AND terms_version=$2',
       [userId, input.termsVersion],
     );
+    if (!input.modelImprovementOptIn) await revokeLearningCandidatesForUser(client, userId);
     if (!input.personalizationEnabled) {
       const changed = await client.query(`UPDATE session_inputs SET visibility='private_session',
         parser_output=CASE WHEN parser_output->>'status'='parsed'
@@ -105,6 +108,7 @@ export async function listOwnFeedback(userId: string) {
 
 export async function putOwnFeedback(userId: string, venueId: string, input: FeedbackInput) {
   return transaction(async client => {
+    await lockLearningChanges(client);
     await requireTerms(client, userId);
     const result = await client.query(`INSERT INTO venue_feedback(
       id,user_id,venue_id,note_text,user_tags,rating_1_to_5,visit_state)
@@ -115,12 +119,14 @@ export async function putOwnFeedback(userId: string, venueId: string, input: Fee
         moderation_status=CASE WHEN venue_feedback.visibility='public' THEN 'pending' ELSE 'none' END,
         updated_at=clock_timestamp(),deleted_at=NULL
       RETURNING *`, [randomUUID(), userId, venueId, input.noteText, input.userTags, input.rating, input.visitState]);
+    await revokeLearningCandidatesForFeedback(client, result.rows[0].id);
     return privateView(result.rows[0]);
   });
 }
 
 export async function patchOwnFeedback(userId: string, feedbackId: string, input: FeedbackPatch) {
   return transaction(async client => {
+    await lockLearningChanges(client);
     const current = await client.query(
       'SELECT * FROM venue_feedback WHERE id=$1 AND user_id=$2 AND deleted_at IS NULL FOR UPDATE',
       [feedbackId, userId],
@@ -140,15 +146,20 @@ export async function patchOwnFeedback(userId: string, feedbackId: string, input
       feedbackId, userId, value('noteText', row.note_text), value('userTags', row.user_tags),
       value('rating', row.rating_1_to_5), value('visitState', row.visit_state), visibility,
     ]);
+    if (changesContent) await revokeLearningCandidatesForFeedback(client, feedbackId);
     return privateView(result.rows[0]);
   });
 }
 
 export async function deleteOwnFeedback(userId: string, feedbackId: string) {
-  const result = await pool().query(`UPDATE venue_feedback SET visibility='private',
+  await transaction(async client => {
+  await lockLearningChanges(client);
+  const result = await client.query(`UPDATE venue_feedback SET visibility='private',
     moderation_status='deleted',deleted_at=clock_timestamp(),updated_at=clock_timestamp()
     WHERE id=$1 AND user_id=$2 AND deleted_at IS NULL`, [feedbackId, userId]);
   if (!result.rowCount) throw new ApiError(404, 'NOT_FOUND');
+  await revokeLearningCandidatesForFeedback(client, feedbackId);
+  });
 }
 
 export async function listPublicReviews(venueId: string, limit: number, offset: number) {

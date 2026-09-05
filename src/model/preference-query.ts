@@ -1,9 +1,7 @@
 import { z } from 'zod';
+import { preferenceAttributes, selectablePreferenceLabels, targetsForLabel, type PreferenceLabel } from './preference-catalog';
 
-const attributes = z.enum([
-  'bright', 'cute', 'childish', 'quiet', 'romantic', 'formal',
-  'interactive', 'relaxing', 'freshness', 'walking', 'food_variety',
-]);
+const attributes = z.enum(preferenceAttributes);
 const score = z.number().min(0).max(1);
 const scope = z.enum(['session', 'long_term']);
 
@@ -102,6 +100,7 @@ export function acceptParserOutput(candidate: unknown): ParserEnvelope {
 export function parseWithRuleBaseline(input: {
   sessionId: string; mode: 'now' | 'future' | null; visibility: Visibility; rawText: string;
   environment?: EnvironmentRequirements;
+  selectedPreferences?: PreferenceLabel[];
 }): ParserEnvelope {
   if (!input.mode) return {
     status: 'unavailable', engine: 'rule_baseline_v1', result: null, clarification: null,
@@ -110,7 +109,7 @@ export function parseWithRuleBaseline(input: {
   // Only whole, explicit labels are consumed; negated or ambiguous sentences remain unresolved.
   const environment = environmentRequirements.parse(input.environment ?? { setting: null, airConditioning: null });
   let environmentConflict = false;
-  const text = input.rawText.split(/[、，。,.]/u).filter(part => {
+  let text = input.rawText.split(/[、，。,.]/u).filter(part => {
     const label = part.trim();
     const setting = label === '室內' ? 'indoor' : ['戶外', '戶外（含戶外區）'].includes(label) ? 'outdoor' : null;
     const cooling = label === '冷氣' ? 'required' : label === '無冷氣' ? 'excluded' : null;
@@ -135,6 +134,20 @@ export function parseWithRuleBaseline(input: {
   const itemScope = input.visibility === 'private_remembered' ? 'long_term' : 'session';
   const preferences: z.infer<typeof preference>[] = [];
   const avoids: z.infer<typeof avoid>[] = [];
+  const labels = new Set<PreferenceLabel>(input.selectedPreferences ?? []);
+  const negatedLabels: Array<{ label: PreferenceLabel; hard: boolean }> = [];
+  // Consume complete clauses only: "不要浪漫" must never become "浪漫".
+  text = text.split('。').filter(part => {
+    const negative = part.trim().match(/^(絕對不要|不要|不想要|不喜歡)(.+)$/u);
+    if (negative && selectablePreferenceLabels.includes(negative[2] as PreferenceLabel)) {
+      negatedLabels.push({ label: negative[2] as PreferenceLabel, hard: negative[1] === '絕對不要' });
+      return false;
+    }
+    const label = part.trim() as PreferenceLabel;
+    if (!selectablePreferenceLabels.includes(label)) return true;
+    labels.add(label);
+    return false;
+  }).join('。');
   if (/(明亮|採光好|亮一點)/u.test(text)) preferences.push({
     attribute: 'bright', target_min: 0.6, importance: 0.8, confidence: 1,
     scope: itemScope, source: 'conversation',
@@ -169,6 +182,24 @@ export function parseWithRuleBaseline(input: {
     attribute: 'freshness', target_min: 0.5, importance: 0.6, confidence: 1,
     scope: itemScope, source: 'conversation',
   });
+  for (const label of labels) for (const target of targetsForLabel(label)) {
+    if (target.min !== undefined) preferences.push({
+      attribute: target.attribute, target_min: target.min, importance: .7, confidence: 1,
+      scope: itemScope, source: 'selection',
+    });
+    if (target.max !== undefined) avoids.push({
+      attribute: target.attribute, target_max: target.max, importance: .7, hard: false, scope: itemScope,
+    });
+  }
+  for (const { label, hard: isHard } of negatedLabels) for (const target of targetsForLabel(label)) {
+    if (target.min !== undefined) avoids.push({ attribute: target.attribute, target_max: .3,
+      importance: .8, hard: isHard, scope: itemScope });
+    // A hard lower bound cannot be represented by the current avoid schema; ask instead.
+    if (target.max !== undefined) return {
+      status: 'needs_clarification', engine: 'rule_baseline_v1', result: null,
+      clarification: '請直接選擇想要的狀態或提供明確限制。', externalModelApiCalls: 0,
+    };
+  }
   const hard = emptyHardConstraints();
   hard.environment = environment;
   const walk = text.match(/(?:最多|不要超過)\s*(\d{1,3})\s*分鐘/u);
@@ -178,7 +209,8 @@ export function parseWithRuleBaseline(input: {
     hard.budget_scope = 'per_person';
     hard.absolute_budget = Number(budget[1]);
   }
-  const residual = text
+  const unrestricted = /^(?:不限|都可以|沒有其他需求|沒有特別偏好)$/u.test(text.trim());
+  const residual = (unrestricted ? '' : text)
     .replace(/明亮|採光好|亮一點/gu, '')
     .replace(/可愛/gu, '')
     .replace(/不要(?:太)?幼稚|不幼稚|幼稚感.{0,4}(?:低|少|不要)/gu, '')
@@ -192,7 +224,7 @@ export function parseWithRuleBaseline(input: {
     status: 'needs_clarification', engine: 'rule_baseline_v1', result: null,
     clarification: '目前規則無法安全解析完整句子，請把每項需求分開說明。', externalModelApiCalls: 0,
   };
-  if (!preferences.length && !avoids.length && hard.max_walk_minutes === null && hard.absolute_budget === null
+  if (!unrestricted && !preferences.length && !avoids.length && hard.max_walk_minutes === null && hard.absolute_budget === null
     && environment.setting === null && environment.airConditioning === null) {
     return {
       status: 'needs_clarification', engine: 'rule_baseline_v1', result: null,

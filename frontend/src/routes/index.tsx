@@ -164,45 +164,6 @@ const backendErrors: Record<string, string> = {
   NETWORK_UNAVAILABLE: "目前連不上 Sideby，沒有顯示假成功。",
 };
 
-function canonicalPreference(profile: PreferenceProfile) {
-  const source = [
-    ...profile.moods,
-    ...profile.preferred_place_types,
-    ...profile.preferred_activities,
-    ...profile.soft_preferences,
-    ...profile.hard_exclusions,
-    ...profile.other_constraints,
-  ].join("、");
-  const values = [
-    /明亮|採光/u.test(source) && "明亮",
-    /可愛/u.test(source) && "可愛",
-    /幼稚/u.test(source) && "不要太幼稚",
-    /安靜|聊天/u.test(source) && "想安靜聊天",
-    (profile.walking_preference === "low" || /少走|不想走|走太多/u.test(source)) && "不要走太多路",
-    /浪漫/u.test(source) && "浪漫",
-    /放鬆|輕鬆|療癒/u.test(source) && "放鬆",
-    /互動|體驗|動手做/u.test(source) && "一起體驗",
-    /新鮮|特別/u.test(source) && "新鮮",
-  ].filter((value): value is string => Boolean(value));
-  return [...new Set(values)].join("、");
-}
-
-function localPreferenceProfile(moods: string[], freeText: string, hardNo: string): PreferenceProfile {
-  const source = `${freeText}、${hardNo}`;
-  return {
-    moods,
-    preferred_place_types: [],
-    preferred_activities: [],
-    soft_preferences: freeText.trim() ? [freeText.trim()] : [],
-    hard_exclusions: hardNo.trim() ? [hardNo.trim()] : [],
-    energy_level: "unspecified",
-    walking_preference: /少走|不想走|走太多/u.test(source) ? "low" : "unspecified",
-    indoor_outdoor: "unspecified",
-    food_preferences: [],
-    other_constraints: [],
-  };
-}
-
 const INITIAL_PLANS: Plan[] = [
   {
     id: "A",
@@ -572,6 +533,23 @@ function Home() {
   const [rawText, setRawText] = useState("");
   const [hardNo, setHardNo] = useState("");
   const [externalAiConsent, setExternalAiConsent] = useState(false);
+  const [modelImprovementOptIn, setModelImprovementOptIn] = useState(false);
+  const [consentsReady, setConsentsReady] = useState(false);
+  const [savingConsent, setSavingConsent] = useState(false);
+  const [personalizationEnabled, setPersonalizationEnabled] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    setConsentsReady(false);
+    if (!identity) return;
+    void sidebyApi<{ modelImprovementOptIn: boolean; personalizationEnabled: boolean }>(identity, 'GET', '/api/me/consents').then(value => {
+      if (!cancelled) {
+        setModelImprovementOptIn(value.modelImprovementOptIn);
+        setPersonalizationEnabled(value.personalizationEnabled);
+        setConsentsReady(true);
+      }
+    }).catch(() => { if (!cancelled) toast.error('無法讀取資料使用設定，請稍後再試。'); });
+    return () => { cancelled = true; };
+  }, [identity]);
   const [generating, setGenerating] = useState(false);
   const [aiError, setAiError] = useState(false);
   const [preferenceProfile, setPreferenceProfile] = useState<PreferenceProfile | null>(null);
@@ -857,14 +835,12 @@ function Home() {
     setGenerating(true);
     setAiError(false);
     try {
-      let profile: PreferenceProfile | null = null;
       if (externalAiConsent) {
         try {
           const result = await runPreferenceAnalysis({
             data: { moods, freeText: rawText, hardNo, visibility },
           });
-          profile = result.profile;
-          setPreferenceProfile(profile);
+          setPreferenceProfile(result.profile);
         } catch {
           setPreferenceProfile(null);
           toast.info("Gemini 暫時不可用，改用本機安全規則解析。");
@@ -873,38 +849,41 @@ function Home() {
         setPreferenceProfile(null);
         toast.info("未授權外部 AI，本次只使用本機安全規則解析。");
       }
+      if (!consentsReady || savingConsent) throw new SidebyApiError('NETWORK_UNAVAILABLE');
       const remembered = visibility === "private_remembered";
       await sidebyApi(identity, "PUT", "/api/me/consents", {
         termsVersion: "2026-09-05-v1",
         acceptTerms: true,
         personalizationEnabled: remembered,
-        modelImprovementOptIn: false,
+        modelImprovementOptIn,
       });
+      setPersonalizationEnabled(remembered);
       const environmentLabels = [
         setting === "indoor" ? "室內" : setting === "outdoor" ? "戶外（含戶外區）" : "",
         airConditioning === "required" ? "冷氣" : airConditioning === "excluded" ? "無冷氣" : "",
       ].filter(Boolean);
       const privateText = [
         rawText.trim(),
-        moods.length ? `選擇：${moods.join("、")}` : "",
         hardNo.trim() ? `絕對不要${hardNo.trim()}` : "",
         environmentLabels.join("、"),
       ].filter(Boolean).join("。");
-      const normalizedText = [canonicalPreference(profile ?? localPreferenceProfile(moods, rawText, hardNo)),
-        ...environmentLabels].filter(Boolean).join("、");
-      const saved = await sidebyApi<{ parse?: { status?: string } }>(
+      const saved = await sidebyApi<{ parse?: { status?: string; clarification?: string | null } }>(
         identity,
         "POST",
         `/api/sessions/${identity.sessionId}/private-inputs`,
         {
-          rawText: privateText,
+          rawText: privateText || "不限",
+          selectedPreferences: moods,
           environment: { setting, airConditioning },
-          ...(normalizedText ? { normalizedText } : {}),
           tags: [],
           visibility: remembered ? "private_remembered" : "private_session",
         },
       );
-      if (saved.parse?.status !== "parsed") throw new SidebyApiError("PRIVATE_INPUT_UNRESOLVED");
+      if (saved.parse?.status !== "parsed") {
+        setAiError(true);
+        toast.error(saved.parse?.clarification || backendErrors['PRIVATE_INPUT_UNRESOLVED']);
+        return;
+      }
       await confirmAndGenerate();
       go("plans");
     } catch (error) {
@@ -1397,6 +1376,7 @@ function Home() {
                     <small>每組單選，可不限</small>
                   </div>
                   <p className="block-help">每一站的實際使用區域都須符合。戶外包含店內的戶外區；冷氣不明不算符合。雙方條件衝突時需重新選擇。</p>
+                  <p className="block-help">偏好會參與配對，但沒有可靠資料的場地屬性不會被當成已符合；可用地點不足時會請你調整條件。</p>
                   <div className="pref-cat">
                     <div className="pref-cat-title">室內／戶外</div>
                     <div className="chip-grid" role="group" aria-label="室內或戶外">
@@ -1439,6 +1419,24 @@ function Home() {
                   <div className="block-head">
                     <h4>這段內容可以怎麼用？</h4>
                   </div>
+                  {preferenceProfile && <p className="block-help">AI 摘要（僅供本人參考）：{[...preferenceProfile.moods, ...preferenceProfile.soft_preferences].join('、') || '尚無摘要'}。正式篩選仍保留你的原始限制。</p>}
+                  <label className="visibility-option">
+                    <input type="checkbox" checked={modelImprovementOptIn} disabled={!consentsReady || savingConsent || generating}
+                      onChange={async event => {
+                        const next = event.target.checked;
+                        if (!identity) return;
+                        setSavingConsent(true);
+                        try {
+                          await sidebyApi(identity, 'PUT', '/api/me/consents', {
+                            termsVersion: '2026-09-05-v1', acceptTerms: true,
+                            personalizationEnabled, modelImprovementOptIn: next,
+                          });
+                          setModelImprovementOptIn(next);
+                        } catch { toast.error('資料使用設定儲存失敗，請再試一次。'); }
+                        finally { setSavingConsent(false); }
+                      }} />
+                    <span>允許我的回饋經去識別與人工審核後，用於後續模型改進。可取消，與是否公開、是否記住偏好分開。</span>
+                  </label>
                   <div className="visibility-list" role="radiogroup">
                     {VISIBILITY_OPTIONS.map((opt) => (
                       <button

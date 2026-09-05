@@ -93,23 +93,26 @@ function fitValue(value: number | undefined, min?: number, max?: number) {
   return 1;
 }
 
-function userFit(query: Query, candidates: Candidate[]) {
+function userFit(query: Query, candidates: Candidate[], personalPenalties: Record<string, number> = {}, walkingMinutes?: number) {
   const averages = new Map<VenueAttribute, number>();
   for (const attribute of [...new Set(candidates.flatMap(item => [...item.attributes.keys()]))]) {
     const values = candidates.map(item => item.attributes.get(attribute)).filter((value): value is number => value !== undefined);
     if (values.length === candidates.length) averages.set(attribute, values.reduce((a, b) => a + b, 0) / values.length);
   }
+  // Walking load is a route measurement, not a guessed attribute of a business.
+  if (walkingMinutes !== undefined) averages.set('walking', Math.min(1, walkingMinutes / 60));
   let weighted = 0, weights = 0;
   for (const item of query.preferences) {
     const weight = item.importance * item.confidence;
-    weighted += fitValue(averages.get(item.attribute), item.target_min, item.target_max) * weight;
+    weighted += (averages.has(item.attribute) ? fitValue(averages.get(item.attribute), item.target_min, item.target_max) : .5) * weight;
     weights += weight;
   }
   for (const item of query.avoid) {
-    weighted += fitValue(averages.get(item.attribute), undefined, item.target_max ?? 0) * item.importance;
+    weighted += (averages.has(item.attribute) ? fitValue(averages.get(item.attribute), undefined, item.target_max ?? 0) : .5) * item.importance;
     weights += item.importance;
   }
-  return weights ? weighted / weights : 0.5;
+  const penalty = candidates.reduce((sum, item) => sum + Math.min(.5, Math.max(0, personalPenalties[item.venue.venueId] ?? 0)), 0) / candidates.length;
+  return Math.max(0, (weights ? weighted / weights : .5) - penalty);
 }
 
 function venueCost(venue: VenueRecord) {
@@ -209,6 +212,7 @@ export function composeItineraries(input: {
   itineraryId?: string; lockedStopIdsByVenue?: Record<string, string>;
   lockedOrderByVenue?: Record<string, number>;
   lockedSlotIdsByVenue?: Record<string, string>;
+  personalVenuePenalties?: [Record<string, number>, Record<string, number>];
 }): PublicItinerary[] {
   const envelopes = input.parserOutputs.map(acceptParserOutput);
   if (envelopes.length !== 2 || envelopes.some(item => item.status !== 'parsed')) return [];
@@ -228,7 +232,7 @@ export function composeItineraries(input: {
     if (lockedSlot && lockedSlot !== slot.data.slotId) continue;
     const assessment = assessVenue(record.data);
     if (!assessment.itineraryEligible) continue;
-    const attributes = new Map(assessment.approvedAttributes.map(item => [item.attribute, item.value!]));
+    const attributes = new Map(assessment.approvedAttributes.filter(item => item.scope === 'general').map(item => [item.attribute, item.value!]));
     const candidate = { venue: record.data, slot: slot.data, attributes };
     if (!excluded.has(record.data.venueId) && candidateAllowed(candidate, input.shared, hard, queries)) candidates.push(candidate);
   }
@@ -236,18 +240,42 @@ export function composeItineraries(input: {
   const meetingKey = input.shared.meetingPoint.matrixKey
     ?? (input.dataMode === 'approved_dataset' ? 'meeting_user' : undefined);
   if (!meetingKey || candidates.length < input.shared.stops) return [];
+  // ponytail: bounded combinatorial search; rank the full eligible pool first, then retain
+  // a diverse 20-venue shortlist (including locks). Larger pools need a beam search.
+  if (new Set(candidates.map(item => item.venue.venueId)).size > 20) {
+    const distance = (c: Candidate) => Math.hypot(c.venue.location.latitude - input.shared.meetingPoint.latitude,
+      (c.venue.location.longitude - input.shared.meetingPoint.longitude) * .9);
+    const ranked = [...candidates].sort((a, b) => {
+      const score = (c: Candidate) => Math.min(userFit(queries[0], [c], input.personalVenuePenalties?.[0]),
+        userFit(queries[1], [c], input.personalVenuePenalties?.[1])) - distance(c);
+      return score(b) - score(a) || a.venue.venueId.localeCompare(b.venue.venueId);
+    });
+    const keep = new Set(required);
+    const categories = new Set<string>();
+    for (const candidate of ranked) if (!categories.has(candidate.venue.category) && keep.size < 10) {
+      categories.add(candidate.venue.category); keep.add(candidate.venue.venueId);
+    }
+    for (const candidate of ranked) if (keep.size < 20) keep.add(candidate.venue.venueId);
+    for (let i = candidates.length - 1; i >= 0; i--) if (!keep.has(candidates[i].venue.venueId)) candidates.splice(i, 1);
+  }
   const start = hard.start, end = hard.end;
   const options: PublicItinerary[] = [];
-  const route = (from: string, to: string) => legs
-    .filter(leg => leg.fromKey === from && leg.toKey === to && compatibleMode(leg.mode, input.shared.transport)
-      && hard.privateTransport.every(modes => modes.has(leg.mode)))
-    .sort((a, b) => a.minutes - b.minutes)[0];
+  const routeMap = new Map<string, Leg>();
+  for (const leg of legs) {
+    if (!compatibleMode(leg.mode, input.shared.transport) || !hard.privateTransport.every(modes => modes.has(leg.mode))) continue;
+    const key = `${leg.fromKey}\0${leg.toKey}`, previous = routeMap.get(key);
+    if (!previous || leg.minutes < previous.minutes) routeMap.set(key, leg);
+  }
+  const route = (from: string, to: string) => routeMap.get(`${from}\0${to}`);
 
   const visit = (chosen: Candidate[], stops: PublicItinerary['stops'], from: string, current: number, cost: number, travel: number) => {
     if (chosen.length === input.shared.stops) {
       if ([...required].some(id => !chosen.some(item => item.venue.venueId === id))) return;
       if (cost > hard.budget || travel > hard.maxTotalTravel) return;
-      const fitA = userFit(queries[0], chosen), fitB = userFit(queries[1], chosen);
+      const walkingMinutes = stops.filter(stop => stop.travel_mode === 'walk').reduce((sum, stop) => sum + stop.travel_minutes, 0)
+        + chosen.filter(item => item.venue.category === 'walk').reduce((sum, item) => sum + item.slot.durationMinutes, 0);
+      const fitA = userFit(queries[0], chosen, input.personalVenuePenalties?.[0], walkingMinutes),
+        fitB = userFit(queries[1], chosen, input.personalVenuePenalties?.[1], walkingMinutes);
       const duration = Math.round((current - start) / 60000);
       const novelty = new Set(chosen.map(item => item.venue.category)).size / chosen.length;
       const efficiency = Math.max(0, 1 - travel / Math.max(1, duration));

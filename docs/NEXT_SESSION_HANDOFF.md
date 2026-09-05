@@ -1,5 +1,9 @@
 # Sideby 跨對話交接（2026-09-05）
 
+## 本輪優先入口（2026-09-06）
+
+目前施工分支為 `feat/recommendation-growth`；34 選項、地點資格／發布與三路改進管線已在本機通過 80 tests，**尚未部署**。先讀本文件末段「2026-09-06 成長功能接續」及 `docs/RECOMMENDATION_GROWTH.md`，再接下方既有正式版本；不要重做已通過內容或把歷史部署當成本輪已上線。
+
 ## 最新部署接續（優先於下方歷史基線）
 
 - 2026-09-06 repository hygiene 已收斂：`E:\sideby` 日常只保留 `main` checkout；已合併或廢棄的 9 個舊 worktree 已移除，GitHub 已合併功能分支也已刪除。長期 ref 只保留 `main`、`archive/phase3-itineraries-checkpoint-20260905` 與 tag `archive/delivery-mvp-v1`。`output/` 保留產品 PDF但由 Git 忽略。Sideby Obsidian 權威使用 `.local/obsidian-sideby-sync-20260905` 的乾淨 worktree；不得用日常 Vault 其他專案的 merge 衝突判定 Sideby 未同步。
@@ -100,3 +104,10 @@ git -C E:\sideby rev-parse origin/main
 - 「CP 寫寫」＝同步 Obsidian 的 AGENTS／PRD／TDD／ROADMAP、Project State、Run Note、Change Log，再 commit＋push 並核對遠端。
 - 不碰主 Vault 的其他專案 dirty state；Obsidian 遠端使用 `E:\sideby\.local\obsidian-sideby-sync-20260905` 隔離同步。
 - 不刪除任何 worktree、archive branch、`.local` 資料或隊友成果，除非 Owner 另行明確指定。
+## 2026-09-06 成長功能接續（優先於下方歷史）
+
+`feat/recommendation-growth` 已實作全 30 軟偏好／21 計分屬性＋4 環境條件、無屬性場地個人回饋排序、全池候選篩選、政府候選資格報告、原子發布與版本索引、Migration 011 及可撤回離線候選。`npm run check:all` 80 tests 與兩端 build 通過；後續 UI 說明亦再次完成前端 typecheck/build 和 UI tests。操作見 `docs/RECOMMENDATION_GROWTH.md`。
+
+未做：正式部署與新場地批量核准。既有正式 13 核准場地保持；新讀來源 1,121 筆中 128 有營業文字、19 有明確入場費文字、425 缺街道地址。不能宣稱全部 1,121 可推薦或已訓練新模型。
+
+部署前：Railway CLI 可讀服務，但舊 SSH identity 要求帳號連結；不要開 PostgreSQL 公網來繞過。Cloudflare 可讀版本，惟本機 build 缺 Supabase browser 公開設定，需要核對現行登入入口後發布，不能讓登入功能倒退。不得索取秘密值或啟用付費。

@@ -20,7 +20,7 @@ export const requirementSampleSchema = z.strictObject({
   sampleId: id,
   text: shortText,
   groupId: id,
-  sourceType: z.enum(['owner_authored', 'consented_interview', 'synthetic_candidate']),
+  sourceType: z.enum(['owner_authored', 'consented_interview', 'consented_feedback', 'synthetic_candidate']),
   sourceRef: id,
   annotations: z.array(annotation).min(1).max(requirementAttributes.length)
     .refine(items => new Set(items.map(item => item.attribute)).size === items.length),

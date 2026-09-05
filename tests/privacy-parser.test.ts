@@ -3,6 +3,30 @@ import { test } from 'node:test';
 import { acceptParserOutput, parseWithRuleBaseline } from '../src/model/preference-query';
 import { publicProjection, safePublicReason } from '../src/server/privacy';
 import { privateInput } from '../src/server/contracts';
+import { selectablePreferenceLabels, targetsForLabel } from '../src/model/preference-catalog';
+
+test('all 30 selections reach calculable targets and never erase unresolved free text', () => {
+  const base = { sessionId: '00000000-0000-4000-8000-000000000001', mode: 'future' as const,
+    visibility: 'private_session' as const };
+  assert.equal(selectablePreferenceLabels.length, 30);
+  for (const label of selectablePreferenceLabels) {
+    for (const input of [{ rawText: label }, { rawText: '不限', selectedPreferences: [label] }]) {
+      const parsed = parseWithRuleBaseline({ ...base, ...input });
+      assert.equal(parsed.status, 'parsed', label);
+      if (parsed.status !== 'parsed') continue;
+      const attrs = [...parsed.result.preferences, ...parsed.result.avoid].map(x => x.attribute);
+      for (const target of targetsForLabel(label)) assert.ok(attrs.includes(target.attribute), label);
+    }
+  }
+  assert.equal(parseWithRuleBaseline({ ...base, rawText: '不能吃花生', selectedPreferences: ['浪漫'] }).status,
+    'needs_clarification');
+  const negative = parseWithRuleBaseline({ ...base, rawText: '不要浪漫' });
+  assert.equal(negative.status, 'parsed');
+  if (negative.status === 'parsed') {
+    assert.equal(negative.result.preferences.length, 0);
+    assert.equal(negative.result.avoid[0].attribute, 'romantic');
+  }
+});
 
 test('environment selections parse independently and never treat unknown or negation as a supported label', () => {
   const input = { sessionId: '00000000-0000-4000-8000-000000000001', mode: 'future' as const,
@@ -45,9 +69,9 @@ test('allowlisted Gemini-normalized wording stays calculable', () => {
   });
   assert.equal(parsed.status, 'parsed');
   if (parsed.status !== 'parsed') return;
-  assert.deepEqual(parsed.result.preferences.map(item => item.attribute), [
+  assert.deepEqual(parsed.result.preferences.map(item => item.attribute).sort(), [
     'romantic', 'relaxing', 'interactive', 'freshness',
-  ]);
+  ].sort());
   assert.equal(parsed.externalModelApiCalls, 0);
 });
 

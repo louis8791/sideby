@@ -5,6 +5,7 @@ const googleHosts = /(^|\.)(google\.[a-z.]+|googleapis\.com|googleusercontent\.c
 const subjectiveAttributes = new Set([
   'bright', 'quiet', 'cute', 'childish', 'romantic', 'formal',
   'interactive', 'relaxing', 'freshness',
+  'fun', 'quality', 'privacy', 'cognitive_load', 'service', 'photography',
 ]);
 
 export interface VenueAssessment {

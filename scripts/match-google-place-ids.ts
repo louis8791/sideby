@@ -11,8 +11,8 @@ function option(name: string, fallback: number) {
 async function main() {
   const apply = process.argv.includes('--apply');
   const refresh = process.argv.includes('--refresh');
-  const limit = option('limit', 1_500);
-  const concurrency = Math.min(option('concurrency', 5), 10);
+  const limit = Math.min(option('limit', 100), 1_500);
+  const concurrency = Math.min(option('concurrency', 2), 5);
   const connectionString = process.env.DATABASE_URL?.trim();
   if (!connectionString) throw new Error('DATABASE_URL is required');
   const apiKey = process.env.GOOGLE_MAPS_SERVER_API_KEY?.trim();
@@ -28,14 +28,19 @@ async function main() {
     return;
   }
   let matched = 0, notFound = 0, retry = 0, cursor = 0;
+  let stopped = false;
   const workers = Array.from({ length: Math.min(concurrency, candidates.length) }, async () => {
     for (;;) {
+      if (stopped) return;
       const candidate = candidates[cursor++];
       if (!candidate) return;
       let placeId: string | null = null;
       let shouldRetry = false;
       try { placeId = await findGooglePlaceId(candidate, apiKey!); }
-      catch { shouldRetry = true; }
+      catch (error) {
+        shouldRetry = true;
+        if (error instanceof Error && /GOOGLE_HTTP_(401|403|429)/.test(error.message)) stopped = true;
+      }
       const write = await db.connect();
       try { await saveGooglePlaceMatch(write, candidate, placeId, shouldRetry); }
       finally { write.release(); }
@@ -46,7 +51,9 @@ async function main() {
   });
   await Promise.all(workers);
   await db.end();
-  console.log(JSON.stringify({ candidates: candidates.length, matched, notFound, retry, apply: true, refresh }));
+  console.log(JSON.stringify({ candidates: candidates.length, matched, notFound, retry,
+    unprocessed: candidates.length - matched - notFound - retry, stopped, apply: true, refresh }));
+  if (stopped) process.exitCode = 1;
 }
 
 void main().catch(error => {
