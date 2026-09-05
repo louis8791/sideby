@@ -2,6 +2,7 @@
 
 ## 最新部署接續（優先於下方歷史基線）
 
+- PR #9 已合併 `main`，merge commit `94ab10583738b8ac4b48bf4f882d63bb1e0c1e13`：本人偏好回饋由單一「太暗」擴充為太暗、太吵、太幼稚、太正式、走太多五種伺服器固定映射。Railway deployment `93b584c5-d3df-40b4-9cf4-6a409a019bab` 成功，migration 008 已隨 `prestart` 執行；公開 API 實測雙人確認、三套生成、「太吵」寫入與三套重生均通過。Cloudflare Worker version `999b5641-7d0c-4dbb-b957-d0383f949418` 已部署，首頁 200 且公開 bundle 含五種回饋。GitHub backend／frontend checks 與本機 `npm run check:all` 全綠（49 根＋15 Maps／proxy）。
 - PR #6 已合併 `main`，merge commit `21b28f333f7cc0f70921ce3a60320183995b2817`：九個既有前端站點、十一個環境 slot、二十四條展示 travel matrix 已由 Railway `prestart` 冪等寫入 PostgreSQL；正式 API 實測生成三套、每套三站，partner 可讀回三套保存結果，共含九個 Google Place ID。展示價格、時長、屬性仍明示 `synthetic_demo`，不保存 Google 地址、照片、評分、評論或路線回應。
 - Google Maps JavaScript 正式底圖已通過；Places API (New)／Routes API／Geocoding 也已由 Cloudflare Worker 真實取得結果。Google Cloud 的 browser／server key 限制已核對正確；根因是 Worker 對 `redirect: "error"` 拋出 `TypeError`，已改為 `redirect: "manual"` 並拒絕所有 3xx，production 四項現均通過。
 - Owner 決定本次不主打 Gemini；它已從提交阻斷移為後續加值，不得用未驗收的 Gemini 能力包裝主流程。
@@ -9,7 +10,7 @@
 - Railway 專案 `chic-bravery` 已建立 PostgreSQL 與根 Next.js 服務。GitHub source 是 `louis8791/sideby`／`main`，自動部署已開啟，`DATABASE_URL` 使用 Postgres reference，migration 成功，健康路徑 `/api/runtime`，公開 target port 已由錯誤的 3000 修正為平台實際 `PORT=8080`。
 - 後端 `https://sideby-production.up.railway.app`：`/api/runtime` 200／`standard`；直接匿名身分建立 201。
 - Cloudflare Worker `https://louis8791-sideby-frontend.louis8791.workers.dev` 已部署；`SIDEBY_API_ORIGIN`／`SIDEBY_PUBLIC_ORIGIN` 已設，Google server key 以 secret 上傳，browser key 由 Vite build 使用。首頁、`/maps-check` 與同源 `/api/runtime` 均 200，經代理匿名建立 201。
-- 最新 `npm run check:all` 通過 47 根＋15 Maps／proxy 測試，GitHub PR checks 全綠；未輸出、記錄或提交任何 secret。
+- 最新 `npm run check:all` 通過 49 根＋15 Maps／proxy 測試，GitHub PR checks 全綠；未輸出、記錄或提交任何 secret。
 - Google production 四項通過：正式底圖可見，Places 回傳臺北車站，Routes 回傳步行／大眾運輸時間，Geocoding 回傳 ROOFTOP 座標；未讀出、記錄或提交任何 key。
 - Railway deployment `9b251684-dcb4-422c-bd6f-739c477263d5` 已成功，PostgreSQL showcase 生成／保存 Runtime 通過；Google 四項通過的 Cloudflare Worker version 為 `25ada2bf-4101-4bcb-8b93-67e83c2d6d74`。兩支手機、跨網路效能與 Owner sign-off 仍未驗；不要重建既有服務。
 
@@ -20,7 +21,7 @@
 - 重新執行 check:all 通過（47 根測試、15 Maps／代理測試、前端 typecheck／client／SSR／Cloudflare build）；有真正 PostgreSQL＋HTTP＋SSE 行為測試，且已另完成公開基礎 Runtime 驗證。
 - 需求研究完成 6 組第一手來源、12 指標的 Markdown＋JSON；並非 Sideby 大數據、採用／留存驗證或訓練資料。四份權威已更新。
 - 本輪瀏覽器用另開的 5311 dev 入口驗到新四選項與單選互斥，390／1280 寬度可讀；測後關閉該測試程序。原 `vite preview` 路徑問題後續已改用 Nitro／Wrangler 正式產物修復並公開部署。正式 Google referrer 仍未由實際 key 擁有者補齊。
-- Railway＋PostgreSQL／Cloudflare 已部署；未更動其他 worktree／archive。下一步只處理 Google key 擁有者設定、外部服務與 Owner gates。
+- Railway＋PostgreSQL／Cloudflare 已部署；未更動其他 worktree／archive。Google production 四項已通過；下一步是 Lovable `Git → Re-check`／Preview／Publish（前提是該 Lovable 專案確實連到本 repo `main`），再做單瀏覽器完整流程、兩支手機、跨網路效能與 Owner gates。
 
 這是下一個對話的唯一接續入口。若本文件與舊 Run Note 不同，以 `AGENTS.md`、`PRD.md`、`TDD.md`、`ROADMAP.md` 與目前 Git／Runtime 為準。
 
@@ -29,7 +30,7 @@
 - 唯一主 Repo：`https://github.com/louis8791/sideby`
 - 本機正式根：`E:\sideby`
 - 主分支：`main`
-- 已驗證程式基線 commit：`6abd18fc959ba2f16738f953dc15b4d3b5d9735f`；本交接文件所在的最新 `main` commit 以 GitHub／`origin/main` 為準。
+- 已驗證程式基線 commit：`94ab10583738b8ac4b48bf4f882d63bb1e0c1e13`；本交接文件所在的最新 `main` commit 以 GitHub／`origin/main` 為準。
 - 最新 Lovable 來源：`leeshim-gif/sideby` commit `c9b4925`，已審查匯入 `frontend/`。
 - 舊推薦候選封存：`archive/phase3-itineraries-checkpoint-20260905`／`63cfe6c`，保留未採用，不得刪除或整包合併。
 
