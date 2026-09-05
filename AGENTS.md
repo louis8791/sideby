@@ -1,12 +1,13 @@
 # Sideby 專案規則
 
-## 2026-09-06 全候選正式發布政策（待部署）
+## 2026-09-06 全候選正式發布政策（已部署）
 
 - Owner 明確要求將最新 1,121 筆通過 schema／來源政策的政府候選全部納入正式推薦池，不再以「每筆先具完整價格、營業、實際區域、室內外與冷氣證據」作為發布前置。
 - 發布不等於補齊事實：原 13 筆維持 `verified_current`；其餘候選以 `needs_confirmation`／`eligible_with_unknowns` 進池，未知價格、營業、實際使用區域、室內外、冷氣及訂位必須保持 `null` 或 unknown，不得由名稱、描述或 Google 評論補成核准事實。
 - 一般推薦可使用待確認候選，但方案須回傳 `total_cost: null`、`confirmation_required: true`、`hard_constraints_passed: false`，並逐站列出 `unknown_fields`。若雙方明確要求室內／戶外、冷氣／無冷氣、飲食、過敏、無障礙等硬條件，未知資料仍 fail closed。
 - Google 評論只在當次請求內產生最多 12 個粗略情境線索；可提示室內、冷氣、營業等可能性，但不得進 PostgreSQL、核准欄位、排序、索引、RAG、訓練或評測。唯一可長期保存的 Google 欄位仍是 Place ID。
-- `venues:publish-candidates` 負責建立可重現的全候選 release；`venues:refresh-all` 每日更新政府快照、Place ID、全候選 release 與學習索引。Migration 012 允許推薦索引保留未知價格。此節目前是本機已測通、正式部署待驗狀態，未實查 production 前不得宣稱正式數已由 13 變成 1,121。
+- `venues:publish-candidates` 負責建立可重現的全候選 release；`venues:refresh-all` 每日更新政府快照、Place ID、全候選 release 與學習索引。Migration 012 允許推薦索引保留未知價格。
+- PR #27 已合併 `main`（`4dbabfa`）；Railway deployment `a10e8db4-29f9-402b-83b0-a283e8879d1c` 成功。Production active release `sideby-release-pool-20260906-a8f936dc01` 實查 1,121 records、2,058 slots（1,108 provisional）、107,616 legs；active index 1,121 entries，其中 1,108 筆價格未知。公開 API 已用兩個匿名身分產生 3 套三站，全部使用新 release，7／9 站標示待確認。Cloudflare version `c0aace76-df4f-4914-b373-db9e956564a3` 已部署並保留登入公開設定與平台 vars。
 
 ## 2026-09-06 Google 評論即時模擬分類
 
@@ -17,7 +18,7 @@
 ## 2026-09-06 成長功能正式驗收（最新）
 
 - PR #22／#23 已合併；功能 commit `85e5ccd` 已部署 Railway `724d3cbf-a31a-4a17-985c-9285541fc0f5`，Cloudflare `38e9fe98-8a69-4aff-85e3-cc2ff8a7bfdd`。81 tests 與兩端建置通過；正式同源 API 驗證 30 軟選項／21 屬性＋4 環境条件、原文硬限制保留、雙人加入與三套真實三站路線；登入表單可開。操作與剩餘界線見 `docs/RECOMMENDATION_GROWTH.md`。
-- Migration 011、13 筆 active index 及完整 `venues:refresh-all` 已在正式環境執行。新候選快照保留 1,121 筆／1,120 Place IDs／128 筆營業文字／19 筆明確費用文字。三條管線已接通，不等於候選全部核准；model-improvement 有效候選目前 0，未訓練新模型。Google 單次 IDs-only 真實探針成功；不加付費。
+- 成長管線當次部署已執行 Migration 011、13 筆 active index 及完整 `venues:refresh-all`；此數量已由本檔最上方的 1,121 筆全候選 release 取代。Model-improvement 有效候選仍為 0，未訓練新模型。Google 單次 IDs-only 真實探針成功；不加付費。
 
 - Owner 要求接通全部 34 選項、全量處理政府候選與三條持續改進路徑。本節取代下方「只准 13 筆」「19 項未映射」「training candidates／索引延後」的施工範圍；實際完成與部署仍以驗收證據為準。
 - 客觀規則可批次審查授權來源的候選並發布版本；必要事實缺漏留在待補隊列，禁止批量改 approved 冒充可執行。主觀屬性無直接觀察仍維持未知。
@@ -46,7 +47,7 @@
 ## 2026-09-06 政府地點更新管線
 
 - PR #15（`4e39cf3`）與集合點修正 PR #16（`84e5d3a`）已合併 `main`。Railway deployment `60042a23-4865-4411-9aa9-088a5136e307` 已將 active 切為 13 筆 `approved_dataset`、950 個未來 90 天 slots 與 468 條矩陣；Cloudflare Worker version `ddb20462-0bcb-4276-b8b5-0dd358e9523d` 已上線。公開前端同源 API 的週日板橋、週五台北、週六土城三案均各回 3 套三站、`approved_dataset` 且每站含 Place ID。
-- Owner 已明確要求首批正式推薦上線。首批固定核准 13 筆政府候選，全部已有 Google Place ID，官方當期快照有可結構化票價／營業資料；主觀屬性與冷氣未知仍不得補猜。標準啟動改為 `approved_dataset`，`synthetic_demo` 只在明示的本機 demo 模式使用。
+- 首批歷史版本固定核准 13 筆政府候選，全部已有 Google Place ID，官方當期快照有可結構化票價／營業資料；它們現在保留為全候選 release 的完整驗證子集。主觀屬性與冷氣未知仍不得補猜；`synthetic_demo` 只在明示的本機 demo 模式使用。
 - 首批 execution slots 只建立可證明的室內參觀區，按官方週期營業規則產生未來 90 天；冷氣、飲食、過敏與無障礙未知時維持 fail closed。內部篩選交通時間以政府座標作可重算估算，行程頁名稱、地址、營業、評分、照片、評論與實際路線仍由 Google 即時取得，不回存。
 - 目前雙方 UI 共 34 個可選項：氛圍 12、狀態 8、互動 10、環境硬限制 4；其中原 30 項只有 11 項已有明確排序映射，19 項仍只是選擇記錄。場地可計分屬性目前為 11 個，兩者不可混稱。
 - 新增交通部觀光署景點／餐飲每日 JSON 更新入口。2026-09-06 dry-run 讀到全臺 9,818 筆、臺北／新北 1,138 筆，其中 1,121 筆通過 schema／政策可進 PostgreSQL staging，17 筆拒絕；來源更新時間為 2026-09-05。

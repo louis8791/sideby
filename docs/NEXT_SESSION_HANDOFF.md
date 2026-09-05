@@ -1,10 +1,12 @@
 # Sideby 跨對話交接（2026-09-05）
 
-## 2026-09-06 全候選發布施工點（最新，優先於下文）
+## 2026-09-06 全候選發布完成狀態（最新，優先於下文）
 
 Owner 已改變發布 gate：最新 1,121 筆通過 schema／來源政策的政府候選都要進正式推薦池，不要求每筆先補齊價格、時段、實際區域、室內外及冷氣。這不是批量補證；13 筆維持 fully verified，其餘以 `eligible_with_unknowns`／`needs_confirmation` 發布，未知欄位維持 null。一般路線可使用，明確環境／安全硬條件仍 fail closed；含未知站點的方案必須顯示待確認、nullable 總價、`confirmation_required=true` 與 `hard_constraints_passed=false`。
 
-工作分支 `feat/publish-full-candidate-pool` 已完成 Migration 012、`venues:publish-candidates`、全量批次發布／索引、provisional slots、推薦與前端 schema／警示，以及 Google 評論最多 12 個即時軟線索。`npm run check:all` 已通過 84 項測試及兩端 build。尚未 commit／push／merge／部署；production 在實查前仍是 13 筆，不能提前寫成 1,121。部署順序：合併 main → Railway 自動部署 migration → 在 Railway 執行一次 `npm run venues:publish-candidates -- --apply` → 核對 active dataset／index／unknown 數量 → Cloudflare 以既有公開 Supabase build 設定重建 → 公開路線與 UI smoke。
+PR #27 已合併 `main` `4dbabfa`；Railway deployment `a10e8db4-29f9-402b-83b0-a283e8879d1c` 成功並套用 Migration 012。Production active release `sideby-release-pool-20260906-a8f936dc01` 實查為 1,121 records、2,058 slots（1,108 provisional）、107,616 legs；active index 1,121 entries，其中 1,108 筆 unknown price。公開後端以兩個匿名身分完成共享條件、兩份非敏感輸入、雙確認與生成，回 3 套三站且全部使用新 release；7／9 站標為 `needs_confirmation`，3 套均 `confirmation_required=true`。
+
+Cloudflare Worker version `c0aace76-df4f-4914-b373-db9e956564a3` 已部署；正式首頁與同源 `/api/runtime` 回 200，bundle 含「部分價格待確認」及「價格／營業／區域請於出發前確認」。建置沿用正式 bundle 既有的 Supabase browser 公開設定，未輸出或提交其值；`--keep-vars` 保留平台 origins 與 secrets。下一個 Owner gate 是兩支實體手機主流程與畫面目視，不是再發布場地。
 
 Google 評論新增室內、冷氣、冷氣可能不足與營業提醒，但只在單次 Place Details 回應內粗略分類，不寫入資料庫、核准欄位、排序、索引或訓練。1,120 筆 Place ID 與 1 筆 not_found 的既有 production 證據未變。
 
@@ -14,7 +16,7 @@ Google 即時評論情境線索已上線：PR #25 merge `030de8b9e48151eb959c2e5
 
 PR #22／#23 已合併，功能 commit `85e5ccd` 已部署；日常回到 `main`。Railway `724d3cbf-a31a-4a17-985c-9285541fc0f5`、Cloudflare `38e9fe98-8a69-4aff-85e3-cc2ff8a7bfdd`；81 tests／CI／正式同源 API 34 選項、雙人加入、3 套真實三站路線通過，登入表單可開。先讀 `docs/RECOMMENDATION_GROWTH.md`；末段「成長功能接續」是部署前歷史，SSH 阻塞已解決，不能再當現行 blocker。
 
-正式 Migration 011、13 筆推薦索引與完整 refresh-all 已執行；候選快照 `tourism-tpe-ntpc-2026-09-06-38445b4239`：1,121 候選／1,120 Place IDs／128 營業文字／19 明確入場費／425 缺街道地址。核准場地仍 13，學習候選 0。新模型訓練、候選證據補齊、主觀標籤觀察及實體手機未完成。Google 單次 IDs-only 查詢成功，未啟用付費。
+成長管線當次的 Migration 011、13 筆推薦索引與完整 refresh-all 已執行；該 13 筆現已成為最上方全候選 release 的完整驗證子集。候選快照 `tourism-tpe-ntpc-2026-09-06-38445b4239`：1,121 候選／1,120 Place IDs／128 營業文字／19 明確入場費／425 缺街道地址。學習候選仍為 0；新模型訓練、更多候選證據、主觀標籤觀察及實體手機未完成。Google 單次 IDs-only 查詢成功，未啟用付費。
 
 正式 frontend build 需帶既有 Supabase URL 與 publishable key（只能用 browser 公開設定）；本輪已由隊友 Git 參考回填至建置程序，沒有將值提交或寫入日誌。一般 `check:all` 的 build 不會帶這些公開設定，不可直接取代正式部署包。Railway 已用既有已註冊 SSH 身分連線，不必再註冊 key 或公開 PostgreSQL。
 

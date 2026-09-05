@@ -6,8 +6,7 @@
 
 | 層級 | 數量 | 意義 |
 |---|---:|---|
-| 目前 production 正式推薦 | 13 | 部署前現況；全候選 release 尚未切換 |
-| 目標正式推薦池 | 1,121 | 13 筆完整驗證＋1,108 筆出發前待確認；待 production 實查 |
+| Production 正式推薦池 | 1,121 | 已實查；13 筆完整驗證＋1,108 筆出發前待確認 |
 | 合成展示場地 | 9 | 只保留於明示的本機 `synthetic_demo` 模式 |
 | Production staging | 1,121 | 已寫入 Railway PostgreSQL；是全候選 release 的來源 |
 | 已對應 Google Place ID | 1,120 | 只長期保存 Place ID；仍是待審 draft |
@@ -102,4 +101,4 @@ npm run venues:publish-candidates -- --apply
 3. 已完成：建立同版本 execution slots、政府座標估算矩陣及 Google 即時顯示分界。
 4. 自動行為測試已用 13 筆生成三套三站正式資料行程；待合併部署後補公開 API 三案例與雙手機驗收。
 
-本節首批 13 筆 gate 保留為完整驗證子集的歷史。新 gate 的正式推薦池目標為 1,121 筆，但其中 1,108 筆須清楚標為待確認；只有 production migration、release 與索引實查後，才能把正式數由 13 更新為 1,121。
+本節首批 13 筆 gate 保留為完整驗證子集的歷史。新 gate 已完成 production migration、release 與索引實查：正式推薦池為 1,121 筆，其中 1,108 筆清楚標為待確認。Active release 是 `sideby-release-pool-20260906-a8f936dc01`；2,058 slots 中 1,108 個為 provisional，交通矩陣 107,616 legs，active index 1,121 entries／1,108 unknown price。
