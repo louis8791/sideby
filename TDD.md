@@ -1,5 +1,12 @@
 # Sideby — MVP TDD
 
+## 2026-09-06 Venue refresh staging
+
+- Migration 009 新增 `venue_sources`、`venue_import_runs`、`venue_staging_records`。來源 metadata、SHA-256、城市範圍、來源／範圍／staged／rejected 數量及 rejection summary 可追溯。
+- `src/venues/tourism-open-data.ts` 下載交通部景點與餐飲 JSON，移除 BOM、只保留臺北／新北，正規化為既有 `VenueRecord`，再走 `assessVenue` 唯一政策出口。政府來源不建立 attributes，缺街道地址時明示「開放資料未提供街道地址」，非法座標或 schema／policy 失敗即拒絕。
+- `npm run venues:refresh-government` 為 dry-run；加 `-- --apply` 才以既有 `DATABASE_URL` 寫入 staging。資料庫使用 advisory transaction lock；內容 hash 相同時回用既有 run，批次失敗 rollback，不修改 `venue_datasets.active`。
+- 自動測試覆蓋城市篩選、缺值明示、錯誤拒絕、無 Google 欄位、draft／零主觀標籤、PostgreSQL transaction、冪等與 active dataset 保留。正式 activation 仍須人工核准、execution slots、交通資料與三案例 Runtime。
+
 ## 2026-09-05 公開 Worker／Railway 執行契約
 
 - `frontend/package.json` 固定 Wrangler 4.129.0；preview／deploy 均讀 Nitro `.output/server/wrangler.json`，保留 generated `no_bundle` 與 assets。deploy 加 `--keep-vars`，避免重部署清掉 Dashboard 的一般環境變數；server secrets 仍由平台保存。

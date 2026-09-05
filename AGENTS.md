@@ -1,5 +1,13 @@
 # Sideby 專案規則
 
+## 2026-09-06 政府地點更新管線
+
+- 目前雙方 UI 共 34 個可選項：氛圍 12、狀態 8、互動 10、環境硬限制 4；其中原 30 項只有 11 項已有明確排序映射，19 項仍只是選擇記錄。場地可計分屬性目前為 11 個，兩者不可混稱。
+- 新增交通部觀光署景點／餐飲每日 JSON 更新入口。2026-09-06 dry-run 讀到全臺 9,818 筆、臺北／新北 1,138 筆，其中 1,121 筆通過 schema／政策可進 PostgreSQL staging，17 筆拒絕；來源更新時間為 2026-09-05。
+- `venue_sources`、`venue_import_runs`、`venue_staging_records` 保存來源、授權、內容雜湊、版本、範圍、數量與 draft。相同來源重跑冪等，transaction 失敗整批 rollback，既有 active dataset 不變。
+- 政府資料只建立客觀 draft，不推論主觀偏好、價格、營業、室內外或冷氣。1,121 是候選庫，不是核准可推薦數；目前 production 仍保留 9 個 `synthetic_demo`，待人工核准、execution slots、合法交通資料及三案例 Runtime 通過後才可切換。
+- Google Places 只作即時顯示與 optional Place ID 對應，不作千筆永久建庫。操作與數量證據見 `docs/VENUE_REFRESH.md`。
+
 ## 2026-09-05 公開部署 Runtime 狀態
 
 - 前端正式產物是 Nitro Cloudflare Worker；`frontend/` 的 `npm run preview` 使用固定版本 Wrangler 4.129.0 執行 `.output/server/wrangler.json`，不是 Node／純靜態 preview。`npm run deploy` 使用同一產物並保留平台 vars。

@@ -1,5 +1,13 @@
 # Sideby — MVP PRD
 
+## 2026-09-06 地點候選庫擴充
+
+Sideby 現有偏好 UI 共 34 個可選項（12 氛圍＋8 狀態＋10 互動＋4 環境），但原 30 項只有 11 項已有明確推薦映射；偏好選項數不等於場地屬性數。場地 schema 目前有 11 個可計分屬性。
+
+地點更新已接交通部觀光署每日景點／餐飲開放資料。最新 dry-run 為全臺 9,818 筆、臺北／新北 1,138 筆，1,121 筆通過 schema／政策進入 draft 候選範圍。這些候選不得因資料量大就自動成為推薦：價格、營業時間、停留時間、實際區域、冷氣與主觀屬性仍須核對；未核准資料不得滿足硬限制或進 CoupleScore。目前 production active 仍為 9 個明示的 `synthetic_demo`。
+
+Google API 金鑰繼續用於使用者當下的地圖、Places、Routes 與 Geocoding 顯示，不作大量永久建庫。Sideby 只保存可重用的 Place ID；Google 名稱、地址、照片、評論、評分與搜尋結果不進場地資料、訓練或 RAG。
+
 ## 2026-09-05 公開部署狀態
 
 PR #4 已合併至 `main`（`16cfd04`）。Railway PostgreSQL 與根 Next.js 已公開，`/api/runtime` 回 200／`standard`；Cloudflare Worker `https://louis8791-sideby-frontend.louis8791.workers.dev` 已設定正式 API／public origins 與 Google server secret，首頁、地圖檢查頁、同源 API 與匿名身分建立已通過公開 HTTPS 驗證。47 根＋15 Maps／proxy 測試及 GitHub checks 全綠。
