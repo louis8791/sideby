@@ -18,6 +18,29 @@ const parserOutputs = recommendationParserOutputs();
 const venues = recommendationVenues();
 const legs = recommendationLegs();
 
+test('personal venue feedback changes ranking even when venue attributes are unknown', () => {
+  const unknown = venues.map(row => ({ ...row, record: { ...row.record, attributes: [] } }));
+  const args = { sessionId, version: 3, shared, parserOutputs, venues: unknown, legs };
+  const before = composeItineraries(args);
+  assert.equal(before.length, 3);
+  const penalties = Object.fromEntries(before[0].stops.map(stop => [stop.venue_id, .5]));
+  const after = composeItineraries({ ...args, personalVenuePenalties: [penalties, {}] });
+  assert.equal(after.length, 3);
+  assert.notDeepEqual(after[0].stops.map(stop => stop.venue_id), before[0].stops.map(stop => stop.venue_id));
+  assert.doesNotMatch(JSON.stringify(after), /personalVenuePenalties|participantKey/);
+});
+
+test('a contextual observation does not silently become a general venue attribute', () => {
+  const unknown = venues.map(row => ({ ...row, record: { ...row.record, attributes: [] } }));
+  const contextual = venues.map(row => ({ ...row, record: { ...row.record,
+    attributes: row.record.attributes.map(item => ({ ...item, scope: 'contextual',
+      context: { dayType: 'weekday', timeOfDay: 'night', area: '測試區域' } })),
+  } }));
+  const score = (records: Parameters<typeof composeItineraries>[0]['venues']) => composeItineraries({ sessionId, version: 3, shared, parserOutputs, venues: records, legs })
+    .map(plan => plan.couple_score);
+  assert.deepEqual(score(contextual), score(unknown));
+});
+
 test('each stop meets both private area and cooling constraints; unknown cooling fails closed', () => {
   const withEnvironment = (label: string, partner = '放鬆') => [label, partner].map(rawText =>
     parseWithRuleBaseline({ sessionId, mode: 'future', visibility: 'private_session', rawText }));

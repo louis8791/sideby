@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { venueId } from '../venues/schema';
 import { environmentRequirements } from '../model/preference-query';
 import { preferenceFeedbackSignals } from '../model/preference-learning';
+import { selectablePreferenceLabels } from '../model/preference-catalog';
 
 export const id = z.uuid();
 export const version = z.number().int().min(0).max(2147483646);
@@ -74,6 +75,7 @@ const privateTags = z.array(z.string().trim().min(1).max(30)
   .max(12).refine(values => new Set(values).size === values.length);
 
 export const privateInput = z.strictObject({
+  selectedPreferences: z.array(z.enum(selectablePreferenceLabels)).max(30).optional(),
   environment: environmentRequirements.optional(),
   rawText: privateText,
   normalizedText: privateText.optional(),

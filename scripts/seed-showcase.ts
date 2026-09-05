@@ -1,4 +1,5 @@
 import { Pool } from 'pg';
+import { buildVenueRecommendationIndex } from '../src/server/learning';
 import {
   showcaseDatasetVersion, showcaseExecutionSlots, showcaseMatrixVersion, showcaseRecords, showcaseTravelLegs,
 } from '../src/recommendations/showcase-data';
@@ -19,6 +20,12 @@ export async function seedShowcase(connectionString: string) {
   const legs = synthetic ? showcaseTravelLegs() : approvedTravelLegs();
   try {
     await client.query('BEGIN');
+    await client.query('SELECT pg_advisory_xact_lock(738922)');
+    const activeRelease = await client.query("SELECT version FROM venue_datasets WHERE status='active' AND version LIKE 'sideby-release-%'");
+    if (!synthetic && activeRelease.rowCount) {
+      await client.query('COMMIT');
+      return;
+    }
     await client.query("UPDATE venue_datasets SET status='stale' WHERE status='active'");
     await client.query(`INSERT INTO venue_datasets(version,status,approved_at,data_mode)
       VALUES ($1,'active',now(),$2) ON CONFLICT (version)
@@ -47,6 +54,7 @@ export async function seedShowcase(connectionString: string) {
     if (!synthetic) await client.query(`UPDATE venue_staging_records SET review_status='approved'
       WHERE run_id=(SELECT id FROM venue_import_runs WHERE status='staged' ORDER BY source_updated_at DESC,created_at DESC LIMIT 1)
       AND source_record_id=ANY($1::text[])`, [approvedSourceRecordIds()]);
+    if (!synthetic) await buildVenueRecommendationIndex(client, `index-${datasetVersion}`);
     await client.query('COMMIT');
   } catch (error) {
     await client.query('ROLLBACK');
@@ -63,6 +71,6 @@ if (process.argv[1]?.endsWith('seed-showcase.ts')) {
   seedShowcase(connectionString)
     .then(() => console.log(process.env.SIDEBY_DATA_MODE === 'synthetic_demo'
       ? `Seeded ${showcaseDatasetVersion} with Google Place IDs and Sideby-owned demo facts.`
-      : `Activated ${approvedDatasetVersion} with 13 Owner-approved government venues.`))
+      : 'Approved dataset initialization complete; an existing sideby-release dataset is preserved.'))
     .catch(error => { console.error(error instanceof Error ? error.message : 'Showcase seed failed'); process.exitCode = 1; });
 }

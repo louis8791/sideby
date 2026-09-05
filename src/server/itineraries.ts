@@ -1,10 +1,12 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import {
   applyPreferenceFeedback, preferenceAdjustmentBySignal, type PreferenceAdjustment,
 } from '../model/preference-learning';
 import { composeItineraries, publicItinerarySchema, type PublicItinerary } from '../recommendations/engine';
 import { approvedMeetingLegs } from '../recommendations/approved-real-data';
+import { venueRecordSchema } from '../venues/schema';
+import { getActiveVenueRecommendationIndex } from './learning';
 import { ApiError, CURRENT_TERMS_VERSION, type ItineraryReaction, type PreferenceFeedback, type SharedConditions } from './contracts';
 import { pool, transaction } from './db';
 import { publicProjection, safePublicReason } from './privacy';
@@ -72,17 +74,27 @@ async function recommendationContext(client: PoolClient, session: SessionRow) {
     WHERE r.dataset_version=$1
       AND (s.execution->>'opensAt')::timestamptz < $3::timestamptz
       AND (s.execution->>'closesAt')::timestamptz > $2::timestamptz
-    ORDER BY r.venue_id LIMIT 32`, [dataset.rows[0].version, session.shared.startsAt, session.shared.endsAt]);
+    ORDER BY r.venue_id`, [dataset.rows[0].version, session.shared.startsAt, session.shared.endsAt]);
+  if (dataset.rows[0].data_mode === 'approved_dataset') {
+    const index = await getActiveVenueRecommendationIndex(client);
+    if (!index || index.datasetVersion !== dataset.rows[0].version || index.entries.length !== index.recordCount) {
+      throw new ApiError(503, 'RECOMMENDATION_DATA_UNAVAILABLE');
+    }
+    const indexed = new Map(index.entries.map(entry => [entry.venue_id, entry]));
+    if (venues.rows.some(row => indexed.get(row.record.venueId)?.record_sha256 !==
+      createHash('sha256').update(JSON.stringify(row.record)).digest('hex'))) throw new ApiError(503, 'RECOMMENDATION_DATA_INVALID');
+  }
   const legs = await client.query(`SELECT matrix_version AS "matrixVersion",from_key AS "fromKey",
     to_key AS "toKey",mode,minutes FROM travel_matrix WHERE matrix_version=$1`, [matrix.rows[0].version]);
   const meetingLegs = dataset.rows[0].data_mode === 'approved_dataset'
-    ? approvedMeetingLegs(session.shared.meetingPoint.matrixKey ?? 'meeting_user', session.shared.meetingPoint)
+    ? approvedMeetingLegs(session.shared.meetingPoint.matrixKey ?? 'meeting_user', session.shared.meetingPoint,
+      venues.rows.map(row => venueRecordSchema.parse(row.record)))
     : [];
   const deltas = await client.query(`SELECT e.user_id,e.attribute,e.target_bound,sum(e.target_delta)::float AS delta
     FROM preference_feedback_events e
     WHERE e.user_id=ANY($1::uuid[]) AND (
       e.session_id=$2 OR (
-        e.session_id<>$2 AND e.long_term_applied AND EXISTS (
+        e.session_id<>$2 AND e.long_term_applied AND e.terms_version=$3 AND EXISTS (
           SELECT 1 FROM consent_preferences p
           WHERE p.user_id=e.user_id AND p.terms_version=$3 AND p.personalization_enabled
         )
@@ -94,9 +106,19 @@ async function recommendationContext(client: PoolClient, session: SessionRow) {
     adjustments.push({ attribute: row.attribute, bound: row.target_bound, delta: Number(row.delta) });
     adjustmentsByUser.set(row.user_id, adjustments);
   }
+  const penalties = await client.query(`SELECT e.user_id,e.venue_id,least(.5,count(*)*.1)::float AS penalty
+    FROM preference_feedback_events e WHERE e.user_id=ANY($1::uuid[]) AND (
+      e.session_id=$2 OR (e.long_term_applied AND e.terms_version=$3 AND EXISTS (
+        SELECT 1 FROM consent_preferences p WHERE p.user_id=e.user_id AND p.terms_version=$3
+          AND p.personalization_enabled))) GROUP BY e.user_id,e.venue_id`,
+    [inputs.rows.map(row => row.user_id), session.id, CURRENT_TERMS_VERSION]);
+  const personalVenuePenalties = inputs.rows.map(input => Object.fromEntries(penalties.rows
+    .filter(row => row.user_id === input.user_id).map(row => [row.venue_id, Number(row.penalty)]))) as
+    [Record<string, number>, Record<string, number>];
   return {
     shared: session.shared as SharedConditions,
     parserOutputs: inputs.rows.map(row => applyPreferenceFeedback(row.parser_output, adjustmentsByUser.get(row.user_id) ?? [])),
+    personalVenuePenalties,
     privateTexts: inputs.rows.map(row => String(row.raw_text)),
     venues: venues.rows,
     legs: [...legs.rows, ...meetingLegs],
@@ -123,6 +145,7 @@ export async function generate(userId: string, sessionId: string, expectedVersio
     const itineraries = safeItineraries(composeItineraries({
       sessionId, version: expectedVersion, shared: context.shared,
       parserOutputs: context.parserOutputs, venues: context.venues, legs: context.legs,
+      personalVenuePenalties: context.personalVenuePenalties,
       dataMode: context.dataMode, datasetVersion: context.datasetVersion, routeMatrixVersion: context.routeMatrixVersion,
     }), context.privateTexts);
     if (itineraries.length !== 3) throw new ApiError(422, 'NO_FEASIBLE_ITINERARIES');
@@ -236,6 +259,7 @@ export async function replan(userId: string, itineraryId: string, expectedVersio
       version: expectedVersion,
       shared: context.shared,
       parserOutputs: context.parserOutputs,
+      personalVenuePenalties: context.personalVenuePenalties,
       venues: context.venues,
       legs: context.legs,
       dataMode: context.dataMode, datasetVersion: context.datasetVersion, routeMatrixVersion: context.routeMatrixVersion,

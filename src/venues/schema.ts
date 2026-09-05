@@ -1,9 +1,7 @@
 import { z } from 'zod';
+import { preferenceAttributes } from '../model/preference-catalog';
 
-export const venueAttributes = [
-  'bright', 'quiet', 'cute', 'childish', 'romantic', 'formal',
-  'interactive', 'relaxing', 'freshness', 'walking', 'food_variety',
-] as const;
+export const venueAttributes = preferenceAttributes;
 
 export const venueCategories = [
   'cafe', 'restaurant', 'exhibition', 'workshop', 'park', 'walk',
@@ -84,6 +82,7 @@ export const venueRecordSchema = z.strictObject({
       evidenceRefs: z.array(z.string()).max(20),
     }),
     facilities: z.array(z.string().trim().min(1).max(100)).max(30),
+    admissionText: z.string().trim().min(1).max(2000).nullable().optional(),
   }),
   sources: z.array(sourceEvidence).min(1).max(50),
   attributes: z.array(attributeObservation).max(100),

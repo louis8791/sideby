@@ -221,6 +221,18 @@
             "minLength": 1,
             "maxLength": 100
           }
+        },
+        "admissionText": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -368,16 +380,26 @@
             "type": "string",
             "enum": [
               "bright",
-              "quiet",
               "cute",
               "childish",
+              "quiet",
               "romantic",
               "formal",
               "interactive",
               "relaxing",
               "freshness",
               "walking",
-              "food_variety"
+              "food_variety",
+              "fun",
+              "quality",
+              "privacy",
+              "cognitive_load",
+              "service",
+              "food",
+              "culture",
+              "photography",
+              "alcohol",
+              "night_view"
             ]
           },
           "value": {

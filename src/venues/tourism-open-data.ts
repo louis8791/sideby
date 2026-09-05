@@ -141,6 +141,8 @@ function parsePayload(sourceKey: SourceKey, payload: unknown, datasetVersion: st
         licenseVerified: true,
         descriptionReuseAllowed: true,
       });
+      // Preserve the government's explicit fee evidence; the earlier importer discarded it.
+      record.facts.admissionText = text(item.FeeInfo)?.slice(0, 2000) ?? null;
       const assessment = assessVenue(record);
       if (!assessment.valid) { reject('policy_rejected'); continue; }
       records.push(record);

@@ -250,6 +250,7 @@ test('Phase 2 + Phase 3 + Phase 5 + Phase 6 backend: real PostgreSQL + built Nex
     const saved = await call('POST', privatePath, privateA, {
       rawText: privateCanary,
       normalizedText: '明亮、可愛、不要幼稚、少走路、浪漫',
+      selectedPreferences: ['浪漫'],
       environment: { setting: 'outdoor', airConditioning: 'excluded' },
       tags: ['secret-desire-canary'], visibility: 'private_session',
     });
