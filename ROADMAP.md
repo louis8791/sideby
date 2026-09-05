@@ -29,7 +29,9 @@
 - `部分完成`：已有可執行交付或相應測試，但仍缺必要功能或較高層驗收。
 - `未開始`：只有需求、schema、fixture 或測試計畫，沒有對應可執行功能。
 
-2026-09-05 整合基線為 `main` commit `76040d0`，且與 `origin/main` 一致。根後端已有匿名房間、私密輸入、合成三套推薦、reaction／locked／局部重排／定案與本人 `too_dark` 偏好更新；整體檢查為後端 39 項、Maps 11 項及前端 typecheck／build 通過。`frontend/` 已匯入且可建置，固定邀請碼與範例行程依 Owner 決策可保留作展示。Google 四項本機檢查已通過；真實 Gemini、展示所需資料流、兩支實體手機、正式部署及 Owner 驗收仍未完成。
+2026-09-05 已驗證的共同基線至少到 `main` parent `9c77595`，本文件自己的最新 commit 以 Git 為準。根後端已有匿名房間、私密輸入、合成三套推薦、reaction／locked／局部重排／定案與本人 `too_dark` 偏好更新；整體檢查為後端 39 項、Maps 11 項及前端 typecheck／build 通過。`frontend/` 已匯入且可建置，固定邀請碼與範例行程依 Owner 決策可保留作展示。Google 四項本機檢查已通過；真實 Gemini、展示所需資料流、兩支實體手機、正式部署及 Owner 驗收仍未完成。
+
+舊 `phase3-itineraries` 的 19 檔候選已以遠端 `archive/phase3-itineraries-checkpoint-20260905`／`63cfe6c` 保存，狀態為 `PRESERVED_NOT_ADOPTED`。它不能直接刪除，也不能因被保存就視為 main 已完成；後端支援者若要取用，須逐項比對後另開採用 commit。
 
 | Phase | 名稱 | 目前狀態 | 主要依賴 | 可平行資訊 |
 |---|---|---|---|---|

@@ -12,6 +12,8 @@ Google 本機接線：`frontend/src/lib/google-maps.server.ts` 使用官方 Plac
 
 黑客松 UI 可保留固定邀請碼與範例行程。範例必須有獨立 demo／synthetic 狀態；真正 API 呼叫一旦失敗，只能顯示失敗或不可用，不得切換範例並沿用成功狀態。這項 cut 不降低後端權限、私密隔離與輸出驗證。
 
+遠端 `archive/phase3-itineraries-checkpoint-20260905`／`63cfe6c` 只保存舊推薦候選。若要採用，先逐檔比較現行 main 的 schema、migration、API 與測試；不得因 archive 自身測試曾通過就整包 cherry-pick 或宣稱已整合。
+
 ## 1. 技術決策
 
 工作區隔離：根 repo 保留 Next.js／PostgreSQL，TanStack 前端納入 `frontend/`，各有依賴與建置目錄，只有根 Git。TypeScript 僅掃描明確來源並排除 `.local`／`frontend`；Next root 固定。既有 local launcher 維持 cwd／埠檢查。以下未更新的模型技術章節是前一版規劃。

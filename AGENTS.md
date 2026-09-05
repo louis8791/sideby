@@ -13,6 +13,8 @@
 - 前端與後端是同一 Repo 的兩個執行元件，lockfile 與編譯範圍分開。原 Lovable 連線仍在隊友 Repo，沒有自動改接此子目錄；共同修改以本 Repo feature 分支為準。
 - Supabase 身分、本地畫面 state、固定房號與範例行程不是根 API 的成員／定案來源。架構匯入、代理連通、完整功能串接與實機驗收分開回報。
 - 黑客松展示可保留固定邀請碼與範例行程；兩者須標示為 demo／synthetic，且外部服務或 API 失敗時不得把範例冒充成新生成結果。固定邀請碼不阻擋本輪，但正式產品前須改為真正房間流程。
+- Owner 用語「CP 寫寫」代表：完成本輪內容、同步 Obsidian 的 AGENTS／PRD／TDD／ROADMAP，再 commit 並 push；執行前仍須排除金鑰、私密資料與不屬本輪的其他人改動。
+- 舊 `phase3-itineraries` 成果已保存於遠端 `archive/phase3-itineraries-checkpoint-20260905` commit `63cfe6c`。它是待審候選，不是 main 已採用功能；不得直接刪除或整包合併，須逐項比對現行 main。
 
 ## 專案目的
 

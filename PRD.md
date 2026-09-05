@@ -8,6 +8,8 @@ Google 地圖本機入口為 `/maps-check`：不依賴 Supabase／Gemini，可�
 
 黑客松展示可保留固定邀請碼與範例行程，不列為目前阻斷；畫面必須能辨識 demo／synthetic，API 或外部服務失敗時不得把範例冒充成新生成成功。三人分工為使用者主責後端、一人支援後端、一人持續前端細修。
 
+舊 `phase3-itineraries` 的 19 檔推薦候選已在遠端 archive branch／commit `63cfe6c` 保存。尚未決定採用，也不構成目前產品完成證據；正式納入前須依本 PRD 的現行 Gemini＋Google API cut、隱私與資料邊界逐項審查。
+
 目標是正式網址能完成雙人核心流程，並提供可重建程式碼與環境說明。私密原文仍互不可見，硬限制、權限與定案由後端驗證。匯入前端不代表 Supabase、Gemini、Google Maps、匿名房間與定案已接通；必須另做實際服務與雙裝置驗收。
 
 ## 1. 產品摘要
