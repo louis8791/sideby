@@ -1,12 +1,13 @@
-# Phase 1B＋Phase 2 私密輸入＋場地回饋後端本機驗證紀錄
+# Sideby Phase 2／3／5／6 後端本機驗證紀錄
 
-日期：2026-09-05。範圍：使用者負責的應用後端房間骨架、Phase 2 私密輸入第一刀及場地回饋；全部請求均為合成資料。
+日期：2026-09-05。範圍：房間骨架、私密輸入、場地回饋、Phase 5 確定性推薦及 Phase 6 反應／重排／定案第一刀；全部請求與場地均為合成資料。
 
 ## 已觀察結果
 
 - Windows x64、Node.js 24.16.0、Next.js 16.3.4、PostgreSQL 18.4。
 - `npm run build`：正式建置通過，包含 TypeScript 檢查。
-- `npm test`：自動重建後，後端 16 個行為子測試＋1 個整合父測試、場地資料 4 個、需求資料契約 3 個及 parser／Privacy Guard 3 個測試，共 27 passed、0 failed；最後一次約 11.8 秒。
+- `npm test`：自動重建後，後端 17 個行為子測試＋1 個整合父測試、場地資料 5 個、需求資料契約 3 個、parser／Privacy Guard 3 個及推薦／重排引擎 6 個測試，共 35 passed、0 failed。
+- 完整 35 tests 與 18 個後端 tests 通過；`phase6:check` 的 source／API gate 為 PASS，僅因兩瀏覽器 Runtime 與 Owner 證據缺少而按設計回 `NOT_READY`。
 - 測試使用真正 PostgreSQL 與 `next start` 正式產物，經 HTTP 呼叫；沒有以資料庫／HTTP mock 代替。
 - 雙 SSE 訂閱的最後一次本機樣本：506ms。這只是一筆合成樣本，不是 p95、手機網路或負載效能承諾。
 - `npm run dev:local`：實際啟動後匿名入口回 201；Ctrl+C 關閉啟動的應用程序與資料庫。已修正 Windows pg_ctl 管線造成的額外等待及 Ctrl+C 關閉競爭。
@@ -35,9 +36,19 @@
 | Remembered 同意 | 未開個人化拒絕；開啟後可保存；關閉後 visibility 與 parsed result 降回 session |
 | 解析 envelope | 有限明示範例 parsed；模糊／混合未支援限制需釐清；非法 parser 候選 unavailable |
 | Privacy Guard | PublicState／SSE 不含私密原文與 tags；公開欄位及理由守門有壞輸入行為測試 |
+| Phase 5 生成閘門 | 非成員、未確認、未解析、未啟用資料與過期版本均明確失敗 |
+| 硬限制 | 合成案例驗證共同與私人日期／時間／戶外／訂位、保守預算、交通、總移動、飲食、正規化過敏、無障礙與未知價格基準 fail closed |
+| 三套行程 | 產生三套 2 站行程；相同站點不超過 50%，至少兩項差異，結果符合公開 schema |
+| CoupleScore | min／mean 高權重公平公式固定；同資料切換 sponsored 後分數不變 |
+| Maps click-out | 自有／授權名稱正確編碼，optional Place ID 優先，URL 無 API key |
+| 公開行程出口 | GET 對 JSONB 重新套用 strict schema；額外私密欄位使整體安全 503，不直接外送 |
+| 場地版本 | 同一穩定 venue_id 可在兩個 dataset version 並存，execution slot 以複合鍵綁定正確版本 |
+| Phase 6 reaction | 單方 like 不鎖；雙方同一 stop like 才鎖；upsert 冪等、非成員／舊版／鎖定衝突均拒絕且不公開 reaction row |
+| Phase 6 replan | 保留 locked stop 的 stop_id／venue_id／order_no，排除 replace 場地後使用同一 composer 重驗硬限制；無可行結果 fail closed |
+| Phase 6 finalize | 一人 pending、兩人不同 choice_conflict、同一方案 finalized；定案後禁止 generate／reaction／replan／改選 |
 
 ## 尚未驗證
 
-前端畫面、兩個真實瀏覽器／兩支手機、正式部署、Supabase RLS、併發負載、管理者審核 API、檢舉／頻率限制、正式場地 ID 存在性、個人偏好更新器、訓練候選出口、自管模型／RAG 整合、推薦計分與行程、外部訂位、Owner 驗收。這批後端證據不能視為完整 Phase 2 或 MVP 通過。
+前端畫面、兩個真實瀏覽器／兩支手機、正式部署、Supabase RLS、併發負載、管理者審核 API、檢舉／頻率限制、個人偏好更新器、訓練候選出口、自管模型／RAG、真實核准場地與交通矩陣、三案例 Runtime、外部訂位、Owner 驗收。這批合成後端證據不能視為完整 Phase 3、Phase 5 或 MVP 通過。
 
 重跑入口與前端欄位見 [BACKEND_API](BACKEND_API.md)。原始本機測試資料與資料庫日誌保留在 `.local/tests/`，不提交 Git。

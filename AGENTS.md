@@ -1,5 +1,15 @@
 # Sideby 專案規則
 
+## 2026-09-05 最新共同開發決策（優先於下方歷史模型規劃）
+
+- 使用者指定 `louis8791/sideby` 為唯一主 Repo；Lovable 程式已匯入 `frontend/`，根後端保留 `app/api/`、`src/`、`db/`。共同操作入口為 `docs/TEAM_INTEGRATION.md`，部署依 `docs/DEPLOYMENT.md`。
+- 本輪採 Gemini＋Google Maps API 型 MVP，不排模型訓練／自管生成／Embedding／RAG。下方相關舊禁止及訓練工作包是歷史／延後參考，不阻擋本輪；權限、硬限制、來源與隱私守門保持必要。
+- 外部 API 只按已配置服務執行，不把失敗默默切成假成功。私密資料送模型須告知與同意；不得公開原文、憑證或原始供應商錯誤。
+- 根後端的 `rule_baseline_v1` 與零外部呼叫結果仍是既有基準；不得把其通過宣稱為 frontend 的 Gemini／Google Maps 已驗收。
+- Google 即時查詢／展示已獲本次方向授權；既有自有資料政策繼續阻擋 Google 評論、照片及衍生標籤進共用 RAG／訓練，不由匯入程式碼推定所有保存行為合法。
+- 前端與後端是同一 Repo 的兩個執行元件，lockfile 與編譯範圍分開。原 Lovable 連線仍在隊友 Repo，沒有自動改接此子目錄；共同修改以本 Repo feature 分支為準。
+- Supabase 身分、本地畫面 state、固定房號與範例行程不是根 API 的成員／定案來源。架構匯入、代理連通、完整功能串接與實機驗收分開回報。
+
 ## 專案目的
 
 本專案定義 Sideby，一個雙人私密需求共決策的約會行程 MVP。文件中的產品範圍、隱私界線、硬限制與驗收標準優先於臨時的實作便利。
@@ -49,6 +59,7 @@
 - 持續學習分成三條可獨立驗收的路徑：私人回饋立即更新本人偏好；經模型改進同意、去識別及人工核准的案例進下一版離線訓練候選；核准場地資料變更後重建版本化索引。三者不得互相冒充。
 - 生成與 Embedding 的型號、版本、量化、維度、執行工具、硬體與授權尚待確認；不得沿用封存版的雲端模型設定或因本機已有模型就擅自選用。
 - 正式專案根目錄為 `E:\sideby`。專案專用模型、索引與執行環境須置於其下明確子目錄，模型權重、索引與私密資料不提交 Git。
+- 2026-09-05 Owner 將自管分類器／生成模型評測與場地 RAG 延後；它們不阻擋本輪黑客松 Phase 1／2 驗收，必須標 `DEFERRED`，不得改寫為 PASS。未來若恢復，仍依本節與 Roadmap Phase 3／4 獨立驗收。
 
 ## 黑客松訓練契約（需求資料契約已實作，訓練待執行）
 
@@ -61,15 +72,17 @@
 - 分類器未達驗收時保留規則／明確選項，標示實際使用模式；RAG／模型缺失回真實不可用，不能用固定場地清單假裝語意檢索成功。
 - 模型分數、字串相似度與小數門檻不是經驗證的信心。程度到 target_min／target_max 的映射由版本化尺度、人工例子與個人校準決定，不直接把分類機率當程度。
 - 需求訓練資料與場地資料分開；正式使用者私密輸入不得自動回收訓練。模型改進同意可在網站條款／設定中一次取得並版本化，不必每次回饋重問；但必須可撤回，且與「記住我的偏好」及「公開這則評論」分開記錄。只有同意有效、去識別及人工核准的內容可進下一版離線訓練候選。
-- 四份文件已記錄方案；需求 JSONL 契約、驗證器、group split 防洩漏檢查及六筆合成範例已實作，場地資料的 JSON Schema、政府資料正規化匯入器與共用政策守門也有合成測試。這不代表 Python 分類器、模型權重、真實需求表、真實場地或 RAG 索引已交付；第一批房間後端仍依原有 HTTP 證據獨立驗收。
-- Phase 1 的機器驗收入口為 `npm run phase1:check`，交接規則見 `docs/PHASE1_ACCEPTANCE.md`。缺少真實需求表、目標硬體模型、檢索或兩瀏覽器證據時必須回傳非零狀態，不得用空白證據檔或合成範例使結果變綠。
+- 四份文件已記錄方案；需求 JSONL 契約、驗證器、group split 防洩漏檢查及六筆格式範例已實作。Owner 另核准 `data/training/requirements.hackathon.jsonl` 的 15 筆／5 群組合成句作基本展示資料；它只證明本輪格式、標註與切分，不是真實使用者研究或模型品質證據。
+- Phase 1 的機器驗收入口為 `npm run phase1:check`，交接規則見 `docs/PHASE1_ACCEPTANCE.md`。本輪模型／RAG 為 `DEFERRED`；需求資料與後端通過後，仍須兩瀏覽器 Runtime 才能回 `READY_FOR_CC_REVIEW`。
 
 ## 分工與施工順序
 
+- 2026-09-05 現場三人協作以 `docs/TEAM_INTEGRATION.md` 為操作入口：本 repo 是唯一後端與整合權威，Lovable 前端在 `frontend/` 共同維護；Manus 收到後只納入指定元件。不同 package／lockfile／API／DB 不可互相覆蓋；每個 checkout 同時只允許一位 writer，其他人用自己的分支／工作目錄。落後的 worktree 先核對基底與未提交內容，不能直接回蓋。
+
 - 另一位成員負責前端 UIUX、畫面狀態與應用 API 串接；使用者負責應用後端、資料權限、決策規則與整合測試；模型／RAG 獨立為可交由另一位協作者承接的工作包，承接人尚待確認。
 - 雙方先對齊請求／回應、錯誤與公開狀態契約，前端可用明確標示的合成資料開發。
-- 應用後端先做 Phase 1B 雙人 Session、公開條件、權限與同步；Phase 1A 自管模型／RAG 可獨立進行，Phase 2 才整合解析，依 ROADMAP 分別驗收。
-- ROADMAP 固定為 Phase 1～5 五個頂層階段；1.0／1A／1B 與 4A～4E 只是階段內工作包，不得在狀態回報中另算成額外 Phase。
+- 已有的雙人 Session、公開條件、權限與同步歸入 Roadmap Phase 2；私密輸入／需求解析歸入 Phase 3，場地資料／RAG 歸入 Phase 4，依各階段完成條件分別驗收。
+- ROADMAP 固定為 Phase 1～8 八個頂層階段；舊 1.0／1A／1B 與 4A～4E 僅作歷史工作包與證據入口，不再構成現行頂層依賴。
 
 ## Runtime contract
 
@@ -88,14 +101,32 @@
 
 私密資料可以影響過濾、排序與重排，但不得以原句、身分指向或可推理形式進入共同輸出。Private input、public explanation、shared realtime state 必須在資料模型與 API 層分開。
 
-## Phase 2 私密輸入契約（2026-09-05 後端第一刀已實作）
+## 私密輸入契約（原 Phase 2，現 Roadmap Phase 3；2026-09-05 後端第一刀已實作）
 
 - `GET／POST／DELETE /api/sessions/:id/private-inputs` 永遠以 Bearer 身分決定 owner，不接受 userId／role 冒名；GET 只讀本人，同房另一人沒有自己的輸入時同樣回 404。
 - 新輸入預設 `private_session`；`private_remembered` 必須已接受當期條款並開啟 `personalization_enabled`。撤回設定後，既有 remembered 輸入與已解析 visibility 降回 session scope。
 - 當前 parser 是明確標示的 `rule_baseline_v1`，只處理已列入的有限語句；未支援的混合限制與「有氣氛」等模糊語句必須回 needs_clarification。非法候選回 unavailable，不得標 parsed。
 - 自管分類器、生成模型與 RAG 尚未接入。規則基準通過不等於模型或 RAG 通過；`externalModelApiCalls` 固定為 0，且不得新增雲端 fallback。
 - PublicState／SSE 只走公開 allowlist 與 Privacy Guard 欄位出口；私密原文、tags、parser output、澄清問題與 userId 不得出現在共同狀態。修改、刪除或撤回 remembered 會增加不含內容的公開 revision 並清除既有確認，使並行舊版確認失敗。
-- CC 驗收入口為 `npm run phase2:check`，完整規則見 `docs/PHASE2_ACCEPTANCE.md`。沒有 RAG 整合與兩瀏覽器隱私證據時，Phase 2 overall 必須維持 NOT_READY。
+- CC 驗收入口為 `npm run phase2:check`，完整規則見 `docs/PHASE2_ACCEPTANCE.md`。本輪 RAG 為 `DEFERRED`；沒有兩瀏覽器隱私證據時，Phase 2 overall 必須維持 NOT_READY。
+
+## 推薦與三套行程契約（Roadmap Phase 5；2026-09-05 後端第一刀已實作）
+
+- 生成只接受同房成員與目前 Session version；雙方未確認、任一私密輸入未解析、沒有單一作用中核准場地資料集或交通矩陣時一律 fail closed。
+- 硬限制先於計分，必要事實未知不得放行。CoupleScore 固定為 `45% min + 25% mean + 15% context + 10% novelty + 5% route efficiency`，合作／贊助欄位不得改分。
+- 每套必須有 2～4 站；任兩套相同站點不超過 50%，且類型、區域、預算層級、移動密度至少兩項不同。不足三套回 `NO_FEASIBLE_ITINERARIES`，不得放寬硬限制。
+- `POST /api/sessions/:id/generate` 與 `GET /api/sessions/:id/itineraries` 的公開結果只含核准場地與安全中性理由；Session 或私密輸入更新後，舊版本行程不得再回傳。
+- 目前 36 個本機測試通過；私人日期／時間／戶外／訂位限制、過敏字串正規化、未知價格基準、嚴格公開 DTO、資料模式與跨資料集穩定 venue_id 均有 fail-closed 行為測試。但推薦資料仍為合成資料。`5 engine/api` 可標 PASS；真實場地／交通、RAG、三案例 Runtime、fairness 最低門檻與 Owner 仍 BLOCKED，Phase 5 overall 必須維持 `NOT_READY`。驗收入口為 `npm run phase5:check` 與 `docs/PHASE5_ACCEPTANCE.md`。
+
+## 反應、局部重排與雙人定案契約（Roadmap Phase 6 第一刀；2026-09-05）
+
+- Reaction 只能由同房成員對目前 Session version 的 itinerary／stop 寫入，身分只取 Bearer token；不公開另一方的 reaction row、身分或原因。
+- 單方 stop like 不鎖定；雙方對同一 stop like 後才由伺服器輸出 `locked=true`。整套行程 like 不鎖死所有站點；鎖定站點不可 dislike／replace。
+- Replan 不接受客戶端自稱的 locked 清單；必須使用同一推薦 composer，保留 locked stop 的 stop_id、venue_id、order_no 與 locked 狀態，並重驗整條路線。無可行方案整體拒絕，不得部分覆寫或放寬硬限制。
+- 兩人選同一方案才 finalize；不同方案回衝突狀態。定案後 generate、reaction、replan 與改選另一方案均拒絕。
+- `too_dark` 只能由本人對當前 itinerary stop 寫入不可變事件，伺服器固定轉為 bright 門檻 `+0.10`；當次 Session 立即生效，只有有效 `personalization_enabled` 才遞增本人的 long-term preference version。事件不得進 PublicState、公開理由、共用事實或 RAG；同一人、行程、站點與 signal 重送冪等。
+- 正式手機優先首頁已串接房間、共同條件、私密輸入、三套方案、反應、局部重排、Maps click-out、雙人定案、本人私人清單與回饋，並以 1.2 秒輪詢補足行程狀態同步。正式模式不自動帶入合成條件；`npm run demo:local` 使用獨立合成資料庫，UI／payload 明示 `synthetic_demo`，不得冒充真實推薦。
+- Chrome＋Edge 單一合成案例已實際完成上述主流程；管理審核、檢舉／隱藏、頻率限制、training candidates、三案例 Runtime、兩支實體手機與 Owner 仍 BLOCKED。驗收入口為 `npm run phase6:check` 與 `docs/PHASE6_ACCEPTANCE.md`。
 
 ## 場地評論與同意契約（2026-09-05，後端第一刀已實作）
 
@@ -106,7 +137,7 @@
 - 公開內容須有 pending／approved／rejected／hidden／deleted 等審核狀態，以及檢舉、隱藏、取消公開與刪除能力。私人內容不得經由列表、統計、搜尋、RAG、快取、日誌或錯誤訊息洩漏。
 - 公開評論是使用者意見，不直接改寫官方事實或共用場地屬性。只有通過同意、去識別、人工核准、最低樣本與版本化資料閘門後，才可成為後續模型或共用標籤的候選證據。
 
-目前後端已提供版本化條款與兩項設定、本人場地回饋 CRUD、預設 private、逐筆切換 public、待審狀態及只讀 approved 公開列表。內容管理 API、檢舉／隱藏、頻率限制、前端畫面、長期偏好更新器與訓練候選出口仍未完成；不得開放陌生使用者自由投稿或宣稱模型已從評論學習。
+目前後端已提供版本化條款與兩項設定、本人場地回饋 CRUD／列表、預設 private、逐筆切換 public、待審狀態、approved 公開列表，以及獨立的 `too_dark` 本人偏好更新事件。正式首頁已呈現本人私人清單、想去／去過與約會後「太暗」回饋；內容管理 API、檢舉／隱藏、頻率限制與訓練候選出口仍未完成。不得開放陌生使用者自由投稿，也不得把偏好門檻更新宣稱為模型已訓練。
 
 ## No-Fake-Success contract
 
@@ -138,3 +169,4 @@
 4. git status、branch、commit 與遠端 HEAD 清楚可追溯。
 5. 尚未驗證的 Runtime、公開 UX、外部 API 與 Owner gate 明確標示為未驗證。
 6. `google_place_id` 保持 optional；Maps URL 正確編碼、Place ID 優先且不含 API key，Google 衍生內容未進持久層或 RAG。
+7. Windows 後端整合測試的共用 stop 必須清除整個 `next start` 程序樹；restart 每次重新配置空閒連接埠並保留失敗日誌，不得只增加等待時間掩蓋競爭。

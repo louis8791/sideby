@@ -1,0 +1,10 @@
+{
+  "folders": [
+    { "name": "Sideby 後端與整合", "path": "." },
+    { "name": "Lovable 候選前端", "path": ".local/frontends/lovable" }
+  ],
+  "settings": {
+    "search.exclude": { "**/.local/**": true, "**/.next/**": true, "**/node_modules/**": true },
+    "files.watcherExclude": { "**/.local/**": true, "**/.next/**": true, "**/node_modules/**": true }
+  }
+}

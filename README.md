@@ -1,84 +1,64 @@
 # Sideby
 
-> 一款把兩個人的喜好、限制與不方便直說的需求，整理成三套可直接出發的完整約會行程的雙人共決策產品。
+雙人私密需求共決策的約會行程 MVP。唯一共同開發 Repo：[louis8791/sideby](https://github.com/louis8791/sideby)。
 
-本 repository 包含 Sideby MVP 規格與可執行後端：匿名雙人房間、公開條件、版本確認、SSE、私密輸入、版本化同意與有限規則解析。前端 UI、自管模型／RAG 與完整推薦尚未整合。
+## 三人從這裡開始
 
-## 啟動後端
+1. clone 本 Repo，從最新 main 開自己的 feature 分支。
+2. 前端改 frontend/；後端改 app/api/、src/、db/；共同欄位先對齊 [API 契約](docs/BACKEND_API.md)。
+3. PR 都回到本 Repo 的 main，整合後其餘人更新基底。每個 checkout 只有一位 writer。
 
-需要 Node.js 22.13+。在 repo 根目錄執行 `npm ci`、`npm run dev:local`，即會啟動本機 PostgreSQL 與 Next.js API（http://127.0.0.1:3000）。目前首頁沒有 UI。完整欄位、同步、錯誤及環境說明見 [後端串接契約](docs/BACKEND_API.md)。
+完整分工與來源見 [TEAM_INTEGRATION](docs/TEAM_INTEGRATION.md)。原 Lovable 仍連著隊友 Repo，不會自動同步到此處的 frontend 子目錄。
 
-驗證：執行 `npm test`，它會先正式建置，再以獨立 PostgreSQL 與正式 HTTP 服務測試後端、場地資料、需求資料契約、parser 與 Privacy Guard。2026-09-05 共 27 tests passed；真實需求表、自管模型／RAG、兩個獨立瀏覽器與公開部署仍待驗收。
+## 專案結構
 
-## 版本與提交紀錄
-
-- `main` 是目前唯一工作分支，後續修改以此分支的文件為基準。
-- [原始交付版 `archive/delivery-mvp-v1`](https://github.com/louis8791/sideby/tree/archive/delivery-mvp-v1) 以 Git tag 保留完整內容與原始 commit，僅供歷史比對。
-- 原始交付版與 `main` 是兩條獨立建立的歷史，內容並不相同。原始版的雲端模型設定只供歷史比對；目前採下述自行部署模型＋場地 RAG 的決策，以 main 四份權威文件為準。
-- 最新修改可查看 [main 提交紀錄](https://github.com/louis8791/sideby/commits/main/)。
-
-| 既有 commit | 內容 | 所在版本 |
-|---|---|---|
-| [`4b297ed`](https://github.com/louis8791/sideby/commit/4b297ed3fb21953df6b1a9d986d91ef3e37e1595) | 建立 MVP 文件基線 | main 歷史 |
-| [`eea56cc`](https://github.com/louis8791/sideby/commit/eea56cc9f0832fa06c99da3970add20b0c1a4132) | 專案更名為 Sideby | main 歷史 |
-| [`96b7017`](https://github.com/louis8791/sideby/commit/96b70171355e431b5532f95e52946b2a8d234581) | 原始交付包的 MVP 文件 | 封存標籤 |
-
-## 產品要解決的問題
-
-情侶通常不是找不到地點，而是難以在以下條件同時成立時快速做決定：
-
-- 兩人的偏好不同，且其中一方可能不方便直接說出完整需求。
-- 「明亮、可愛、浪漫、放鬆」等形容詞對不同人的標準不同。
-- 找到地點後仍要處理時間、營業狀態、交通、預算與行程順序。
-- 一方拒絕一站時，不應讓整份行程全部重做。
-
-MVP 的核心承諾是：雙方分別輸入需求，AI 只把可安全公開的共同結果呈現給兩人，再產生三套多站式、經硬限制驗證的行程。
-
-## MVP 範圍
-
-- 臺北市與新北市，以捷運及大眾運輸可合理到達區域為主。
-- 現在就出發、規劃未來兩種模式。
-- 匿名裝置身分、邀請碼、雙人 Session 與即時公開狀態。
-- 公開共同條件與每人可選的 shared、private_session、private_remembered 輸入。
-- 自然語言偏好解析、硬限制過濾、雙人公平計分、三套完整行程與局部重排。
-- 約會後在取得同意後更新個人偏好。
-
-## 模型與分工
-
-- 自行部署生成模型、Embedding 模型與場地 RAG，不呼叫外部模型 API，也不自動以雲端模型作故障備援。
-- 前後端應用 API、雙人同步及自管推論內部介面保留；此決策不代表全系統離線。
-- RAG 僅檢索團隊核准的場地資料，保留 venue_id、來源與版本；私密對話不進共用索引，硬限制、計分與行程驗證由程式負責。
-- 另一位成員負責前端 UIUX；使用者負責應用後端、資料權限、決策規則與整合測試；模型／RAG 是可獨立交付的工作包，承接人待確認。
-- 模型型號、執行工具與硬體尚待 Phase 1A 驗證；需求 JSONL 契約與驗證器已開工，模型／RAG 與房間後端仍分開驗收。
-- 已同意黑客松先訓練小型需求分類器：字元 TF-IDF＋Logistic Regression 對照固定規則，約 100–200 句人工標註、4–6 個屬性、分組 60%／20%／20% 評測；SetFit 為有時間後的比較選項。目前只有六筆 synthetic 格式範例，沒有真實需求表或已訓練模型。[詳細訓練規格](TDD.md#11-黑客松小型需求分類器需求資料契約已實作訓練待執行)、[Phase 1 驗收交接](docs/PHASE1_ACCEPTANCE.md)與 [六小時工作安排](ROADMAP.md#黑客松六小時工作安排規劃假設非工期承諾)已記入專案。
-- 不接 Google API，不把 Google Maps／Places 衍生內容用於訓練或 RAG；場地採自有／適當授權資料及附證據的人工標籤。建議先做單一小區域試點，未知屬性與無照片權利時明確標示，不由模型補猜。
-
-## 明確不包含
-
-CRM、商家後台、App 內付款、訂閱、社群、即時聊天、遊戲化、驚喜約會、住宿、SPA、酒吧、過夜、長途旅遊、全臺擴張、大模型微調平台，以及依賴即時大量評論或照片訓練的 RAG 系統。
-
-## 文件入口
-
-| 文件 | 用途 |
+| 路徑 | 用途 |
 |---|---|
-| [PRD.md](PRD.md) | 使用者、問題、範圍、功能需求與產品驗收 |
-| [TDD.md](TDD.md) | 架構、資料、API、模型邊界與測試策略 |
-| [ROADMAP.md](ROADMAP.md) | 從文件基線到可展示 MVP 的分階段交付 |
-| [AGENTS.md](AGENTS.md) | 本專案的執行規則與不可越過的契約 |
-| [docs/MVP_SPEC.md](docs/MVP_SPEC.md) | 完整 MVP 產品與系統規格 |
-| [docs/MODEL_RAG.md](docs/MODEL_RAG.md) | 模型、資料來源、隱私與 RAG 邊界 |
-| [docs/PHASE1_ACCEPTANCE.md](docs/PHASE1_ACCEPTANCE.md) | 給 CC 的 Phase 1 可重跑驗收步驟與證據格式 |
-| [docs/PHASE2_ACCEPTANCE.md](docs/PHASE2_ACCEPTANCE.md) | 給 CC 的 Phase 2 私密輸入、RAG 與兩瀏覽器驗收規則 |
-| [schemas/](schemas/) | LLM 結構化輸出與行程輸出的 JSON Schema |
-| [data/training/requirements.example.jsonl](data/training/requirements.example.jsonl) | 需求資料契約的 synthetic 格式範例 |
-| [data/fixtures/](data/fixtures/) | 不含秘密的範例場地與評測案例 |
+| frontend/ | Lovable 的 React／TanStack Start 前端與伺服器函式 |
+| app/api/、src/ | Next.js API、房間、私密資料、推薦、重排與定案 |
+| db/ | 根後端 PostgreSQL migrations |
+| app/page.tsx | 已接根 API 的合成整合展示入口 |
+| docs/、tests/ | 共同規格、部署、驗收與後端測試 |
+| .env.example、frontend/.env.example | 兩個執行元件各自的設定範本 |
 
-## 重要證據邊界
+一個 Repo 保留兩個現有執行元件與各自 lockfile，避免框架與依賴互相覆蓋。
 
-本 repo 的 schema 通過、文件完整或離線 fixture 測試，只能證明文件與靜態契約層級。它們不等於兩支真實手機、API 權限隔離、公開畫面隱私、外部訂位、即時資料正確或 Owner 驗收已完成。
+## 安裝及執行
 
-核心 Demo 必須能使用預先整理的範例資料與交通矩陣完成；地點／路線外部 API 只能是可替換的補充來源。合作優惠若為模擬資料，必須在 UI 清楚標示。
+需要 Node.js 22.13+、npm。前端安裝使用固定 Bun 1.4.2 與既有 bun.lock，不需全域安裝 Bun。
 
-## 隱私底線
+```powershell
+npm ci
+npm run frontend:install
+```
 
-私密原文不得進入另一半可取得的 API、Realtime 訊息、共用快取、共用歷史或一般伺服器日誌。共同推薦理由只能描述安全的共同條件或中性結果，不得揭露輸入者或可反推出私密內容的原因。
+兩個終端都從 Repo 根目錄操作：
+
+```powershell
+# 終端 1：後端及明示的合成展示，http://127.0.0.1:3000
+npm run demo:local
+
+# 終端 2：Lovable 來源前端，http://127.0.0.1:5173
+npm run frontend:dev
+```
+
+後端建立專案內獨立 PostgreSQL；無合成種子模式用 npm run dev:local。前端雲端功能須自行設定 frontend/.env；未配置時登入、Gemini、地圖可能不可用，見 [部署說明](docs/DEPLOYMENT.md)。
+
+前端開發 /api/* 已代理到根後端；頁面按鈕仍須逐項接真實 API，不能把代理通過視為功能全通。
+
+## 驗證
+
+```powershell
+npm run check:all
+```
+
+執行後端 build／HTTP 與資料測試，以及前端型別檢查與 build；GitHub PR 有兩個獨立檢查工作。舊 Phase 閘門保留，缺真實資料／實機證據時仍應回 NOT_READY。
+
+## 能力與未完成項
+
+- 既有後端包含匿名雙人房間、公開同步、本人私密輸入、同意設定、有限規則解析、合成三套行程、反應／鎖定／重排／定案與本人偏好更新。
+- 新前端原始碼含 Supabase、Gemini 與 Google Maps 接法。本輪採 API 型 MVP，不排模型訓練／自管模型／RAG；需求句作核准後的回歸驗收。
+- 前端固定房間碼／行程、Supabase 身分與根後端狀態尚待接合；兩支手機、真實雲端服務、公開部署及 Owner 驗收仍未完成。
+- 私密原文不得進對方 API、SSE、公開理由、共用歷史或一般日誌。雲端解析須告知與同意；Google 展示資料不自動進自有訓練／RAG。
+
+權威文件：[AGENTS](AGENTS.md)、[PRD](PRD.md)、[TDD](TDD.md)、[ROADMAP](ROADMAP.md)。舊模型／RAG 章節保留為歷史與未來參考，最新決策以各文件開頭及 TEAM_INTEGRATION 為準。

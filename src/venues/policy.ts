@@ -66,6 +66,9 @@ export function assessVenue(input: unknown): VenueAssessment {
   if (venue.facts.price.status === 'verified_current' && (venue.facts.price.minTwd === null || venue.facts.price.maxTwd === null || venue.facts.price.evidenceRefs.length === 0)) {
     errors.push('verified_current price requires values and evidence');
   }
+  if (venue.facts.price.status === 'verified_current' && venue.facts.price.basis === 'unknown') {
+    errors.push('verified_current price requires a known basis');
+  }
   if (venue.facts.openingHours.status === 'verified_current' && (!venue.facts.openingHours.rawText || venue.facts.openingHours.evidenceRefs.length === 0)) {
     errors.push('verified_current opening hours require text and evidence');
   }

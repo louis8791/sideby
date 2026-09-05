@@ -58,6 +58,7 @@ export const venueRecordSchema = z.strictObject({
   datasetVersion: z.string().trim().min(1).max(80),
   dataOwner: z.string().trim().min(1).max(120),
   venueId,
+  google_place_id: z.string().regex(/^[A-Za-z0-9_-]{1,300}$/).optional(),
   name: z.string().trim().min(1).max(160),
   category: z.enum(venueCategories),
   location: z.strictObject({

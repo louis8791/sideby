@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sideby 雙瀏覽器驗收台</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --brand: #0f766e;
+      --brand-dark: #115e59;
+      --brand-soft: #ccfbf1;
+      --ink: #16302d;
+      --muted: #55706c;
+      --page: #f5f7f4;
+      --card: #fffefa;
+      --line: #cbd8d4;
+      --ok: #177245;
+      --warn: #9a6700;
+      --danger: #b42318;
+      --radius: 14px;
+      --shadow: 0 8px 24px rgb(22 48 45 / 8%);
+      font-family: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--ink); background: var(--page); }
+    main { width: min(1120px, calc(100% - 32px)); margin: 32px auto 64px; }
+    header { margin-bottom: 24px; }
+    h1 { margin: 0 0 8px; font-size: clamp(28px, 4vw, 42px); line-height: 1.15; }
+    h2 { margin: 0 0 16px; font-size: 20px; }
+    h3 { margin: 20px 0 8px; font-size: 16px; }
+    p { margin: 8px 0; color: var(--muted); line-height: 1.65; }
+    code { overflow-wrap: anywhere; }
+    .notice { padding: 12px 16px; border-left: 4px solid var(--warn); background: #fff8e6; color: #6b4b00; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .card { padding: 20px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); box-shadow: var(--shadow); }
+    .wide { grid-column: 1 / -1; }
+    .row { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; }
+    .field { flex: 1 1 220px; }
+    label { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 700; }
+    input, select, textarea, button { font: inherit; }
+    input, select, textarea { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); background: white; }
+    textarea { min-height: 86px; resize: vertical; }
+    input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible { outline: 3px solid #5eead4; outline-offset: 2px; }
+    button { min-height: 44px; padding: 10px 16px; border: 0; border-radius: 10px; color: white; background: var(--brand); font-weight: 800; cursor: pointer; transition: background 180ms ease, transform 180ms ease; }
+    button:hover { background: var(--brand-dark); }
+    button:active { transform: translateY(1px); }
+    button:disabled { cursor: not-allowed; opacity: .48; }
+    button.secondary { color: var(--brand-dark); border: 1px solid var(--brand); background: white; }
+    button.secondary:hover { background: var(--brand-soft); }
+    button.danger { background: var(--danger); }
+    .status { display: flex; gap: 8px; align-items: center; min-height: 32px; margin: 12px 0 0; }
+    .dot { width: 10px; height: 10px; border-radius: 999px; background: var(--warn); }
+    .dot.ok { background: var(--ok); }
+    .dot.bad { background: var(--danger); }
+    .pill { display: inline-block; padding: 4px 9px; border-radius: 999px; background: var(--brand-soft); color: var(--brand-dark); font-size: 13px; font-weight: 800; }
+    .mono { padding: 10px 12px; border: 1px dashed var(--line); border-radius: 10px; background: #f8fbfa; font-family: ui-monospace, Consolas, monospace; font-size: 13px; overflow-wrap: anywhere; }
+    .checklist { display: grid; gap: 8px; margin-top: 12px; }
+    .check { padding: 10px 12px; border-radius: 10px; background: #eef3f1; color: var(--muted); }
+    .check.ok { background: #e8f7ee; color: var(--ok); font-weight: 800; }
+    .check.bad { background: #fff0ee; color: var(--danger); font-weight: 800; }
+    #messages { max-height: 210px; overflow: auto; white-space: pre-wrap; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
+    @media (max-width: 760px) { main { width: min(100% - 20px, 640px); margin-top: 20px; } .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <span class="pill">黑客松驗收工具</span>
+    <h1>Sideby 雙瀏覽器驗收台</h1>
+    <p>請分別用 Chrome 與 Edge 開啟本頁。一邊建立房間，另一邊輸入邀請碼加入；所有操作都會呼叫真正的 Sideby API。</p>
+    <p class="notice">本頁不會顯示或記錄登入憑證。截圖與錄影只在所有檢查完成後進行，請勿把私密測試原句拍進畫面。</p>
+  </header>
+
+  <div class="grid">
+    <section class="card">
+      <h2>1. 建立或加入房間</h2>
+      <div class="row">
+        <button id="create-room">我是 A，建立房間</button>
+        <button id="reset" class="danger">清除此瀏覽器</button>
+      </div>
+      <h3>另一個瀏覽器</h3>
+      <div class="row">
+        <div class="field">
+          <label for="invite-input">貼上 A 顯示的邀請碼</label>
+          <input id="invite-input" autocomplete="off" spellcheck="false">
+        </div>
+        <button id="join-room">我是 B，加入房間</button>
+      </div>
+      <div id="identity" class="status" aria-live="polite"><span class="dot"></span><span>尚未建立身分</span></div>
+      <p>邀請碼</p>
+      <div id="invite-output" class="mono">由 A 建立後顯示</div>
+      <p>Session</p>
+      <div id="session-output" class="mono">尚未建立</div>
+    </section>
+
+    <section class="card">
+      <h2>2. 共同狀態與即時同步</h2>
+      <p>先讓兩個瀏覽器加入同一房間，再由任一方更新。另一方應在不用重新整理的情況下看到版本與條件改變。</p>
+      <div class="row">
+        <button id="set-shared">更新共同約會條件</button>
+        <button id="confirm" class="secondary">確認目前版本</button>
+        <button id="refresh" class="secondary">重新讀取</button>
+      </div>
+      <div id="realtime" class="status" aria-live="polite"><span class="dot"></span><span>尚未連線</span></div>
+      <div id="public-state" class="mono">尚無公開狀態</div>
+    </section>
+
+    <section class="card">
+      <h2>3. 本人私密需求</h2>
+      <div class="row">
+        <button id="consent-session" class="secondary">同意條款，不長期記憶</button>
+        <button id="consent-remembered" class="secondary">同意並允許個人化</button>
+      </div>
+      <div class="field">
+        <label for="private-text">私密測試句（儲存後會自動畫面清除）</label>
+        <textarea id="private-text" placeholder="例如：想要明亮可愛，但不要幼稚，今天少走路"></textarea>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="visibility">保存範圍</label>
+          <select id="visibility"><option value="private_session">只限本次約會</option><option value="private_remembered">長期記憶</option></select>
+        </div>
+        <button id="save-private">儲存本人需求</button>
+        <button id="read-private" class="secondary">讀取本人結果</button>
+        <button id="withdraw" class="secondary">撤回個人化並驗證降級</button>
+      </div>
+      <div id="private-result" class="mono">尚未操作</div>
+    </section>
+
+    <section class="card">
+      <h2>4. 隱私掃描</h2>
+      <p>在另一個瀏覽器填入對方的測試句，掃描 PublicState 與即時事件是否出現。伺服器日誌仍須由 CC 在操作後獨立檢查。</p>
+      <div class="field">
+        <label for="forbidden">不得出現在公開資料的字串（一行一個）</label>
+        <textarea id="forbidden" placeholder="貼上自己與對方剛才使用的完整測試句"></textarea>
+      </div>
+      <button id="scan">掃描公開狀態與即時事件</button>
+      <div id="privacy-result" class="check">尚未掃描</div>
+    </section>
+
+    <section class="card wide">
+      <h2>驗收進度</h2>
+      <div class="checklist">
+        <div id="check-room" class="check">兩位成員加入同一房間：待驗證</div>
+        <div id="check-sync" class="check">跨瀏覽器即時同步：待驗證</div>
+        <div id="check-private" class="check">本人私密資料與解析：待驗證</div>
+        <div id="check-withdraw" class="check">撤回個人化後降級：待驗證</div>
+        <div id="check-leak" class="check">公開狀態／即時事件零洩漏：待驗證</div>
+      </div>
+      <h3>操作紀錄（不含憑證與私密原句）</h3>
+      <div id="messages" class="mono" aria-live="polite">等待操作</div>
+    </section>
+  </div>
+</main>
+
+<script>
+  const key = 'sideby.acceptance.v1';
+  const $ = id => document.getElementById(id);
+  let saved = JSON.parse(sessionStorage.getItem(key) || '{}');
+  let state = null;
+  let eventRaw = '';
+  let eventController = null;
+  let sawRemoteUpdate = false;
+  let localUpdateVersion = null;
+
+  function persist() { sessionStorage.setItem(key, JSON.stringify(saved)); renderIdentity(); }
+  function log(message, kind = 'info') {
+    const line = `${new Date().toLocaleTimeString('zh-TW', { hour12: false })}  ${message}`;
+    $('messages').textContent = $('messages').textContent === '等待操作' ? line : `${line}\n${$('messages').textContent}`;
+    if (kind === 'error') $('messages').style.borderColor = 'var(--danger)';
+  }
+  function mark(id, ok, text) { const node = $(id); node.className = `check ${ok ? 'ok' : 'bad'}`; node.textContent = text; }
+  function renderIdentity() {
+    const ready = saved.token && saved.sessionId;
+    $('identity').innerHTML = `<span class="dot ${ready ? 'ok' : ''}"></span><span>${ready ? `已就緒：成員 ${saved.role}` : '尚未建立身分'}</span>`;
+    $('invite-output').textContent = saved.inviteCode || (saved.role === 'B' ? 'B 不會再次顯示邀請碼' : '由 A 建立後顯示');
+    $('session-output').textContent = saved.sessionId || '尚未建立';
+    document.querySelectorAll('#set-shared,#confirm,#refresh,#consent-session,#consent-remembered,#save-private,#read-private,#withdraw,#scan').forEach(button => button.disabled = !ready);
+  }
+  async function api(method, path, data, token = saved.token) {
+    const response = await fetch(path, {
+      method,
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(data !== undefined ? { 'Content-Type': 'application/json' } : {}) },
+      body: data === undefined ? undefined : JSON.stringify(data),
+    });
+    const payload = response.status === 204 ? null : await response.json().catch(() => null);
+    if (!response.ok) throw new Error(payload?.error?.code || `HTTP_${response.status}`);
+    return payload;
+  }
+  async function anonymous() { return api('POST', '/api/auth/anonymous', {}, null); }
+  async function fingerprint(text) {
+    const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    return [...new Uint8Array(bytes)].slice(0, 6).map(value => value.toString(16).padStart(2, '0')).join('');
+  }
+  function presentState(next, source) {
+    const previous = state;
+    state = next;
+    $('public-state').textContent = JSON.stringify({
+      version: next.version,
+      status: next.status,
+      members: next.members,
+      shared: next.shared ? { mode: next.shared.mode, meetingPoint: next.shared.meetingPoint.label, budgetTwdTotal: next.shared.budgetTwdTotal } : null,
+    }, null, 2);
+    if (next.members?.length === 2) mark('check-room', true, '兩位成員加入同一房間：通過');
+    if (source === 'event' && previous && next.version !== previous.version && next.version !== localUpdateVersion) {
+      sawRemoteUpdate = true;
+      mark('check-sync', true, '跨瀏覽器即時同步：通過');
+    }
+  }
+  async function refresh() { const next = await api('GET', `/api/sessions/${saved.sessionId}`); presentState(next, 'refresh'); return next; }
+  async function connectEvents() {
+    eventController?.abort();
+    eventController = new AbortController();
+    $('realtime').innerHTML = '<span class="dot"></span><span>連線中</span>';
+    try {
+      const response = await fetch(`/api/sessions/${saved.sessionId}/events`, { headers: { Authorization: `Bearer ${saved.token}` }, signal: eventController.signal });
+      if (!response.ok || !response.body) throw new Error(`HTTP_${response.status}`);
+      $('realtime').innerHTML = '<span class="dot ok"></span><span>即時連線正常</span>';
+      const reader = response.body.getReader(), decoder = new TextDecoder();
+      let buffer = '';
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const packets = buffer.split('\n\n');
+        buffer = packets.pop() || '';
+        for (const packet of packets) {
+          eventRaw += `${packet}\n`;
+          const type = packet.match(/^event: (.+)$/m)?.[1];
+          const data = packet.match(/^data: (.+)$/m)?.[1];
+          if (type === 'state' && data) presentState(JSON.parse(data), 'event');
+        }
+      }
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        $('realtime').innerHTML = '<span class="dot bad"></span><span>即時連線中斷，請重新整理</span>';
+        log(`即時連線失敗：${error.message}`, 'error');
+      }
+    }
+  }
+  async function run(label, work) {
+    document.querySelectorAll('button').forEach(button => button.disabled = true);
+    try { await work(); log(`${label}：成功`); }
+    catch (error) { log(`${label}：${error.message}`, 'error'); alert(`${label}失敗：${error.message}`); }
+    finally {
+      document.querySelectorAll('button').forEach(button => button.disabled = false);
+      renderIdentity();
+    }
+  }
+
+  $('create-room').onclick = () => run('建立房間', async () => {
+    eventController?.abort(); sessionStorage.removeItem(key); saved = {};
+    const auth = await anonymous();
+    const room = await api('POST', '/api/couples', {}, auth.token);
+    const session = await api('POST', '/api/sessions', { coupleId: room.coupleId }, auth.token);
+    saved = { token: auth.token, role: room.role, coupleId: room.coupleId, inviteCode: room.inviteCode, sessionId: session.sessionId };
+    persist(); await refresh(); void connectEvents();
+  });
+  $('join-room').onclick = () => run('加入房間', async () => {
+    const inviteCode = $('invite-input').value.trim();
+    if (!inviteCode) throw new Error('請先貼上邀請碼');
+    eventController?.abort(); sessionStorage.removeItem(key); saved = {};
+    const auth = await anonymous();
+    const room = await api('POST', '/api/couples/join', { inviteCode }, auth.token);
+    const session = await api('POST', '/api/sessions', { coupleId: room.coupleId }, auth.token);
+    saved = { token: auth.token, role: room.role, coupleId: room.coupleId, sessionId: session.sessionId };
+    persist(); await refresh(); void connectEvents();
+  });
+  $('reset').onclick = () => { eventController?.abort(); sessionStorage.removeItem(key); location.reload(); };
+  $('refresh').onclick = () => run('重新讀取公開狀態', refresh);
+  $('set-shared').onclick = () => run('更新共同條件', async () => {
+    const current = await refresh();
+    const taipeiTomorrow = new Date(Date.now() + 8 * 3600000 + 86400000).toISOString().slice(0, 10);
+    localUpdateVersion = current.version + 1;
+    const next = await api('PUT', `/api/sessions/${saved.sessionId}/shared`, {
+      version: current.version,
+      shared: {
+        mode: 'future', startsAt: `${taipeiTomorrow}T18:00:00+08:00`, endsAt: `${taipeiTomorrow}T21:00:00+08:00`,
+        meetingPoint: { label: '台北車站', latitude: 25.0478, longitude: 121.5170 },
+        budgetTwdTotal: 2000, transport: ['walk', 'transit'], stops: 3, outdoorAllowed: true, bookingAllowed: false,
+      },
+    });
+    presentState(next, 'local');
+  });
+  $('confirm').onclick = () => run('確認目前版本', async () => {
+    const current = await refresh();
+    presentState(await api('POST', `/api/sessions/${saved.sessionId}/confirm`, { version: current.version }), 'local');
+  });
+  async function consent(personalizationEnabled) {
+    await api('PUT', '/api/me/consents', {
+      termsVersion: '2026-09-05-v1', acceptTerms: true, personalizationEnabled, modelImprovementOptIn: false,
+    });
+  }
+  $('consent-session').onclick = () => run('同意條款（不長期記憶）', () => consent(false));
+  $('consent-remembered').onclick = () => run('同意條款並允許個人化', () => consent(true));
+  $('save-private').onclick = () => run('儲存本人私密需求', async () => {
+    const rawText = $('private-text').value.trim();
+    if (!rawText) throw new Error('請先輸入測試句');
+    const result = await api('POST', `/api/sessions/${saved.sessionId}/private-inputs`, { rawText, tags: [], visibility: $('visibility').value });
+    $('private-text').value = '';
+    $('private-result').textContent = JSON.stringify({ visibility: result.visibility, parseStatus: result.parse?.status, engine: result.parse?.engine, ownTextFingerprint: await fingerprint(result.rawText) }, null, 2);
+    mark('check-private', true, '本人私密資料與解析：通過');
+    await refresh();
+  });
+  $('read-private').onclick = () => run('讀取本人私密結果', async () => {
+    const result = await api('GET', `/api/sessions/${saved.sessionId}/private-inputs`);
+    $('private-result').textContent = JSON.stringify({ visibility: result.visibility, parseStatus: result.parse?.status, engine: result.parse?.engine, ownTextFingerprint: await fingerprint(result.rawText) }, null, 2);
+    mark('check-private', true, '本人私密資料與解析：通過');
+  });
+  $('withdraw').onclick = () => run('撤回個人化並驗證降級', async () => {
+    await consent(false);
+    const result = await api('GET', `/api/sessions/${saved.sessionId}/private-inputs`);
+    const ok = result.visibility === 'private_session';
+    mark('check-withdraw', ok, `撤回個人化後降級：${ok ? '通過' : '失敗'}`);
+    if (!ok) throw new Error('WITHDRAWAL_NOT_DOWNGRADED');
+    $('private-result').textContent = JSON.stringify({ visibility: result.visibility, withdrawalVerified: true }, null, 2);
+  });
+  $('scan').onclick = () => run('隱私掃描', async () => {
+    const latest = await api('GET', `/api/sessions/${saved.sessionId}`);
+    const terms = $('forbidden').value.split(/\r?\n/).map(value => value.trim()).filter(Boolean);
+    if (!terms.length) throw new Error('請輸入至少一個禁止出現字串');
+    const publicRaw = JSON.stringify(latest);
+    const hits = terms.filter(term => publicRaw.includes(term) || eventRaw.includes(term));
+    const ok = hits.length === 0;
+    $('privacy-result').textContent = ok ? '公開狀態／即時事件：0 筆洩漏。伺服器日誌仍待 CC 檢查。' : `發現 ${hits.length} 個禁止字串，驗收失敗。`;
+    mark('check-leak', ok, `公開狀態／即時事件零洩漏：${ok ? '通過' : '失敗'}`);
+    if (!ok) throw new Error('PRIVATE_TEXT_FOUND_IN_PUBLIC_OUTPUT');
+  });
+
+  renderIdentity();
+  if (saved.token && saved.sessionId) { refresh().then(() => void connectEvents()).catch(error => log(`恢復工作階段失敗：${error.message}`, 'error')); }
+</script>
+</body>
+</html>

@@ -94,6 +94,15 @@ export async function getOwnFeedback(userId: string, venueId: string) {
   return privateView(result.rows[0]);
 }
 
+export async function listOwnFeedback(userId: string) {
+  const result = await pool().query(
+    `SELECT * FROM venue_feedback WHERE user_id=$1 AND deleted_at IS NULL
+      ORDER BY updated_at DESC,id DESC`,
+    [userId],
+  );
+  return result.rows.map(privateView);
+}
+
 export async function putOwnFeedback(userId: string, venueId: string, input: FeedbackInput) {
   return transaction(async client => {
     await requireTerms(client, userId);

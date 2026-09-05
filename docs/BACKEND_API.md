@@ -1,6 +1,6 @@
-# Phase 1B＋Phase 2 後端串接契約
+# Sideby 後端串接契約
 
-2026-09-05：已實作房間／公開條件骨架、私密 Session 輸入、有限規則解析，以及版本化同意、私人場地清單與待審公開評論後端。自管模型／RAG、偏好更新器、內容管理、推薦與 UI 尚未接入。
+2026-09-05：已實作房間／公開條件、私密 Session 輸入、有限規則解析、版本化同意、私人場地清單、確定性推薦、反應／鎖定／局部重排／雙人定案，以及 `too_dark` 本人偏好更新。正式首頁已串接完整雙人主流程。展示推薦使用明確標示的合成資料；Phase 4 真實場地／RAG 與內容管理仍未接入。
 
 ## 啟動與驗證
 
@@ -11,7 +11,7 @@ npm ci
 npm run dev:local
 ```
 
-服務預設 `http://127.0.0.1:3000`，此階段只有 `/api/*`，首頁 404 是預期行為。`dev:local` 自動啟動套件攜帶的真正 PostgreSQL 18.4、執行 migration，再啟動 Next.js；僅綁定本機，不新增 Windows 服務。資料、隨機密碼與資料庫日誌保存在 `.local/dev-postgres/`，不提交 Git。結束時關閉該程序與資料庫。
+服務預設 `http://127.0.0.1:3000`，提供 `/api/*` 與根後端整合首頁；匯入的 `frontend/` 是另一個執行元件，開發預設 5173。`dev:local` 自動啟動套件攜帶的真正 PostgreSQL 18.4、執行 migration，再啟動 Next.js；僅綁定本機，不新增 Windows 服務。資料、隨機密碼與資料庫日誌保存在 `.local/dev-postgres/`，不提交 Git。結束時關閉該程序與資料庫。
 
 已有 PostgreSQL 時，由啟動環境設定伺服器專用 `DATABASE_URL`，執行 `npm run db:migrate`，再執行 `npm run dev`。migration 指令不自動讀取 `.env`；部署環境必須明確注入變數。此階段透過後端驗證成員，禁止將資料庫或資料表直接開放瀏覽器／PostgREST；尚未配置 Supabase RLS。
 
@@ -51,12 +51,19 @@ npm test
 | GET `/api/sessions/:id/private-inputs` | 無 | 200，本人的私密輸入；無資料、非成員或對方沒有自己的投影為 404 |
 | POST `/api/sessions/:id/private-inputs` | 見下方 | 200，新增或取代本人的私密輸入與 parser envelope |
 | DELETE `/api/sessions/:id/private-inputs` | 無 | 204，刪除本人的私密輸入 |
+| POST `/api/sessions/:id/generate` | `{ "version": 3 }` | 200，當期三套公開安全行程；不足三套則失敗 |
+| GET `/api/sessions/:id/itineraries` | 無 | 200，只回當前 Session version 的行程 |
+| POST `/api/itineraries/:id/reactions` | `{ "version": 3, "stopId": "UUID", "reaction": "like" }` | 200，更新後的公開行程；不回傳個人反應列 |
+| POST `/api/itineraries/:id/replan` | `{ "version": 3 }` | 200，保留鎖定站點並重新驗證後的一套行程 |
+| POST `/api/itineraries/:id/preference-feedback` | `{ "version": 3, "stopId": "UUID", "signal": "too_dark" }` | 200，只回是否套用本次與本人的長期偏好版本 |
+| POST `/api/sessions/:id/finalize` | `{ "version": 3, "itineraryId": "UUID" }` | 200，pending_partner／choice_conflict／finalized |
 | GET `/api/me/consents` | 無 | 200，目前條款版本與兩項設定 |
 | PUT `/api/me/consents` | 見下方 | 200，持久化後的條款與設定 |
 | GET `/api/me/venues/:venueId/feedback` | 無 | 200，本人的私人回饋；無資料或非本人為 404 |
 | PUT `/api/me/venues/:venueId/feedback` | 見下方 | 200，新增／取代本人的私人回饋 |
 | PATCH `/api/me/venue-feedback/:id` | 見下方 | 200，修改本人內容或切換可見性 |
 | DELETE `/api/me/venue-feedback/:id` | 無 | 204，軟刪除本人回饋 |
+| GET `/api/me/venue-feedback` | 無 | 200，只列出 Bearer token 本人的未刪除回饋 |
 | GET `/api/venues/:venueId/public-reviews` | query：`limit=1..50&cursor=0..100000` | 200，只列 approved 公開回饋 |
 
 邀請碼是 24 隨機 bytes 的 32 字元 base64url，可包成邀請連結（建議 URL fragment，由 UI 讀取後清除）；有效 24 小時，只有建房回應給建立者，伺服器僅存雜湊。加入交易鎖住房間，資料庫限制 A／B 各一名，第三人回 409。已加入成員重送加入請求回原角色，不新增席位。
@@ -180,7 +187,8 @@ PUT 固定建立 private，不能夾帶 visibility。取得 `feedbackId` 後，�
     "meetingPoint": {
       "label": "合成範例集合點",
       "latitude": 25.04,
-      "longitude": 121.52
+      "longitude": 121.52,
+      "matrixKey": "meeting_example"
     },
     "budgetTwdTotal": 1800,
     "transport": ["walk", "transit"],
@@ -197,6 +205,27 @@ PUT 固定建立 private，不能夾帶 visibility。取得 `feedbackId` 後，�
 - `budgetTwdTotal` 是兩人合計新臺幣整數，輸入範圍 0–100000。後續行程仍須另驗算，不代表支出可行性已驗證。
 - `transport`：不重複的 `walk`／`transit`／`car`／`bike`，至少一種。
 - `stops`：2–4 站；`outdoorAllowed` 是是否容許戶外，`bookingAllowed` 是是否容許需要訂位／購票的安排，不代表已查到空位。
+- Phase 5 生成可另外送 `maxLegTravelMinutes`、`maxTotalTravelMinutes`、`dietaryRequirements`、`allergensToAvoid`、`accessibilityRequirements`、`participantMinAge`、`hardNoCategories`。這些都是公開共同硬限制；`matrixKey` 對應團隊核准的交通矩陣集合點，沒有對應資料時不估算直線距離冒充路線。
+
+## 三套行程生成
+
+生成前必須有兩位成員、共同條件、兩份 parsed 私密輸入，以及雙方對目前 version 的確認。後端只讀唯一 active 的 venue dataset 與 travel matrix；場地仍會通過 `assessVenue` 的來源、權利、審核、價格及營業守門。
+
+硬限制先於計分。時間、營業、保守價格、訂位、交通、步行／總移動、飲食、過敏、無障礙、年齡、Hard No 與戶外／天氣任一不合即排除。必要事實未知、路線缺少、資料版本未啟用或不足三套實質差異時，不產生部分或固定假結果。
+
+CoupleScore 固定使用 `45% × min(A,B) + 25% × mean(A,B) + 15% × context + 10% × novelty + 5% × route efficiency`。贊助只影響 `sponsored_content` 標示，不參與分數。每套 2～4 站，包含時間、保守估計費用、移動、score breakdown、中性公開理由、資料驗證狀態及以自有／授權名稱產生的 Google Maps click-out；optional `google_place_id` 只用於 `query_place_id`，URL 不含 API key。
+
+Session 共同條件或私密輸入修改後 version 增加；GET 不再回傳舊 version 的行程，過期 generate 回 `VERSION_CONFLICT`。目前資料寫入沒有公開管理 API，測試直接載入合成 venue record／execution slot／travel matrix；正式匯入器與真實資料仍待完成。
+
+## 反應、局部重排與定案
+
+Reaction 可針對整套行程送 `like`／`dislike`，或帶 `stopId` 對站點送 `like`／`dislike`／`replace`；`replace` 必須帶 stopId。單方按讚不鎖定，雙方按讚同一站點後才由後端將該站 `locked` 設為 true。已鎖定站點不可拒絕或替換，且反應回應不揭露另一方的反應內容或身分。
+
+重排由既有 reaction 決定排除項目，不接受客戶端自稱的 locked 清單。成功時沿用原 itinerary ID，鎖定站點的 stop ID、venue ID、順序與 locked 狀態不變；其餘路線使用相同 composer 重新跑全部 Phase 5 硬限制與 Privacy Guard。沒有反應回 `REACTION_REQUIRED`，無合法替代方案回 `NO_FEASIBLE_REPLAN`，原行程不變。
+
+Finalize 是雙人選擇：一人選擇回 `pending_partner`，兩人不同回 `choice_conflict`，兩人同一方案才回 `finalized`。定案後同方案重送冪等；generate、reaction、replan 或改選另一方案均拒絕。GET itineraries 另回 `finalizedItineraryId`，未定案為 null。
+
+`preference-feedback` 可在重排前或定案後提交，且同一人／行程／站點／signal 重送不重複學習。`too_dark` 由伺服器固定投影為本人 bright target minimum `+0.10`；當次 Session 一律可用，只有目前條款已接受且個人化開啟時才遞增長期版本。不可變事件在舊行程重建後仍保留，但 event、signal、userId 與門檻不進 PublicState、行程公開 DTO、公開理由或共用 RAG。這是可追蹤的個人偏好更新，不是通用模型訓練。
 
 ## 公開狀態、版本與確認
 
@@ -260,8 +289,16 @@ data: {"code":"UNAUTHENTICATED"}
 | 409 | PARTNER_REQUIRED | 等另一人加入 |
 | 409 | TERMS_REQUIRED | 先接受目前條款版本 |
 | 409 | PERSONALIZATION_REQUIRED | private_remembered 前先開啟個人化設定 |
+| 409 | SESSION_NOT_READY | 等兩人完成輸入並確認目前版本 |
+| 409 | REACTION_REQUIRED | 先對目前未鎖定站點拒絕或要求替換 |
+| 409 | LOCKED_STOP_CONFLICT | 鎖定站點不可拒絕或替換 |
+| 409 | SESSION_FINALIZED | 已定案，停止重新生成、反應、重排或改選 |
+| 422 | PRIVATE_INPUT_UNRESOLVED | 兩份私密需求尚未完成或仍需釐清 |
+| 422 | NO_FEASIBLE_ITINERARIES | 硬限制及差異規則後不足三套，不自動放寬 |
+| 422 | NO_FEASIBLE_REPLAN | 保留鎖定站點後無合法替代方案，原行程不變 |
 | 413 | BODY_TOO_LARGE | JSON 超過 8 KiB |
 | 415 | JSON_REQUIRED | 設定 application/json |
 | 503 | SERVICE_UNAVAILABLE | 服務／資料庫未就緒，顯示錯誤並退避 |
+| 503 | RECOMMENDATION_DATA_UNAVAILABLE | 核准場地資料集或交通矩陣未啟用 |
 
-尚未實作的 generate、itineraries、公開評論檢舉／管理等路由不會回傳假成功。目前只可串接上表，其他功能按 Roadmap 後續接入。
+尚未實作的偏好更新器、公開評論檢舉／管理與 training candidates 等路由不會回傳假成功。目前只可串接上表，其他功能按 Roadmap 後續接入。

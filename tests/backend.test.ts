@@ -2,13 +2,16 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { once } from 'node:events';
 import { resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { Pool } from 'pg';
 import { freePort, localPostgres } from '../scripts/postgres';
 import { migrate } from '../scripts/migrate';
 import { CURRENT_TERMS_VERSION, type PublicState } from '../src/server/contracts';
+import {
+  recommendationLegs, recommendationRecord, recommendationShared,
+  recommendationSlot,
+} from './recommendation-fixtures';
 
 const shared = {
   mode: 'future', startsAt: '2026-10-10T12:00:00+08:00', endsAt: '2026-10-10T18:00:00+08:00',
@@ -17,32 +20,80 @@ const shared = {
   outdoorAllowed: true, bookingAllowed: false,
 };
 
-test('Phase 1B + Phase 2: real PostgreSQL + built Next.js over HTTP', { timeout: 120000 }, async t => {
+test('Phase 2 + Phase 3 + Phase 5 + Phase 6 backend: real PostgreSQL + built Next.js over HTTP', { timeout: 120000 }, async t => {
   const { postgres, url } = await localPostgres(`.local/tests/${Date.now()}`);
   const db = new Pool({ connectionString: url });
   let app: ChildProcess | undefined;
   let logs = '';
+  let port = 0;
+  let base = '';
+
+  async function waitForExit(child: ChildProcess, timeoutMs: number) {
+    if (child.exitCode !== null) return true;
+    return new Promise<boolean>(resolveExit => {
+      const finished = () => { clearTimeout(timer); resolveExit(true); };
+      const timer = setTimeout(() => {
+        child.off('exit', finished);
+        resolveExit(false);
+      }, timeoutMs);
+      child.once('exit', finished);
+    });
+  }
+
+  async function stop() {
+    const child = app;
+    if (!child) return;
+    app = undefined;
+    if (child.exitCode !== null) return;
+
+    if (process.platform === 'win32' && child.pid) {
+      const killer = spawn('taskkill.exe', ['/pid', String(child.pid), '/t', '/f'], {
+        stdio: 'ignore', windowsHide: true,
+      });
+      await new Promise<void>(done => {
+        let settled = false;
+        const finish = () => { if (!settled) { settled = true; done(); } };
+        killer.once('error', finish);
+        killer.once('exit', finish);
+      });
+    } else {
+      child.kill('SIGTERM');
+    }
+
+    if (!(await waitForExit(child, 5000))) {
+      child.kill('SIGKILL');
+      if (!(await waitForExit(child, 5000))) throw new Error(`Built backend process ${child.pid ?? 'unknown'} did not stop`);
+    }
+  }
+
   t.after(async () => {
-    if (app && app.exitCode === null) { const stopped = once(app, 'exit'); app.kill(); await stopped; }
+    await stop();
     await db.end();
     await postgres.stop();
   });
-  const port = await freePort(), base = `http://127.0.0.1:${port}`;
   async function start() {
-    app = spawn(process.execPath, [resolve('node_modules/next/dist/bin/next'), 'start', '-H', '127.0.0.1', '-p', String(port)], {
+    await stop();
+    const previousPort = port;
+    do { port = await freePort(); } while (port === previousPort);
+    base = `http://127.0.0.1:${port}`;
+    const logStart = logs.length;
+    const child = spawn(process.execPath, [resolve('node_modules/next/dist/bin/next'), 'start', '-H', '127.0.0.1', '-p', String(port)], {
       env: { ...process.env, DATABASE_URL: url, NEXT_TELEMETRY_DISABLED: '1' },
       stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true,
     });
-    app.stdout?.on('data', chunk => { logs += chunk.toString(); });
-    app.stderr?.on('data', chunk => { logs += chunk.toString(); });
-    app.on('error', () => { logs += 'APP_SPAWN_FAILED'; });
+    app = child;
+    child.stdout?.on('data', chunk => { logs += chunk.toString(); });
+    child.stderr?.on('data', chunk => { logs += chunk.toString(); });
+    child.on('error', error => { logs += `APP_SPAWN_FAILED: ${error.message}`; });
     for (let i = 0; i < 100; i++) {
       try { if ((await fetch(`${base}/api/sessions`, { signal: AbortSignal.timeout(1000) })).status === 401) return; }
       catch { /* Application is still starting. */ }
-      if (app.exitCode !== null) break;
+      if (child.exitCode !== null) break;
       await delay(100);
     }
-    throw new Error('Built backend did not start');
+    const detail = logs.slice(logStart).trim().slice(-2000) || 'no application output';
+    await stop().catch(() => {});
+    throw new Error(`Built backend did not start on port ${port} (exit ${child.exitCode}). ${detail}`);
   }
   await start();
   async function call(method: string, path: string, token?: string, data?: unknown) {
@@ -101,6 +152,8 @@ test('Phase 1B + Phase 2: real PostgreSQL + built Next.js over HTTP', { timeout:
     assert.equal((await call('POST', main + '/confirm', a, { version: 0, userId: 'B' })).status, 400);
     assert.equal((await call('POST', '/api/couples', a, { text: 'x'.repeat(9000) })).status, 413);
     assert.equal((await call('POST', main + '/confirm', a, { version: 0 })).data.error.code, 'SHARED_REQUIRED');
+    const sameOrigin = await fetch(base + main, { headers: { Authorization: `Bearer ${a}`, Origin: base } });
+    assert.equal(sameOrigin.status, 200);
     const crossOrigin = await fetch(base + main, { headers: { Authorization: `Bearer ${a}`, Origin: 'https://untrusted.example' } });
     assert.equal(crossOrigin.status, 403);
   });
@@ -276,10 +329,197 @@ test('Phase 1B + Phase 2: real PostgreSQL + built Next.js over HTTP', { timeout:
     assert.equal((await call('GET', privatePath, privateA)).status, 404);
     assert.equal((await call('DELETE', privatePath, privateA)).status, 404);
   });
+  await t.test('Phase 5 generation and Phase 6 reaction, replan and finalize fail closed', async () => {
+    const phase5A = (await call('POST', '/api/auth/anonymous', undefined, {})).data.token;
+    const phase5B = (await call('POST', '/api/auth/anonymous', undefined, {})).data.token;
+    const phase5Room = (await call('POST', '/api/couples', phase5A, {})).data;
+    await call('POST', '/api/couples/join', phase5B, { inviteCode: phase5Room.inviteCode });
+    const phase5Id = (await call('POST', '/api/sessions', phase5A, { coupleId: phase5Room.coupleId })).data.sessionId;
+    const phase5Path = `/api/sessions/${phase5Id}`;
+    await call('PUT', phase5Path + '/shared', phase5A, { version: 0, shared: recommendationShared });
+    for (const token of [phase5A, phase5B]) await call('PUT', '/api/me/consents', token, {
+      termsVersion: CURRENT_TERMS_VERSION, acceptTerms: true,
+      personalizationEnabled: false, modelImprovementOptIn: false,
+    });
+    await call('POST', phase5Path + '/private-inputs', phase5A, {
+      rawText: '希望明亮。', tags: ['phase5-a-secret'], visibility: 'private_session',
+    });
+    await call('POST', phase5Path + '/private-inputs', phase5B, {
+      rawText: '想安靜聊天。', tags: ['phase5-b-secret'], visibility: 'private_session',
+    });
+    assert.deepEqual((await call('GET', phase5Path + '/itineraries', phase5A)).data.itineraries, []);
+    assert.equal((await call('POST', phase5Path + '/generate', c, { version: 3 })).status, 404);
+    assert.equal((await call('POST', phase5Path + '/generate', phase5A, { version: 3, userId: 'B' })).status, 400);
+    assert.equal((await call('POST', phase5Path + '/generate', phase5A, { version: 3 })).data.error.code, 'SESSION_NOT_READY');
+    await call('POST', phase5Path + '/confirm', phase5A, { version: 3 });
+    await call('POST', phase5Path + '/confirm', phase5B, { version: 3 });
+    assert.equal((await call('POST', phase5Path + '/generate', phase5A, { version: 3 })).data.error.code, 'RECOMMENDATION_DATA_UNAVAILABLE');
+
+    await db.query("INSERT INTO venue_datasets(version,status,approved_at) VALUES ('test-v1','active',now())");
+    await db.query("INSERT INTO travel_matrix_versions(version,status,checked_at) VALUES ('matrix-v1','active',now())");
+    for (let index = 1; index <= 8; index++) {
+      const record = recommendationRecord(index), slot = recommendationSlot(index);
+      await db.query('INSERT INTO venue_records(venue_id,dataset_version,record) VALUES ($1,$2,$3)', [record.venueId, 'test-v1', record]);
+      await db.query('INSERT INTO venue_execution_slots(id,dataset_version,venue_id,execution) VALUES ($1,$2,$3,$4)', [slot.slotId, 'test-v1', slot.venueId, slot]);
+    }
+    for (const leg of recommendationLegs()) await db.query(`INSERT INTO travel_matrix(
+      matrix_version,from_key,to_key,mode,minutes) VALUES ($1,$2,$3,$4,$5)`,
+      [leg.matrixVersion, leg.fromKey, leg.toKey, leg.mode, leg.minutes]);
+
+    const generated = await call('POST', phase5Path + '/generate', phase5A, { version: 3 });
+    assert.equal(generated.status, 200);
+    assert.equal(generated.data.itineraries.length, 3);
+    assert.ok(generated.data.itineraries.every((item: { data_mode: string }) => item.data_mode === 'synthetic_demo'));
+    const serialized = JSON.stringify(generated.data);
+    for (const secret of ['希望明亮', '想安靜聊天', 'phase5-a-secret', 'phase5-b-secret', phase5A, phase5B]) {
+      assert.ok(!serialized.includes(secret));
+    }
+    for (const itinerary of generated.data.itineraries) {
+      assert.equal(itinerary.validation.hard_constraints_passed, true);
+      assert.ok(itinerary.total_cost <= recommendationShared.budgetTwdTotal);
+      assert.equal(itinerary.stops.length, 2);
+    }
+    const partnerView = await call('GET', phase5Path + '/itineraries', phase5B);
+    assert.deepEqual(partnerView.data.itineraries, generated.data.itineraries);
+    assert.equal((await db.query('SELECT count(*)::int AS n FROM session_itineraries WHERE session_id=$1', [phase5Id])).rows[0].n, 3);
+
+    await db.query(`UPDATE session_itineraries SET payload=payload || '{"private_note":"must not leave JSONB"}'::jsonb
+      WHERE session_id=$1 AND rank_no=1`, [phase5Id]);
+    assert.equal((await call('GET', phase5Path + '/itineraries', phase5A)).data.error.code, 'RECOMMENDATION_DATA_INVALID');
+    const restored = await call('POST', phase5Path + '/generate', phase5A, { version: 3 });
+    assert.equal(restored.status, 200);
+
+    const target = restored.data.itineraries[0];
+    const other = restored.data.itineraries[1];
+    const lockedStop = target.stops[0];
+    const rejectedStop = target.stops[1];
+    const reactionPath = `/api/itineraries/${target.itinerary_id}/reactions`;
+    const replanPath = `/api/itineraries/${target.itinerary_id}/replan`;
+    assert.equal((await call('POST', reactionPath, c, {
+      version: 3, stopId: lockedStop.stop_id, reaction: 'like',
+    })).status, 404);
+    assert.equal((await call('POST', reactionPath, phase5A, {
+      version: 2, stopId: lockedStop.stop_id, reaction: 'like',
+    })).data.error.code, 'VERSION_CONFLICT');
+    assert.equal((await call('POST', replanPath, phase5A, { version: 2 })).data.error.code, 'VERSION_CONFLICT');
+    assert.equal((await call('POST', phase5Path + '/finalize', phase5A, {
+      version: 2, itineraryId: target.itinerary_id,
+    })).data.error.code, 'VERSION_CONFLICT');
+
+    assert.equal((await call('POST', reactionPath, phase5A, {
+      version: 3, reaction: 'replace',
+    })).status, 400);
+    const singleLike = await call('POST', reactionPath, phase5A, {
+      version: 3, stopId: lockedStop.stop_id, reaction: 'like',
+    });
+    assert.equal(singleLike.data.itinerary.stops.find((stop: { stop_id: string }) => stop.stop_id === lockedStop.stop_id).locked, false);
+    assert.equal('reaction' in singleLike.data, false);
+    await call('POST', reactionPath, phase5A, { version: 3, stopId: lockedStop.stop_id, reaction: 'like' });
+    assert.equal((await db.query(`SELECT count(*)::int AS n FROM itinerary_reactions
+      WHERE itinerary_id=$1 AND user_id=(SELECT id FROM anonymous_users WHERE token_hash=$2)`,
+    [target.itinerary_id, createHash('sha256').update(phase5A).digest('hex')])).rows[0].n, 1);
+    const lockedResponse = await call('POST', reactionPath, phase5B, {
+      version: 3, stopId: lockedStop.stop_id, reaction: 'like',
+    });
+    assert.equal(lockedResponse.data.itinerary.stops.find((stop: { stop_id: string }) => stop.stop_id === lockedStop.stop_id).locked, true);
+    assert.equal((await call('POST', reactionPath, phase5A, {
+      version: 3, stopId: lockedStop.stop_id, reaction: 'replace',
+    })).data.error.code, 'LOCKED_STOP_CONFLICT');
+    await call('POST', reactionPath, phase5A, { version: 3, stopId: rejectedStop.stop_id, reaction: 'replace' });
+    const replanned = await call('POST', replanPath, phase5A, { version: 3 });
+    assert.equal(replanned.status, 200);
+    assert.equal(replanned.data.itinerary.itinerary_id, target.itinerary_id);
+    assert.ok(replanned.data.itinerary.stops.some((stop: { stop_id: string; venue_id: string; order_no: number; locked: boolean }) =>
+      stop.stop_id === lockedStop.stop_id && stop.venue_id === lockedStop.venue_id
+      && stop.order_no === lockedStop.order_no && stop.locked));
+    assert.ok(!replanned.data.itinerary.stops.some((stop: { venue_id: string }) => stop.venue_id === rejectedStop.venue_id));
+    assert.equal(replanned.data.itinerary.validation.hard_constraints_passed, true);
+    assert.ok(replanned.data.itinerary.total_cost <= recommendationShared.budgetTwdTotal);
+
+    assert.equal((await call('POST', phase5Path + '/finalize', c, {
+      version: 3, itineraryId: target.itinerary_id,
+    })).status, 404);
+    const firstChoice = await call('POST', phase5Path + '/finalize', phase5A, {
+      version: 3, itineraryId: target.itinerary_id,
+    });
+    assert.equal(firstChoice.data.status, 'pending_partner');
+    const conflict = await call('POST', phase5Path + '/finalize', phase5B, {
+      version: 3, itineraryId: other.itinerary_id,
+    });
+    assert.equal(conflict.data.status, 'choice_conflict');
+    const finalized = await call('POST', phase5Path + '/finalize', phase5B, {
+      version: 3, itineraryId: target.itinerary_id,
+    });
+    assert.equal(finalized.data.status, 'finalized');
+    assert.equal(finalized.data.finalizedItineraryId, target.itinerary_id);
+    assert.equal((await call('GET', phase5Path + '/itineraries', phase5A)).data.finalizedItineraryId, target.itinerary_id);
+    assert.equal((await call('POST', phase5Path + '/finalize', phase5A, {
+      version: 3, itineraryId: target.itinerary_id,
+    })).data.status, 'finalized');
+    assert.equal((await call('POST', phase5Path + '/finalize', phase5A, {
+      version: 3, itineraryId: other.itinerary_id,
+    })).data.error.code, 'SESSION_FINALIZED');
+    assert.equal((await call('POST', reactionPath, phase5A, {
+      version: 3, stopId: lockedStop.stop_id, reaction: 'like',
+    })).data.error.code, 'SESSION_FINALIZED');
+    assert.equal((await call('POST', replanPath, phase5A, { version: 3 })).data.error.code, 'SESSION_FINALIZED');
+    assert.equal((await call('POST', phase5Path + '/generate', phase5A, { version: 3 })).data.error.code, 'SESSION_FINALIZED');
+
+    const preferencePath = `/api/itineraries/${target.itinerary_id}/preference-feedback`;
+    assert.equal((await call('POST', preferencePath, c, {
+      version: 3, stopId: lockedStop.stop_id, signal: 'too_dark',
+    })).status, 404);
+    const sessionOnly = await call('POST', preferencePath, phase5A, {
+      version: 3, stopId: lockedStop.stop_id, signal: 'too_dark',
+    });
+    assert.deepEqual(sessionOnly.data, {
+      sessionId: phase5Id, version: 3, sessionApplied: true, longTermPreferenceVersion: null,
+    });
+    await call('POST', preferencePath, phase5A, {
+      version: 3, stopId: lockedStop.stop_id, signal: 'too_dark',
+    });
+    assert.equal((await db.query(`SELECT count(*)::int AS n FROM preference_feedback_events
+      WHERE itinerary_id=$1 AND user_id=(SELECT id FROM anonymous_users WHERE token_hash=$2)`,
+    [target.itinerary_id, createHash('sha256').update(phase5A).digest('hex')])).rows[0].n, 1);
+    await call('PUT', '/api/me/consents', phase5B, {
+      termsVersion: CURRENT_TERMS_VERSION, acceptTerms: true,
+      personalizationEnabled: true, modelImprovementOptIn: false,
+    });
+    const remembered = await call('POST', preferencePath, phase5B, {
+      version: 3, stopId: lockedStop.stop_id, signal: 'too_dark',
+    });
+    assert.equal(remembered.data.longTermPreferenceVersion, 1);
+    assert.equal('signal' in remembered.data, false);
+    assert.ok(!JSON.stringify(await call('GET', phase5Path + '/itineraries', phase5B)).includes('too_dark'));
+    const learningRows = await db.query(`SELECT long_term_applied,preference_version_after
+      FROM preference_feedback_events WHERE itinerary_id=$1 ORDER BY long_term_applied`, [target.itinerary_id]);
+    assert.deepEqual(learningRows.rows, [
+      { long_term_applied: false, preference_version_after: null },
+      { long_term_applied: true, preference_version_after: 1 },
+    ]);
+
+    await db.query("UPDATE venue_datasets SET status='stale' WHERE version='test-v1'");
+    await db.query("INSERT INTO venue_datasets(version,status,approved_at) VALUES ('test-v2','active',now())");
+    const versionedRecord = { ...recommendationRecord(1), datasetVersion: 'test-v2' };
+    const versionedSlot = { ...recommendationSlot(1), slotId: '20000000-0000-4000-8000-999999999999' };
+    await db.query('INSERT INTO venue_records(venue_id,dataset_version,record) VALUES ($1,$2,$3)', [versionedRecord.venueId, 'test-v2', versionedRecord]);
+    await db.query('INSERT INTO venue_execution_slots(id,dataset_version,venue_id,execution) VALUES ($1,$2,$3,$4)', [versionedSlot.slotId, 'test-v2', versionedSlot.venueId, versionedSlot]);
+    assert.equal((await db.query("SELECT count(*)::int AS n FROM venue_records WHERE venue_id='venue_test_1'")).rows[0].n, 2);
+
+    await call('PUT', phase5Path + '/shared', phase5B, { version: 3, shared: recommendationShared });
+    assert.deepEqual((await call('GET', phase5Path + '/itineraries', phase5A)).data.itineraries, []);
+    assert.equal((await call('POST', phase5Path + '/generate', phase5A, { version: 3 })).data.error.code, 'VERSION_CONFLICT');
+    assert.equal((await call('POST', reactionPath, phase5A, {
+      version: 3, stopId: lockedStop.stop_id, reaction: 'like',
+    })).data.error.code, 'VERSION_CONFLICT');
+    assert.equal((await call('POST', replanPath, phase5A, { version: 3 })).data.error.code, 'VERSION_CONFLICT');
+  });
   await t.test('migration retry and application restart retain session version and conditions', async () => {
     await migrate(url);
-    const stopped = once(app!, 'exit'); app!.kill(); await stopped;
+    const previousPort = port;
+    await stop();
     await start();
+    assert.notEqual(port, previousPort);
     const state = (await call('GET', main, b)).data;
     assert.equal(state.version, 3); assert.equal(state.shared.stops, 4);
   });
@@ -313,6 +553,10 @@ test('Phase 1B + Phase 2: real PostgreSQL + built Next.js over HTTP', { timeout:
     assert.equal(saved.data.moderationStatus, 'none');
     assert.deepEqual((await call('GET', venuePath, a)).data.userTags, ['明亮', '約會']);
     assert.equal((await call('GET', venuePath, b)).status, 404);
+    const ownList = await call('GET', '/api/me/venue-feedback', a);
+    assert.equal(ownList.status, 200);
+    assert.deepEqual(ownList.data.items.map((item: { venueId: string }) => item.venueId), ['venue_example_001']);
+    assert.deepEqual((await call('GET', '/api/me/venue-feedback', b)).data.items, []);
     assert.equal((await call('PUT', '/api/me/venues/venue_example_002/feedback', b, feedback)).data.error.code, 'TERMS_REQUIRED');
     const legacyId = '00000000-0000-4000-8000-000000000099';
     await db.query(`INSERT INTO venue_feedback(id,user_id,venue_id,visit_state)
