@@ -156,7 +156,7 @@
 - 單方 stop like 不鎖定；雙方對同一 stop like 後才由伺服器輸出 `locked=true`。整套行程 like 不鎖死所有站點；鎖定站點不可 dislike／replace。
 - Replan 不接受客戶端自稱的 locked 清單；必須使用同一推薦 composer，保留 locked stop 的 stop_id、venue_id、order_no 與 locked 狀態，並重驗整條路線。無可行方案整體拒絕，不得部分覆寫或放寬硬限制。
 - 兩人選同一方案才 finalize；不同方案回衝突狀態。定案後 generate、reaction、replan 與改選另一方案均拒絕。
-- 本人只能對當前 itinerary stop 寫入 allowlist 不可變事件；伺服器固定映射 `too_dark→bright min +0.10`、`too_noisy→quiet min +0.10`、`too_childish→childish max -0.10`、`too_formal→formal max -0.10`、`too_much_walking→walking max -0.10`。定案前回饋立即重生三套方案；只有有效 `personalization_enabled` 才遞增本人的 long-term preference version。事件不得進 PublicState、公開理由、共用事實或 RAG；同一人、行程、站點與 signal 重送冪等。
+- 本人只能對當前 itinerary stop 寫入 allowlist 不可變事件；伺服器固定映射 `too_dark→bright min +0.10`、`too_noisy→quiet min +0.10`、`too_childish→childish max -0.10`、`too_formal→formal max -0.10`、`too_much_walking→walking max -0.10`。定案前且尚無 reaction／finalize choice 時，回饋可立即重生三套方案；已有共同決策進度時必須拒絕重生，不得以 cascade 清除。定案後只有有效 `personalization_enabled` 才接受回饋並遞增本人的 long-term preference version。事件不得進 PublicState、公開理由、共用事實或 RAG；同一人、行程、站點與 signal 重送冪等。
 - 正式手機優先首頁已串接房間、共同條件、私密輸入、三套方案、反應、局部重排、Maps click-out、雙人定案、本人私人清單與回饋，並以 1.2 秒輪詢補足行程狀態同步。正式模式不自動帶入合成條件；`npm run demo:local` 使用獨立合成資料庫，UI／payload 明示 `synthetic_demo`，不得冒充真實推薦。
 - Chrome＋Edge 單一合成案例已實際完成上述主流程；管理審核、檢舉／隱藏、頻率限制、training candidates、三案例 Runtime、兩支實體手機與 Owner 仍 BLOCKED。驗收入口為 `npm run phase6:check` 與 `docs/PHASE6_ACCEPTANCE.md`。
 

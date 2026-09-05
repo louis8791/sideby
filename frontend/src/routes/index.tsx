@@ -155,6 +155,8 @@ const backendErrors: Record<string, string> = {
   PARTNER_REQUIRED: "需要另一半加入後才能繼續。",
   SHARED_REQUIRED: "請先儲存共同條件。",
   TERMS_REQUIRED: "請先接受本版服務條款。",
+  PERSONALIZATION_REQUIRED: "行程已定案；請先開啟個人化，才能將回饋用於未來約會。",
+  DECISION_IN_PROGRESS: "你們已開始喜歡、鎖定或選擇方案；為避免清掉共同決策，這次不會重新產生。",
   PRIVATE_INPUT_UNRESOLVED: "需求還不夠明確，請換一種說法。",
   SESSION_NOT_READY: "兩人都要完成私密需求並確認最新版。",
   NO_FEASIBLE_ITINERARIES: "目前條件找不到三套安全可行行程。",

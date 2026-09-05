@@ -38,6 +38,16 @@ async function assertNotFinalized(client: PoolClient, sessionId: string, version
   if (result.rowCount) throw new ApiError(409, 'SESSION_FINALIZED');
 }
 
+async function assertNoDecisionProgress(client: PoolClient, sessionId: string, version: number) {
+  const result = await client.query(`SELECT 1 FROM itinerary_reactions r
+    JOIN session_itineraries i ON i.id=r.itinerary_id
+    WHERE i.session_id=$1 AND i.session_version=$2
+    UNION ALL
+    SELECT 1 FROM session_finalize_choices WHERE session_id=$1 AND session_version=$2
+    LIMIT 1`, [sessionId, version]);
+  if (result.rowCount) throw new ApiError(409, 'DECISION_IN_PROGRESS');
+}
+
 async function recommendationContext(client: PoolClient, session: SessionRow) {
   if (!session.shared) throw new ApiError(409, 'SHARED_REQUIRED');
   const ready = await client.query(`SELECT count(*)::int AS members,
@@ -101,6 +111,7 @@ export async function generate(userId: string, sessionId: string, expectedVersio
     const session = await memberSession(client, userId, sessionId, true);
     if (session.version !== expectedVersion) throw new ApiError(409, 'VERSION_CONFLICT');
     await assertNotFinalized(client, sessionId, expectedVersion);
+    await assertNoDecisionProgress(client, sessionId, expectedVersion);
     const context = await recommendationContext(client, session);
     const itineraries = safeItineraries(composeItineraries({
       sessionId, version: expectedVersion, shared: context.shared,
@@ -162,6 +173,9 @@ export async function recordPreferenceFeedback(userId: string, itineraryId: stri
       LEFT JOIN consent_preferences p ON p.user_id=a.user_id AND p.terms_version=a.terms_version
       WHERE a.user_id=$1 AND a.terms_version=$2`, [userId, CURRENT_TERMS_VERSION]);
     if (!consent.rowCount) throw new ApiError(409, 'TERMS_REQUIRED');
+    if (finalized.rowCount && !consent.rows[0].personalization_enabled) {
+      throw new ApiError(409, 'PERSONALIZATION_REQUIRED');
+    }
     const adjustment = preferenceAdjustmentBySignal[input.signal];
     const inserted = await client.query(`INSERT INTO preference_feedback_events(
       id,user_id,session_id,session_version,itinerary_id,stop_id,venue_id,signal,attribute,target_bound,target_delta)

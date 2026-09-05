@@ -38,6 +38,7 @@ const errorText: Record<string, string> = {
   VERSION_CONFLICT: '另一位剛更新了內容，畫面已同步，請再試一次。',
   PARTNER_REQUIRED: '需要另一位加入後才能確認。', SHARED_REQUIRED: '請先設定共同條件。',
   TERMS_REQUIRED: '請先閱讀並儲存同意設定。', PERSONALIZATION_REQUIRED: '要長期記住偏好，請先開啟個人化。',
+  DECISION_IN_PROGRESS: '你們已開始喜歡、鎖定或選擇方案；為避免清掉共同決策，這次不會重新產生。',
   PRIVATE_INPUT_UNRESOLVED: '其中一人的需求還需要改寫成更明確的句子。',
   SESSION_NOT_READY: '兩位都要輸入需求並確認最新版本。',
   RECOMMENDATION_DATA_UNAVAILABLE: '目前沒有可用且版本一致的推薦資料。',
