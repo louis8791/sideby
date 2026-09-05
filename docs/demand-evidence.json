@@ -1,0 +1,82 @@
+{
+  "title": "Sideby public demand evidence register",
+  "verified_at": "2026-09-05",
+  "kind": "aggregate_public_evidence_not_sideby_usage_data",
+  "aggregation_rule": "Do not pool samples, infer adoption, or sum trip and person denominators.",
+  "sources": [
+    {
+      "id": "tourism_2024", "publisher": "交通部觀光署", "year": 2024,
+      "url": "https://admin.taiwan.net.tw/fapi/AttFile?id=38418&type=AttFile",
+      "region": "臺灣", "population": "12歲以上國民",
+      "method": "各季分層電話調查，舊樣本輔以行動電話與網路",
+      "sample": {"quarterly_respondents": [6049, 6038, 6033, 6038], "not_unique_annual_total": true},
+      "metrics": [
+        {"id":"annual_participation", "value":90.8, "unit":"percent", "denominator":"12歲以上國民，全年至少國旅一次", "locator":"摘要表1"},
+        {"id":"trips_per_person", "value":10.46, "unit":"trips_per_person_per_year", "denominator":"12歲以上國民，含未出遊者", "locator":"摘要表1、表5"},
+        {"id":"one_day_trips", "value":74.8, "unit":"percent", "denominator":"國內旅次，不是人數", "locator":"摘要表11"},
+        {"id":"self_planned_trips", "value":91.6, "unit":"percent", "denominator":"國內旅次，不是情侶數", "locator":"摘要旅遊方式"}
+      ],
+      "product_hypothesis": "短程自助規劃值得提供多站行程工具",
+      "limits": "不是大臺北情侶樣本，自行規劃不代表需要AI；不能當Sideby用戶或收入"
+    },
+    {
+      "id":"climate_2024", "publisher":"中央氣象署", "year":2024,
+      "url":"https://www.cwa.gov.tw/Data/service/notice/download/Publish_20250722161044.pdf",
+      "region":"臺北測站", "population":"2024年逐日氣象觀測",
+      "method":"測站觀測，非問卷；2025年出版113年氣候年報",
+      "sample":{"calendar_days":366},
+      "metrics":[{"id":"hot_days", "value":63, "unit":"days", "denominator":"臺北測站全年日最高溫至少35°C之日數", "locator":"表1.3.1"}],
+      "product_hypothesis":"提供室內外、冷氣及天氣限制有實際情境依據",
+      "limits":"單站單年不是每個場地微氣候或冷氣需求調查；正文與表格距平不一致，僅採原始日數"
+    },
+    {
+      "id":"couple_preferences_2024", "publisher":"Boto-García and Mariel / Economia Politica", "year":2024,
+      "url":"https://link.springer.com/article/10.1007/s40888-024-00346-x",
+      "region":"西班牙北部", "population":"伴侶休閒旅遊選擇實驗",
+      "method":"伴侶各自選擇並預測對方，不可交談",
+      "sample":{"recruited_couples":130, "analyzed_couples":128, "individuals":256, "all_choice_observations":3072, "partner_predictions":1536},
+      "metrics":[{"id":"correct_partner_prediction", "value":53.5, "unit":"percent", "denominator":"1536筆伴侶選擇預測，不是1536名獨立受訪者", "locator":"3.3、表3"}],
+      "product_hypothesis":"分別輸入可減少一方代猜，需在Sideby測試",
+      "limits":"作者亦認為伴侶對彼此整體偏好有不錯認識；不能只用53.5%渲染不了解彼此，也不是臺灣或私密輸入效果研究"
+    },
+    {
+      "id":"couples_money_2024", "publisher":"Fidelity / Ipsos", "year":2024,
+      "url":"https://alumni.fidelity.com/news/803629",
+      "published_at":"2024-02-01", "fieldwork":"2023-10-31/2023-11-22",
+      "region":"美國", "population":"18歲以上已婚或長期同居伴侶",
+      "method":"KnowledgePanel機率樣本，雙方個別作答；金融業者委託",
+      "sample":{"couples":1794, "individuals":3588, "question_specific_n":null},
+      "metrics":[
+        {"id":"money_arguments", "value":45, "unit":"percent", "denominator":"受訪伴侶成員，該題有效n未揭露", "locator":"新聞稿開頭"},
+        {"id":"frustration_kept_peace", "value":27, "unit":"percent", "denominator":"受訪伴侶成員，該題有效n未揭露", "locator":"Beyond I do"}
+      ],
+      "product_hypothesis":"共同預算與雙人確認值得驗證",
+      "limits":"一般財務不是約會開支；不是臺灣比例，也未證明私密輸入會改善關係"
+    },
+    {
+      "id":"internet_2025", "publisher":"TWNIC", "year":2025,
+      "url":"https://report.twnic.tw/2025/",
+      "detail_urls":["https://report.twnic.tw/2025/TrendAnalysis_internetUsage.html", "https://report.twnic.tw/2025/TrendAnalysis_issueInsight.html"],
+      "fieldwork":"2025-07-28/2025-09-01", "region":"臺灣", "population":"18歲以上民眾",
+      "method":"市話與手機雙底冊，加權估計",
+      "sample":{"landline":1070, "mobile":1072, "total":2142},
+      "metrics":[
+        {"id":"internet_use", "value":88.75, "unit":"percent", "denominator":"全部成人樣本，加權", "locator":"整體使用概況"},
+        {"id":"mobile_broadband", "value":87.12, "unit":"percent", "denominator":"全部成人樣本，加權", "locator":"整體使用概況"},
+        {"id":"generative_ai_use", "value":43.19, "unit":"percent", "denominator":"成人民眾過去三個月使用生成式AI，加權", "locator":"趨勢議題洞察"}
+      ],
+      "product_hypothesis":"手機網頁與可選AI入口具有既有使用環境",
+      "limits":"三指標有重疊，不能相加；AI使用不等於信任、付費或採用Sideby"
+    },
+    {
+      "id":"group_recommendation_2018", "publisher":"Delić et al. / Information Technology & Tourism", "year":2018,
+      "url":"https://link.springer.com/article/10.1007/s40558-018-0106-y",
+      "region":"奧地利與荷蘭三所大學", "population":"學生小組旅遊目的地選擇",
+      "method":"觀察組內討論前後的偏好與群體選擇",
+      "sample":{"individuals":200, "groups":55, "group_size_min":2, "group_size_max":5},
+      "metrics":[{"id":"personal_top_choice_matches_group", "value":36.5, "unit":"percent", "numerator":73, "denominator":"200名參與者的個人首選與群組最終選擇相同", "locator":"5.1、表3"}],
+      "product_hypothesis":"推薦後仍需反應、協商與共同定案，不以一次計分取代人",
+      "limits":"不是滿意度或失敗率；首選不同仍可能滿意。不是情侶樣本，也不是Sideby演算法驗證"
+    }
+  ]
+}

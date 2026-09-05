@@ -51,6 +51,36 @@ test('production API proxy keeps one public origin and fails closed', async t =>
   assert.equal(calls[0].init.headers.get('x-forwarded-host'), 'sideby.example');
 });
 
+test('proxy rejects without leaving an unread incoming request stream', async t => {
+  const originalOrigin = process.env.SIDEBY_API_ORIGIN;
+  delete process.env.SIDEBY_API_ORIGIN;
+  t.after(() => {
+    if (originalOrigin === undefined) delete process.env.SIDEBY_API_ORIGIN;
+    else process.env.SIDEBY_API_ORIGIN = originalOrigin;
+  });
+  const outbound = t.mock.method(globalThis, 'fetch', () => assert.fail('rejected request must not be forwarded'));
+  for (const [env, origin, status] of [
+    [{}, 'https://sideby.example', 503],
+    [{ SIDEBY_API_ORIGIN: 'https://api.sideby.example' }, 'https://attacker.example', 403],
+    [{ SIDEBY_API_ORIGIN: 'https://api.sideby.example' }, 'not-an-origin', 403],
+  ]) {
+    let pulls = 0;
+    const request = new Request('https://sideby.example/api/auth/anonymous', {
+      method: 'POST', headers: { origin }, duplex: 'half',
+      body: new ReadableStream({
+        pull(controller) {
+          pulls++;
+          if (pulls === 4) controller.close();
+          else controller.enqueue(new Uint8Array(32));
+        },
+      }),
+    });
+    assert.equal((await proxySidebyApi(request, env)).status, status);
+    assert.equal(pulls, 4, 'early response must consume the body to EOF, not just cancel it');
+  }
+  assert.equal(outbound.mock.callCount(), 0);
+});
+
 test('private Gemini use requires explicit user consent and never logs provider bodies', () => {
   const page = readFileSync(new URL('../src/routes/index.tsx', import.meta.url), 'utf8');
   const provider = readFileSync(new URL('../src/lib/preference-ai.server.ts', import.meta.url), 'utf8');

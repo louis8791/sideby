@@ -55,6 +55,7 @@ export async function putOwnPrivateInput(userId: string, sessionId: string, inpu
     const parserOutput = parseWithRuleBaseline({
       sessionId, mode: session.shared?.mode ?? null, visibility: input.visibility,
       rawText: input.normalizedText ?? input.rawText,
+      environment: input.environment,
     });
     const result = await client.query(`INSERT INTO session_inputs(
       id,session_id,user_id,raw_text,tags,visibility,parse_status,parser_output)

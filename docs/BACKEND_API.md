@@ -1,5 +1,17 @@
 # Sideby 後端串接契約
 
+## 2026-09-05 環境條件增補
+
+本人 `POST /api/sessions/:id/private-inputs` 新增 optional 結構化欄位：
+
+```json
+{"rawText":"室內、冷氣","normalizedText":"室內、冷氣","environment":{"setting":"indoor","airConditioning":"required"},"tags":[],"visibility":"private_session"}
+```
+
+`setting` 為 `indoor`／`outdoor`／null；`airConditioning` 為 `required`／`excluded`／null。缺整欄相容舊客戶端；null 表示不限，excluded 是確定無冷氣。本人 GET 的 parse.result.hard_constraints.environment 回傳解析後條件；公開狀態與 SSE 不回此欄，改動照舊提高版本、撤銷雙方確認。前端把新標籤直接接入欄位，不能交 Gemini 猜。
+
+執行資料新增 optional `areaName` 與 `airConditioned`（true／false／null）；原 `outdoor` 為實際使用區域屬性。未知冷氣不得滿足指定需求。同店室內／戶外區用不同 slot，新 public stop 帶 `execution_slot_id`、`area_name`，舊 payload 可不帶。新版鎖站／重排保留 slot；舊 payload 無 slot 時僅保留原 venue／order 行為。各站必須同時通過雙方環境、共享戶外許可與天氣條件；不足三套沿用 NO_FEASIBLE_ITINERARIES／既有安全錯誤，不說明哪一方要求什麼。
+
 2026-09-05：已實作房間／公開條件、私密 Session 輸入、有限規則解析、版本化同意、私人場地清單、確定性推薦、反應／鎖定／局部重排／雙人定案，以及 `too_dark` 本人偏好更新。正式首頁已串接完整雙人主流程。展示推薦使用明確標示的合成資料；Phase 4 真實場地／RAG 與內容管理仍未接入。
 
 ## 啟動與驗證

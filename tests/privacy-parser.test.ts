@@ -2,6 +2,28 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { acceptParserOutput, parseWithRuleBaseline } from '../src/model/preference-query';
 import { publicProjection, safePublicReason } from '../src/server/privacy';
+import { privateInput } from '../src/server/contracts';
+
+test('environment selections parse independently and never treat unknown or negation as a supported label', () => {
+  const input = { sessionId: '00000000-0000-4000-8000-000000000001', mode: 'future' as const,
+    visibility: 'private_session' as const };
+  for (const [rawText, expected] of [
+    ['戶外（含戶外區）、無冷氣', { setting: 'outdoor', airConditioning: 'excluded' }],
+    ['室內、冷氣', { setting: 'indoor', airConditioning: 'required' }],
+  ] as const) {
+    const result = parseWithRuleBaseline({ ...input, rawText });
+    assert.equal(result.status, 'parsed');
+    if (result.status === 'parsed') assert.deepEqual(result.result.hard_constraints.environment, expected);
+  }
+  for (const rawText of ['室內、戶外', '冷氣、無冷氣', '不要冷氣', '不要戶外', '冷氣不一定']) {
+    assert.equal(parseWithRuleBaseline({ ...input, rawText }).status, 'needs_clarification');
+  }
+  const environment = { setting: 'indoor' as const, airConditioning: 'required' as const };
+  assert.equal(parseWithRuleBaseline({ ...input, rawText: '放鬆', environment }).status, 'parsed');
+  assert.equal(parseWithRuleBaseline({ ...input, rawText: '戶外', environment }).status, 'needs_clarification');
+  assert.equal(privateInput.safeParse({ rawText: '放鬆', environment: { setting: 'unknown', airConditioning: null } }).success, false);
+  assert.throws(() => publicProjection({ nested: { environment } }));
+});
 
 test('supported private wording becomes a schema-safe calculable query', () => {
   const parsed = parseWithRuleBaseline({

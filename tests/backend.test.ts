@@ -250,12 +250,16 @@ test('Phase 2 + Phase 3 + Phase 5 + Phase 6 backend: real PostgreSQL + built Nex
     const saved = await call('POST', privatePath, privateA, {
       rawText: privateCanary,
       normalizedText: '明亮、可愛、不要幼稚、少走路、浪漫',
+      environment: { setting: 'outdoor', airConditioning: 'excluded' },
       tags: ['secret-desire-canary'], visibility: 'private_session',
     });
     assert.equal(saved.status, 200);
     assert.equal(saved.data.rawText, privateCanary);
     assert.equal(saved.data.parse.status, 'parsed');
     assert.equal(saved.data.parse.externalModelApiCalls, 0);
+    assert.deepEqual(saved.data.parse.result.hard_constraints.environment, { setting: 'outdoor', airConditioning: 'excluded' });
+    assert.deepEqual((await call('GET', privatePath, privateA)).data.parse.result.hard_constraints.environment,
+      { setting: 'outdoor', airConditioning: 'excluded' });
     assert.deepEqual(saved.data.parse.result.preferences.map((item: { attribute: string }) => item.attribute), ['bright', 'cute', 'romantic']);
     assert.deepEqual(saved.data.parse.result.avoid.map((item: { attribute: string }) => item.attribute), ['childish', 'walking']);
     assert.ok(!JSON.stringify(saved.data).includes('normalizedText'));
@@ -275,6 +279,8 @@ test('Phase 2 + Phase 3 + Phase 5 + Phase 6 backend: real PostgreSQL + built Nex
     assert.equal(realtimeState.version, 2);
     assert.ok(!JSON.stringify(publicState.data).includes('secret-desire-canary'));
     assert.ok(!JSON.stringify(realtimeState).includes('secret-desire-canary'));
+    assert.ok(!JSON.stringify(publicState.data).includes('environment'));
+    assert.ok(!JSON.stringify(realtimeState).includes('environment'));
     assert.equal((await db.query(
       'SELECT count(*)::int AS n FROM session_inputs WHERE session_id=$1', [privateSessionId],
     )).rows[0].n, 1);

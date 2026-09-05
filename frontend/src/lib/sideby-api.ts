@@ -19,6 +19,8 @@ export type SidebyStop = {
   venue_id: string;
   order_no: number;
   venue_name: string;
+  execution_slot_id?: string;
+  area_name?: string;
   category: string;
   district: string;
   arrival_at: string;

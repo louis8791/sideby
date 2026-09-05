@@ -162,6 +162,7 @@
           "minLength": 1
         },
         "order_no": {
+          "description": "Position of this execution area in the itinerary.",
           "type": "integer",
           "minimum": 1
         },
@@ -170,6 +171,8 @@
           "pattern": "^venue_[a-z0-9_-]{1,120}$",
           "minLength": 1
         },
+        "execution_slot_id": { "type": "string", "format": "uuid" },
+        "area_name": { "type": "string", "minLength": 1, "maxLength": 80 },
         "venue_name": {
           "type": "string",
           "minLength": 1

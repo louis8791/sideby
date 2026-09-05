@@ -17,6 +17,15 @@ function safeApiOrigin(value: string): URL | null {
   }
 }
 
+async function rejectRequest(request: Request, status: number, code: string): Promise<Response> {
+  // Nitro emits no-bundle Workers, without Wrangler's body-drain middleware.
+  // Fully drain rejected bodies without buffering or forwarding private data.
+  if (request.body && !request.bodyUsed) {
+    await request.body.pipeTo(new WritableStream()).catch(() => undefined);
+  }
+  return Response.json({ error: { code } }, { status });
+}
+
 export async function proxySidebyApi(request: Request, env: unknown): Promise<Response | null> {
   const incoming = new URL(request.url);
   if (!incoming.pathname.startsWith("/api/")) return null;
@@ -24,17 +33,17 @@ export async function proxySidebyApi(request: Request, env: unknown): Promise<Re
   const configured = configuredOrigin(env);
   const apiOrigin = configured ? safeApiOrigin(configured) : null;
   if (!apiOrigin) {
-    return Response.json({ error: { code: "API_ORIGIN_UNAVAILABLE" } }, { status: 503 });
+    return rejectRequest(request, 503, "API_ORIGIN_UNAVAILABLE");
   }
 
   const browserOrigin = request.headers.get("origin");
   if (browserOrigin) {
     try {
       if (new URL(browserOrigin).host.toLowerCase() !== incoming.host.toLowerCase()) {
-        return Response.json({ error: { code: "ORIGIN_DENIED" } }, { status: 403 });
+        return rejectRequest(request, 403, "ORIGIN_DENIED");
       }
     } catch {
-      return Response.json({ error: { code: "ORIGIN_DENIED" } }, { status: 403 });
+      return rejectRequest(request, 403, "ORIGIN_DENIED");
     }
   }
 

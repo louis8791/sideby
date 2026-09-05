@@ -12,6 +12,8 @@ export const executionSlotSchema = z.strictObject({
   opensAt: z.iso.datetime({ offset: true }), closesAt: z.iso.datetime({ offset: true }),
   durationMinutes: z.number().int().min(15).max(480),
   outdoor: z.boolean(), weatherStatus: z.enum(['not_applicable', 'verified_suitable', 'unknown', 'unsuitable']),
+  areaName: z.string().trim().min(1).max(80).optional(),
+  airConditioned: z.boolean().nullable().optional(),
   bookingStatus: z.enum(['not_required', 'available', 'required', 'unknown']),
   transportModes: z.array(travelMode).min(1).max(6),
   dietarySupport: z.array(z.string().min(1).max(40)).max(30),
@@ -39,6 +41,7 @@ export interface PublicItinerary {
   data_mode: 'approved_dataset' | 'synthetic_demo'; dataset_version: string; route_matrix_version: string;
   stops: Array<{
     stop_id: string; order_no: number; venue_id: string; venue_name: string; category: string; district: string;
+    execution_slot_id?: string; area_name?: string;
     arrival_at: string; leave_at: string; travel_mode: z.infer<typeof travelMode>;
     travel_minutes: number; estimated_cost: number; locked: boolean;
     booking_status: Slot['bookingStatus']; booking_url: null; google_maps_url: string; google_place_id?: string;
@@ -61,6 +64,7 @@ export const publicItinerarySchema = z.strictObject({
   dataset_version: z.string().min(1).max(80), route_matrix_version: z.string().min(1).max(80),
   stops: z.array(z.strictObject({
     stop_id: z.uuid(), order_no: z.number().int().min(1), venue_id: venueId,
+    execution_slot_id: z.uuid().optional(), area_name: z.string().min(1).max(80).optional(),
     venue_name: z.string().min(1), category: z.string().min(1), district: z.string().min(1),
     arrival_at: z.iso.datetime(), leave_at: z.iso.datetime(), travel_mode: travelMode,
     travel_minutes: z.number().int().min(0), estimated_cost: z.number().min(0),
@@ -133,7 +137,11 @@ function combinedHard(query: Query[], shared: SharedConditions) {
   const privateEnds = query.flatMap(item => item.hard_constraints.end_time
     ? [Date.parse(`${sharedDate}T${item.hard_constraints.end_time}:00+08:00`)]
     : []);
+  const settings = [...new Set(query.flatMap(item => item.hard_constraints.environment?.setting ?? []))];
+  const cooling = [...new Set(query.flatMap(item => item.hard_constraints.environment?.airConditioning ?? []))];
   return {
+    setting: settings[0] ?? null,
+    airConditioning: cooling[0] ?? null,
     budget: Math.min(shared.budgetTwdTotal, ...privateBudgets),
     maxWalk: Math.min(...query.map(item => item.hard_constraints.max_walk_minutes ?? Number.POSITIVE_INFINITY)),
     maxTotalTravel: Math.min(shared.maxTotalTravelMinutes ?? Number.POSITIVE_INFINITY,
@@ -147,7 +155,7 @@ function combinedHard(query: Query[], shared: SharedConditions) {
     bookingRequired: bookingPreferences.length === 1 ? bookingPreferences[0] : null,
     start: Math.max(Date.parse(shared.startsAt), ...privateStarts),
     end: Math.min(Date.parse(shared.endsAt), ...privateEnds),
-    incompatible: bookingPreferences.length > 1
+    incompatible: bookingPreferences.length > 1 || settings.length > 1 || cooling.length > 1
       || privateDates.some(date => date !== sharedDate)
       || privateMeetingPoints.some(point => point !== shared.meetingPoint.label.trim().toLocaleLowerCase('zh-TW')),
     privateTransport,
@@ -158,7 +166,11 @@ function candidateAllowed(candidate: Candidate, shared: SharedConditions, hard: 
   const { venue, slot } = candidate;
   if (hard.hardNo.has(venue.category) || hard.hardNo.has(venue.venueId.toLocaleLowerCase('zh-TW'))) return false;
   if (!hard.outdoorAllowed && slot.outdoor) return false;
-  if (slot.outdoor && (slot.weatherStatus === 'unknown' || slot.weatherStatus === 'unsuitable')) return false;
+  if (hard.setting === 'outdoor' && !slot.outdoor) return false;
+  if (hard.setting === 'indoor' && slot.outdoor) return false;
+  if (hard.airConditioning === 'required' && slot.airConditioned !== true) return false;
+  if (hard.airConditioning === 'excluded' && slot.airConditioned !== false) return false;
+  if (slot.outdoor && slot.weatherStatus !== 'verified_suitable') return false;
   if (hard.weather && slot.weatherStatus !== 'verified_suitable') return false;
   if (slot.bookingStatus === 'unknown') return false;
   if ((!shared.bookingAllowed || hard.bookingRequired === false) && slot.bookingStatus !== 'not_required') return false;
@@ -196,6 +208,7 @@ export function composeItineraries(input: {
   requiredVenueIds?: string[]; excludedVenueIds?: string[]; resultLimit?: 1 | 3;
   itineraryId?: string; lockedStopIdsByVenue?: Record<string, string>;
   lockedOrderByVenue?: Record<string, number>;
+  lockedSlotIdsByVenue?: Record<string, string>;
 }): PublicItinerary[] {
   const envelopes = input.parserOutputs.map(acceptParserOutput);
   if (envelopes.length !== 2 || envelopes.some(item => item.status !== 'parsed')) return [];
@@ -211,6 +224,8 @@ export function composeItineraries(input: {
   for (const row of input.venues) {
     const record = venueRecordSchema.safeParse(row.record), slot = executionSlotSchema.safeParse(row.execution);
     if (!record.success || !slot.success || record.data.venueId !== slot.data.venueId) continue;
+    const lockedSlot = input.lockedSlotIdsByVenue?.[record.data.venueId];
+    if (lockedSlot && lockedSlot !== slot.data.slotId) continue;
     const assessment = assessVenue(record.data);
     if (!assessment.itineraryEligible) continue;
     const attributes = new Map(assessment.approvedAttributes.map(item => [item.attribute, item.value!]));
@@ -274,6 +289,8 @@ export function composeItineraries(input: {
       visit([...chosen, candidate], [...stops, {
         stop_id: input.lockedStopIdsByVenue?.[candidate.venue.venueId] ?? randomUUID(), order_no: orderNo, venue_id: candidate.venue.venueId,
         venue_name: candidate.venue.name, category: candidate.venue.category, district: candidate.venue.location.district,
+        execution_slot_id: candidate.slot.slotId,
+        area_name: candidate.slot.areaName ?? (candidate.slot.outdoor ? '戶外區' : '室內區'),
         arrival_at: new Date(arrival).toISOString(), leave_at: new Date(leave).toISOString(),
         travel_mode: leg.mode, travel_minutes: leg.minutes, estimated_cost: venueCost(candidate.venue),
         locked: required.has(candidate.venue.venueId), booking_status: candidate.slot.bookingStatus, booking_url: null,
