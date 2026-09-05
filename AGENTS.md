@@ -8,6 +8,7 @@
 - 政府資料只建立客觀 draft，不推論主觀偏好、價格、營業、室內外或冷氣。1,121 是候選庫，不是核准可推薦數；目前 production 仍保留 9 個 `synthetic_demo`，待人工核准、execution slots、合法交通資料及三案例 Runtime 通過後才可切換。
 - Google Places 只作 Place ID 對應與即時顯示。允許針對既有政府候選以 ID-only Text Search 批次對應；永久層只能保存 `google_place_id` 與執行狀態，不得保存 Google 名稱、地址、營業、評分、照片、評論或路線回應。操作與數量證據見 `docs/VENUE_REFRESH.md`。
 - PR #11 已合併 `main`（`0452445`），Railway migration 009 與 production staging 已套用：1,121 筆 draft、17 筆拒絕，相同來源第二次執行沿用同一 run。`venue-refresh-daily` 已設每日 00:00 UTC 執行，production API 維持 200；active 推薦資料仍是 9 筆 `synthetic_demo`。
+- PR #13 已合併 `main`（`e3e6336`），migration 010 與批次 Place ID 對應已在 Railway production 執行：1,121 筆政府候選中 1,120 筆為 `matched`、1 筆 `not_found`，無待重試列；100 筆高完整度審查隊列已產生。`venue-refresh-daily` 已改用 `npm run venues:refresh-all`，每日先更新政府候選再補 Place ID。這不等於人工核准，active 推薦仍保留 9 筆 `synthetic_demo`。
 
 ## 2026-09-05 公開部署 Runtime 狀態
 

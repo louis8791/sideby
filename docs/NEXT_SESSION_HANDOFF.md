@@ -2,7 +2,7 @@
 
 ## 最新部署接續（優先於下方歷史基線）
 
-- 2026-09-06 本輪 `feature/google-place-catalog` 已完成本機實作：migration 010、政府候選 ID-only Google Text Search 批次對應、Place ID 跨政府快照沿用、100 筆完整度查核清單，以及行程頁即時名稱／地址／營業時間／評分／照片／最多三則評論／路線顯示。完整 `npm run check:all` 通過；尚待合併、Railway 套 migration／執行 1,121 筆、Cloudflare 部署及正式 Runtime，未部署前不得宣稱 production 已更新。
+- 2026-09-06 PR #13 已合併 `main` `e3e6336cb9403614b829a331f6efa5bba5c8fdc1`：migration 010、政府候選 ID-only Google Text Search 批次對應、Place ID 跨快照沿用、100 筆審查隊列，以及行程頁即時名稱／地址／營業時間／評分／照片／最多三則評論／路線顯示均已上線。Railway 正式 DB 實際為 1,121 筆候選、1,120 筆 matched、1 筆 not_found、0 筆 retry；Cron deployment `71aa7dff-06a5-4b63-a12b-78f753f88af6` 已改用 `npm run venues:refresh-all`。根後端 deployment `ab075dba-e37d-4ebf-bad4-ad93ba9250f7` 成功，Cloudflare Worker version `772bd542-38f9-478a-96b1-5b7698454cc4` 已部署；後端與前端首頁均回 200。此證據不等於 1,120 筆已人工核准。
 
 - PR #11 已合併 `main`（`0452445`）：交通部觀光署每日景點／餐飲更新管線讀到全臺 9,818、臺北／新北 1,138，Railway PostgreSQL 已寫入 1,121 筆 draft、拒絕 17，migration 009 與相同內容冪等回用已在 production 驗證。獨立 `venue-refresh-daily` 每日 00:00 UTC 執行；公開 runtime 維持 200。active 推薦仍是 9 個 `synthetic_demo`，下一刀是人工核准首批真實場地、補 execution slots／交通資料並跑三案例 Runtime；不得把候選庫冒充已核准場地。操作見 `docs/VENUE_REFRESH.md`。
 - PR #9 已合併 `main`，merge commit `94ab10583738b8ac4b48bf4f882d63bb1e0c1e13`：本人偏好回饋由單一「太暗」擴充為太暗、太吵、太幼稚、太正式、走太多五種伺服器固定映射。Railway deployment `93b584c5-d3df-40b4-9cf4-6a409a019bab` 成功，migration 008 已隨 `prestart` 執行；公開 API 實測雙人確認、三套生成、「太吵」寫入與三套重生均通過。Cloudflare Worker version `999b5641-7d0c-4dbb-b957-d0383f949418` 已部署，首頁 200 且公開 bundle 含五種回饋。GitHub backend／frontend checks 與本機 `npm run check:all` 全綠（49 根＋15 Maps／proxy）。

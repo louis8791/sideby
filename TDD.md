@@ -7,6 +7,8 @@
 - `npm run venues:refresh-government` 為 dry-run；加 `-- --apply` 才以既有 `DATABASE_URL` 寫入 staging。資料庫使用 advisory transaction lock；內容 hash 相同時回用既有 run，批次失敗 rollback，不修改 `venue_datasets.active`。
 - 自動測試覆蓋城市篩選、缺值明示、錯誤拒絕、無 Google 欄位、draft／零主觀標籤、PostgreSQL transaction、冪等與 active dataset 保留。正式 activation 仍須人工核准、execution slots、交通資料與三案例 Runtime。
 - PR #11 `0452445` 已部署 Railway；migration 009 成功，正式 DB 首次寫入 1,121 筆，第二次相同內容回 `reused=true` 且 run ID 相同。獨立 `venue-refresh-daily` Cron 服務用 PostgreSQL reference，每日 00:00 UTC 執行同一命令並在完成後退出。
+- Migration 010 新增 `venue_google_place_matches` 與 `venue_candidate_review_queue`。ID-only Text Search 的 FieldMask 固定為 `places.id`，候選查詢合併政府名稱、地址與 500 公尺座標偏置；只寫 Place ID、對應狀態、時間與重試計數。新政府快照以穩定 `venue_id` 沿用已有 Place ID，不回填 Google 衍生內容。
+- 2026-09-06 Railway production 批次對應後，資料庫實際計數為 `matched=1120`、`not_found=1`、`retry=0`，最新 staging 為 1,121 筆，其中 1,120 筆含 Place ID。100 筆審查隊列已實際讀取。Cron deployment `71aa7dff-06a5-4b63-a12b-78f753f88af6` 使用 `npm run venues:refresh-all`；這些是匹配與候選證據，不是人工核准證據。
 
 ## 2026-09-05 公開 Worker／Railway 執行契約
 
