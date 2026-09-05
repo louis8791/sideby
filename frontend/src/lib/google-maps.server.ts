@@ -2,10 +2,11 @@
 const PLACES = "https://places.googleapis.com/v1";
 const BIAS = { circle: { center: { latitude: 25.0478, longitude: 121.5319 }, radius: 30000 } };
 export type Attribution = { displayName: string; uri?: string };
+export type PlaceReview = { author: Attribution; rating?: number; relativeTime?: string; text?: string };
 export type Venue = {
   query: string; placeId: string; name: string; address: string; lat: number; lng: number;
   rating?: number; ratingCount?: number; openNow?: boolean; category?: string; photoUri?: string;
-  photoAttributions?: Attribution[]; googleMapsUri: string;
+  openingHours?: string[]; photoAttributions?: Attribution[]; reviews?: PlaceReview[]; googleMapsUri: string;
 };
 export type TravelLeg = { from: string; to: string; walkMinutes?: number; transitMinutes?: number; distanceKm?: number };
 export type Point = { label: string; lat: number; lng: number };
@@ -14,7 +15,11 @@ type Place = {
   id: string; displayName?: { text?: string }; formattedAddress?: string;
   location?: { latitude: number; longitude: number }; rating?: number; userRatingCount?: number;
   currentOpeningHours?: { openNow?: boolean }; primaryTypeDisplayName?: { text?: string }; googleMapsUri?: string;
+  regularOpeningHours?: { weekdayDescriptions?: string[] };
   photos?: Array<{ name: string; authorAttributions?: Attribution[] }>;
+  reviews?: Array<{
+    authorAttribution?: Attribution; rating?: number; relativePublishTimeDescription?: string; text?: { text?: string };
+  }>;
 };
 
 export function assertLocalMapsRequest(
@@ -85,8 +90,28 @@ function toVenue(place: Place, query: string): Venue | null {
   if (typeof place.rating === "number") venue.rating = place.rating;
   if (typeof place.userRatingCount === "number") venue.ratingCount = place.userRatingCount;
   if (typeof place.currentOpeningHours?.openNow === "boolean") venue.openNow = place.currentOpeningHours.openNow;
+  if (place.regularOpeningHours?.weekdayDescriptions?.length) venue.openingHours = place.regularOpeningHours.weekdayDescriptions;
   if (place.primaryTypeDisplayName?.text) venue.category = place.primaryTypeDisplayName.text;
+  const reviews = (place.reviews ?? []).flatMap(review => review.authorAttribution ? [{
+    author: review.authorAttribution,
+    ...(typeof review.rating === "number" ? { rating: review.rating } : {}),
+    ...(review.relativePublishTimeDescription ? { relativeTime: review.relativePublishTimeDescription } : {}),
+    ...(review.text?.text ? { text: review.text.text } : {}),
+  }] : []).slice(0, 3);
+  if (reviews.length) venue.reviews = reviews;
   return venue;
+}
+
+async function attachFirstPhoto(venue: Venue, place: Place) {
+  const photo = place.photos?.[0];
+  if (!photo || !/^places\/[^/]+\/photos\/[^/]+$/.test(photo.name)) return;
+  try {
+    const media = await googleJson<{ photoUri?: string }>(`${PLACES}/${photo.name}/media?maxWidthPx=800&skipHttpRedirect=true`);
+    if (media.photoUri?.startsWith("https://")) {
+      venue.photoUri = media.photoUri;
+      venue.photoAttributions = photo.authorAttributions ?? [];
+    }
+  } catch { /* Optional photo unavailable; do not fabricate or discard a valid place. */ }
 }
 
 export async function searchVenue(query: string): Promise<Venue | null> {
@@ -98,16 +123,7 @@ export async function searchVenue(query: string): Promise<Venue | null> {
   const place = payload.places?.[0];
   const venue = place ? toVenue(place, query) : null;
   if (!venue) return null;
-  const photo = place?.photos?.[0];
-  if (photo && /^places\/[^/]+\/photos\/[^/]+$/.test(photo.name)) {
-    try {
-      const media = await googleJson<{ photoUri?: string }>(`${PLACES}/${photo.name}/media?maxWidthPx=800&skipHttpRedirect=true`);
-      if (media.photoUri?.startsWith("https://")) {
-        venue.photoUri = media.photoUri;
-        venue.photoAttributions = photo.authorAttributions ?? [];
-      }
-    } catch { /* Optional photo unavailable; do not fabricate or discard a valid place. */ }
-  }
+  await attachFirstPhoto(venue, place!);
   return venue;
 }
 
@@ -132,10 +148,14 @@ export async function autocomplete(input: string): Promise<{ suggestions: PlaceS
 
 export async function placeDetails(placeId: string) {
   const place = await googleJson<Place>(`${PLACES}/places/${encodeURIComponent(placeId)}?languageCode=zh-TW&regionCode=TW`, {
-    headers: { "X-Goog-FieldMask": FIELDS.join(",") },
+    headers: { "X-Goog-FieldMask": [...FIELDS,
+      "regularOpeningHours.weekdayDescriptions", "photos.name", "photos.authorAttributions",
+      "reviews.authorAttribution", "reviews.rating", "reviews.relativePublishTimeDescription", "reviews.text",
+    ].join(",") },
   });
   const venue = toVenue(place, place.displayName?.text ?? "");
   if (!venue) throw new Error("找不到這個地點的座標");
+  await attachFirstPhoto(venue, place);
   return { venue };
 }
 

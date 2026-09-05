@@ -6,7 +6,7 @@
 - 新增交通部觀光署景點／餐飲每日 JSON 更新入口。2026-09-06 dry-run 讀到全臺 9,818 筆、臺北／新北 1,138 筆，其中 1,121 筆通過 schema／政策可進 PostgreSQL staging，17 筆拒絕；來源更新時間為 2026-09-05。
 - `venue_sources`、`venue_import_runs`、`venue_staging_records` 保存來源、授權、內容雜湊、版本、範圍、數量與 draft。相同來源重跑冪等，transaction 失敗整批 rollback，既有 active dataset 不變。
 - 政府資料只建立客觀 draft，不推論主觀偏好、價格、營業、室內外或冷氣。1,121 是候選庫，不是核准可推薦數；目前 production 仍保留 9 個 `synthetic_demo`，待人工核准、execution slots、合法交通資料及三案例 Runtime 通過後才可切換。
-- Google Places 只作即時顯示與 optional Place ID 對應，不作千筆永久建庫。操作與數量證據見 `docs/VENUE_REFRESH.md`。
+- Google Places 只作 Place ID 對應與即時顯示。允許針對既有政府候選以 ID-only Text Search 批次對應；永久層只能保存 `google_place_id` 與執行狀態，不得保存 Google 名稱、地址、營業、評分、照片、評論或路線回應。操作與數量證據見 `docs/VENUE_REFRESH.md`。
 - PR #11 已合併 `main`（`0452445`），Railway migration 009 與 production staging 已套用：1,121 筆 draft、17 筆拒絕，相同來源第二次執行沿用同一 run。`venue-refresh-daily` 已設每日 00:00 UTC 執行，production API 維持 200；active 推薦資料仍是 9 筆 `synthetic_demo`。
 
 ## 2026-09-05 公開部署 Runtime 狀態
@@ -78,7 +78,7 @@
 - Google API 只用於即時查詢與展示；不得以 Google Maps／Places 評論、照片、搜尋摘要或 Takeout 清單建立自有場地資料、標籤、Embedding 索引或訓練／評測資料。
 - `google_place_id` 是唯一可長期保存的 Google 識別欄位，且只能作為選用的外部對應 ID；商家名稱、地址、評論、照片、搜尋結果及由此推導的標籤若來源是 Google，仍不得複製、長存、重新發布或送入 RAG／Embedding／訓練／評測。
 - 推薦卡片、排序與公開理由只使用自有、合作方授權或合規開放資料。使用者按「在 Google Maps 查看」時，後端／前端才以自有或授權的場地名稱與 `google_place_id` 即時產生已編碼的 Maps URL；此跳轉不使用 API key，也不是本專案的 Google Maps Platform API 計費請求。
-- 不得批次呼叫 Google Text Search 建立或擴充場地庫。外部連結格式為 `https://www.google.com/maps/search/?api=1&query=<urlencoded name>&query_place_id=<place_id>`；有 Place ID 時以它鎖定目的地，名稱只作 URL 必填 query 與找不到 ID 時的 fallback。
+- 可對既有、可追溯的政府候選批次呼叫 Google Text Search，但 FieldMask 只能為 `places.id`，用途只限建立／更新 Place ID 對應，不得以 Google 結果新增場地或回填其他持久欄位。外部連結格式為 `https://www.google.com/maps/search/?api=1&query=<urlencoded name>&query_place_id=<place_id>`；有 Place ID 時以它鎖定目的地，名稱只作 URL 必填 query 與找不到 ID 時的 fallback。
 - 場地資料採團隊自有、已取得適當授權或已確認可使用的開放資料；公開可閱讀不代表全文／照片可重用。每筆場地及每個主觀屬性須保留來源、查核時間、適用情境、審核狀態與未知值；不以模型猜測補足證據。
 - 場地發布、共用排序與 RAG 索引一律先通過 `src/venues/policy.ts`；政府匯入只能建立 draft 骨架。私人回饋不得進共用 RAG；公開評論也不能因已發布就自動成為場地事實、共用標籤或訓練資料。情境屬性不得省略其時段／區域後冒充一般屬性。
 

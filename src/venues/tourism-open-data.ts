@@ -233,6 +233,10 @@ export async function stageTourismVenueBatch(client: PoolClient, batch: TourismV
     await client.query(`INSERT INTO venue_staging_records(run_id,venue_id,source_key,source_record_id,record)
       SELECT $1,item->>'venueId',item->>'sourceKey',item->>'sourceRecordId',item->'record'
       FROM jsonb_array_elements($2::jsonb) item`, [runId, JSON.stringify(stagingRecords)]);
+    await client.query(`UPDATE venue_staging_records s SET
+      record=jsonb_set(s.record,'{google_place_id}',to_jsonb(m.google_place_id),true)
+      FROM venue_google_place_matches m
+      WHERE s.run_id=$1 AND m.venue_id=s.venue_id AND m.status='matched'`, [runId]);
     await client.query('COMMIT');
     return { runId, reused: false, stagedRecordCount: batch.records.length };
   } catch (error) {

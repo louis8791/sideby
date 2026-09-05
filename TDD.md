@@ -254,7 +254,7 @@ Privacy Guard 必須在公開輸出前執行：
 
 外部訂位／購票只提供連結跳轉，不在 MVP 內代理付款、保證座位或處理退款。
 
-Google 詳細資訊同樣只做外部跳轉。按鈕文字固定為「在 Google Maps 查看」，URL 以自有／授權的 `venue.name` 作必填 `query`，使用 UTF-8 URL encoding；有 `google_place_id` 時加入 `query_place_id` 並以它優先鎖定目的地。格式：`https://www.google.com/maps/search/?api=1&query=<urlencoded name>&query_place_id=<place_id>`。URL 不得包含 API key；開啟 Maps URL 不計為本專案的 GMP API 呼叫。若沒有 Place ID，可只用已編碼的自有／授權名稱跳轉，但不得因此呼叫 Google 搜尋補資料或把回傳頁面存回資料庫。
+Google 詳細資訊以 Place ID 在行程頁即時查詢並顯示，包含名稱、地址、營業時間、評分、照片與最多三則評論；照片及評論保留作者標示，任何回應都不得寫入資料庫。地圖與導航 URL 以自有／授權的 `venue.name` 作必填 `query`，有 `google_place_id` 時加入 `query_place_id`／`destination_place_id` 優先定位，且不得包含 API key。
 
 ### 自管模型／索引失敗
 
@@ -398,7 +398,7 @@ bright 等初始程度對應的區間由人工錨點及設定定義；未校準�
 ### 12.1 來源及更新
 
 - Google API 只作即時查詢與展示；不將 Google Maps／Places／搜尋摘要／Takeout 衍生內容寫入場地資料、標籤、訓練或索引。
-- Place ID 是上述保存限制的窄例外：只可保存為 optional `google_place_id`，不得連帶保存 Google 回傳的名稱、地址、評論、照片、搜尋結果或依其推導的標籤。MVP 不批次呼叫 Google Text Search 建庫。
+- Place ID 是上述保存限制的窄例外：可對政府候選用 `places.id` 唯一 FieldMask 批次對應並保存 optional `google_place_id`；不得連帶保存 Google 回傳的名稱、地址、營業、評論、照片、搜尋結果或依其推導的標籤，也不得用搜尋結果新增候選。
 - 採集名單從有授權的開放資料、團隊自有觀察與商家直接提供資料開始；資料集授權、文字、照片、衍生分析及發布權利分開記錄，來源不明先隔離不用。
 - 商家官網可用來核對事實及保留出處，但不得因公開可見就批量轉存全文或照片。主觀宣傳描述只作有限證據，不能當現場體驗已驗證。
 - 核心欄位為 venue_id、名稱／類別、地點、營業／活動日期、費用範圍、資料來源、查核時間、授權／使用範圍、更新負責人；價格及時段不足以驗證時該候選不能通過必要限制。

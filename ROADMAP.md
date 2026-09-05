@@ -52,7 +52,7 @@ Gemini 三接點契約保留為未來選項，但 Owner 已決定本輪不主打
 
 - Sideby 是雙人私密需求共決策產品，不是地點清單或單人行程產生器。
 - 本輪採 Google Maps＋確定性規則；Gemini、自管生成、Embedding、RAG 及訓練均為 DEFERRED，不以固定範例假裝外部服務成功。
-- 不以 Google Places／Maps API 或批次 Google Text Search 建庫。唯一可長期保存的 Google 識別欄位是 optional `google_place_id`。
+- 政府開放資料維持候選母表；可用 Google ID-only Text Search 批次補 optional `google_place_id`。Google 其他欄位只即時顯示、不進持久層、排序、標籤、訓練或 RAG。
 - Google 衍生的名稱、地址、評論、照片、搜尋結果與標籤不得進持久層、RAG、Embedding、訓練或評測；推薦、排序與公開理由只用自有、合作方授權或合規開放資料。
 - 硬限制、雙人公平計分、行程組合、局部重排與最終合法性由確定性程式負責；模型只做受控解析與公開文字改寫。
 - 模型、資料或外部服務未就緒時，回傳真實未就緒／無可行方案；不得用文件、schema、fixture 或固定結果冒充成功，也不得靜默切換成未揭露的供應商或假資料。

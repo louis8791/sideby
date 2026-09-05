@@ -6,7 +6,7 @@ Sideby 現有偏好 UI 共 34 個可選項（12 氛圍＋8 狀態＋10 互動＋
 
 地點更新已接交通部觀光署每日景點／餐飲開放資料。最新 dry-run 為全臺 9,818 筆、臺北／新北 1,138 筆，1,121 筆通過 schema／政策進入 draft 候選範圍。這些候選不得因資料量大就自動成為推薦：價格、營業時間、停留時間、實際區域、冷氣與主觀屬性仍須核對；未核准資料不得滿足硬限制或進 CoupleScore。目前 production active 仍為 9 個明示的 `synthetic_demo`。
 
-Google API 金鑰繼續用於使用者當下的地圖、Places、Routes 與 Geocoding 顯示，不作大量永久建庫。Sideby 只保存可重用的 Place ID；Google 名稱、地址、照片、評論、評分與搜尋結果不進場地資料、訓練或 RAG。
+Google API 金鑰繼續用於地圖、Places、Routes 與 Geocoding。系統可將既有政府候選以 ID-only Text Search 批次對應並長期保存 Place ID；Google 名稱、地址、營業時間、照片、評論、評分與路線只在使用者查看行程時即時取得，不進場地資料、訓練或 RAG。
 
 PR #11 已合併並部署。Railway PostgreSQL 現有 1,121 筆可追溯 draft 候選，另有每日 00:00 UTC 更新排程；這不改變「未核准不得進推薦」的產品規則，production active 仍保留 9 筆 `synthetic_demo`。
 
@@ -112,7 +112,7 @@ Phase 1 已先完成版本化 JSONL 契約、人工核准欄位、原文證據�
 
 Google API 只用於即時查詢與展示，不把 Maps／Places 評論、照片或搜尋摘要轉入自有 RAG。可使用有適當授權的開放資料、團隊自有觀察、商家直接提供資料；照片、全文重用與訓練權利各自確認，不把官網公開或 Takeout 匯出當作再利用授權。
 
-`google_place_id` 是唯一可長期保存的 Google 識別欄位，且為 optional。Sideby 不保存由 Google 取得的商家名稱、地址、評論、照片、搜尋結果或衍生標籤；推薦卡片、排序與理由一律使用自有／授權資料。使用者需要 Google 的即時詳情時，按「在 Google Maps 查看」跳到外部 Google Maps；系統以自有／授權的場地名稱與 Place ID 即時組成 URL，不需 API key，也不產生本專案的 GMP API 計費請求。MVP 不以批次 Google Text Search 建庫。
+`google_place_id` 是唯一可長期保存的 Google 識別欄位，且為 optional。Sideby 可對政府候選執行只回傳 `places.id` 的批次對應，但不以結果新增候選，也不保存由 Google 取得的商家名稱、地址、營業、評論、照片、搜尋結果或衍生標籤；推薦卡片、排序與理由一律使用自有／授權資料。名稱、地址、營業時間、評分、照片、評論與路線只在行程頁即時查詢並附 Google／作者標示。
 
 名稱／座標／營業時間等事實，與明亮／安靜／可愛等主觀屬性分開。每個屬性保留證據、適用時段、更新日期及審核狀態；沒有證據就是未知，不填 0、不自動填中間值。照片缺乏授權時，畫面可使用文字卡與自製圖示，照片不是推薦流程的前置條件。
 
