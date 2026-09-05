@@ -2,7 +2,11 @@
 
 ## 本輪優先入口（2026-09-06）
 
-目前施工分支為 `feat/recommendation-growth`；34 選項、地點資格／發布與三路改進管線已在本機通過 80 tests，**尚未部署**。先讀本文件末段「2026-09-06 成長功能接續」及 `docs/RECOMMENDATION_GROWTH.md`，再接下方既有正式版本；不要重做已通過內容或把歷史部署當成本輪已上線。
+PR #22／#23 已合併，功能 commit `85e5ccd` 已部署；日常回到 `main`。Railway `724d3cbf-a31a-4a17-985c-9285541fc0f5`、Cloudflare `38e9fe98-8a69-4aff-85e3-cc2ff8a7bfdd`；81 tests／CI／正式同源 API 34 選項、雙人加入、3 套真實三站路線通過，登入表單可開。先讀 `docs/RECOMMENDATION_GROWTH.md`；末段「成長功能接續」是部署前歷史，SSH 阻塞已解決，不能再當現行 blocker。
+
+正式 Migration 011、13 筆推薦索引與完整 refresh-all 已執行；候選快照 `tourism-tpe-ntpc-2026-09-06-38445b4239`：1,121 候選／1,120 Place IDs／128 營業文字／19 明確入場費／425 缺街道地址。核准場地仍 13，學習候選 0。新模型訓練、候選證據補齊、主觀標籤觀察及實體手機未完成。Google 單次 IDs-only 查詢成功，未啟用付費。
+
+正式 frontend build 需帶既有 Supabase URL 與 publishable key（只能用 browser 公開設定）；本輪已由隊友 Git 參考回填至建置程序，沒有將值提交或寫入日誌。一般 `check:all` 的 build 不會帶這些公開設定，不可直接取代正式部署包。Railway 已用既有已註冊 SSH 身分連線，不必再註冊 key 或公開 PostgreSQL。
 
 ## 最新部署接續（優先於下方歷史基線）
 
