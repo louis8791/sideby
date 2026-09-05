@@ -105,10 +105,10 @@ export function assessVenue(input: unknown): VenueAssessment {
   }
 
   const valid = errors.length === 0;
-  const itineraryEligible = valid
-    && venue.review.status === 'approved'
-    && venue.facts.price.status === 'verified_current'
-    && venue.facts.openingHours.status === 'verified_current';
+  // Publication approval answers whether the government-backed venue may enter the
+  // recommendation pool. Missing operational facts remain unknown and are handled
+  // as confirmation-required at itinerary time instead of being invented here.
+  const itineraryEligible = valid && venue.review.status === 'approved';
 
   let ragDocument: string | null = null;
   if (valid && venue.review.status === 'approved') {

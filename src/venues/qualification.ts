@@ -3,7 +3,7 @@ import { venueRecordSchema, type VenueRecord } from './schema';
 
 export type VenueQualification = {
   venueId: string; name: string; sourceVersion: string; placeIdMatched: boolean;
-  status: 'eligible' | 'needs_evidence' | 'rejected'; missing: string[];
+  status: 'eligible' | 'eligible_with_unknowns' | 'needs_evidence' | 'rejected'; missing: string[];
   knownAttributes: string[]; unknownAttributes: string[];
 };
 
@@ -28,10 +28,11 @@ export function qualifyVenue(input: unknown, executionCount = 0): VenueQualifica
   if (record.facts.openingHours.status !== 'verified_current') missing.push('verified_hours');
   if (!executionCount) missing.push('execution_area_and_schedule');
   if (record.location.address.includes('未提供街道地址')) missing.push('street_address');
+  const blocking = missing.some(reason => ['policy_rejected', 'review', 'execution_area_and_schedule'].includes(reason));
   return {
     venueId: record.venueId, name: record.name, sourceVersion: record.datasetVersion,
     placeIdMatched: Boolean(record.google_place_id),
-    status: !assessment.valid ? 'rejected' : missing.length ? 'needs_evidence' : 'eligible', missing,
+    status: !assessment.valid ? 'rejected' : blocking ? 'needs_evidence' : missing.length ? 'eligible_with_unknowns' : 'eligible', missing,
     knownAttributes: assessment.approvedAttributes.map(item => item.attribute),
     unknownAttributes: assessment.unknownAttributes,
   };
@@ -45,6 +46,7 @@ export function qualificationSummary(records: VenueRecord[]) {
   const missingCounts: Record<string, number> = {};
   for (const item of items) for (const reason of item.missing) missingCounts[reason] = (missingCounts[reason] ?? 0) + 1;
   return { total: items.length, eligible: items.filter(item => item.status === 'eligible').length,
+    eligibleWithUnknowns: items.filter(item => item.status === 'eligible_with_unknowns').length,
     sourceHours: items.filter(item => item.hasSourceHours).length,
     explicitAdmission: items.filter(item => item.proposedAdmissionTwd !== null).length,
     missingCounts, items };

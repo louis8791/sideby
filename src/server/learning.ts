@@ -220,7 +220,7 @@ export async function buildVenueRecommendationIndex(client: Client, rawVersion: 
     const attributes = Object.fromEntries(assessment.approvedAttributes.filter(item => item.scope === 'general').map(item => [item.attribute, item.value]));
     return { venueId: row.venue_id as string, hash: sha256(JSON.stringify(row.record)),
       category: row.record.category as string, district: row.record.location.district as string,
-      min: price.minTwd as number, max: price.maxTwd as number, basis: price.basis as string, attributes };
+      min: price.minTwd as number | null, max: price.maxTwd as number | null, basis: price.basis as string, attributes };
   });
   if (!entries.length) throw new Error('VENUE_RECOMMENDATION_INDEX_EMPTY');
   const existing = await client.query(`SELECT dataset_version,record_count
@@ -248,10 +248,11 @@ export async function buildVenueRecommendationIndex(client: Client, rawVersion: 
   await client.query("UPDATE venue_recommendation_indexes SET status='stale' WHERE status='active'");
   await client.query(`INSERT INTO venue_recommendation_indexes(version,dataset_version,status,record_count,activated_at)
     VALUES ($1,$2,'active',$3,clock_timestamp())`, [version, datasetVersion, entries.length]);
-  for (const entry of entries) await client.query(`INSERT INTO venue_recommendation_index_entries(
+  await client.query(`INSERT INTO venue_recommendation_index_entries(
     index_version,venue_id,record_sha256,category,district,price_min_twd,price_max_twd,price_basis,approved_attributes)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [version, entry.venueId, entry.hash, entry.category,
-    entry.district, entry.min, entry.max, entry.basis, JSON.stringify(entry.attributes)]);
+    SELECT $1,item->>'venueId',item->>'hash',item->>'category',item->>'district',
+      (item->>'min')::integer,(item->>'max')::integer,item->>'basis',item->'attributes'
+    FROM jsonb_array_elements($2::jsonb) item`, [version, JSON.stringify(entries)]);
   return { version, datasetVersion, recordCount: entries.length, reused: false };
 }
 

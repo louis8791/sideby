@@ -899,6 +899,16 @@ label small,
   gap: 8px;
   display: flex;
 }
+.confirmation-badge {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 8px;
+  border: 1px solid #111;
+  border-radius: 999px;
+  background: #ffe29a;
+  font-size: 10px;
+  font-weight: 800;
+}
 .favorite-btn {
   background: #fffaf4;
   border: 1.5px solid #111;

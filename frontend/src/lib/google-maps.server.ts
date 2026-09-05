@@ -96,12 +96,16 @@ const reviewSignalCatalog: Array<{ label: string; tone: ReviewSignal["tone"]; pa
   { label: "文藝展覽", tone: "positive", pattern: /展覽|藝術|文創|文化|博物館|美術館|設計感/u },
   { label: "親子友善", tone: "positive", pattern: /親子|小孩|兒童|家庭|帶孩子/u },
   { label: "戶外景觀", tone: "positive", pattern: /戶外|露天|露臺|河景|海景|山景|觀景/u },
+  { label: "室內空間線索", tone: "positive", pattern: /室內|店內|館內|室內座位/u },
+  { label: "冷氣線索", tone: "positive", pattern: /有冷氣|冷氣很強|空調|涼爽/u },
   { label: "可能擁擠", tone: "caution", pattern: /人很多|人潮|擁擠|客滿|一位難求/u },
   { label: "可能排隊", tone: "caution", pattern: /排隊|候位|等很久|久候/u },
   { label: "價格偏高", tone: "caution", pattern: /價格偏高|價位偏高|價格高|價位高|不便宜|有點貴|很貴/u },
   { label: "停車不易", tone: "caution", pattern: /難停車|停車位少|不好停|停車不便/u },
   { label: "步行較多", tone: "caution", pattern: /走很久|走一段路|爬坡|階梯很多|走到很累/u },
   { label: "可能吵雜", tone: "caution", pattern: /很吵|吵雜|嘈雜|噪音/u },
+  { label: "冷氣可能不足", tone: "caution", pattern: /沒冷氣|沒有冷氣|冷氣不冷|冷氣不足|悶熱/u },
+  { label: "營業時間需留意", tone: "caution", pattern: /營業時間|公休|休館|沒開|沒有開|提早關門/u },
 ];
 
 /** Request-local hints for the demo UI. Never persist or use as verified venue facts. */
@@ -111,7 +115,7 @@ export function classifyReviewSignals(reviews: PlaceReview[]): ReviewSignal[] {
     ...signal, order, count: texts.filter(text => signal.pattern.test(text)).length,
   })).filter(signal => signal.count > 0)
     .sort((a, b) => b.count - a.count || a.order - b.order)
-    .slice(0, 10)
+    .slice(0, 12)
     .map(({ label, tone, count }) => ({ label, tone, count }));
 }
 

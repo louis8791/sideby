@@ -1,5 +1,13 @@
 # Sideby 跨對話交接（2026-09-05）
 
+## 2026-09-06 全候選發布施工點（最新，優先於下文）
+
+Owner 已改變發布 gate：最新 1,121 筆通過 schema／來源政策的政府候選都要進正式推薦池，不要求每筆先補齊價格、時段、實際區域、室內外及冷氣。這不是批量補證；13 筆維持 fully verified，其餘以 `eligible_with_unknowns`／`needs_confirmation` 發布，未知欄位維持 null。一般路線可使用，明確環境／安全硬條件仍 fail closed；含未知站點的方案必須顯示待確認、nullable 總價、`confirmation_required=true` 與 `hard_constraints_passed=false`。
+
+工作分支 `feat/publish-full-candidate-pool` 已完成 Migration 012、`venues:publish-candidates`、全量批次發布／索引、provisional slots、推薦與前端 schema／警示，以及 Google 評論最多 12 個即時軟線索。`npm run check:all` 已通過 84 項測試及兩端 build。尚未 commit／push／merge／部署；production 在實查前仍是 13 筆，不能提前寫成 1,121。部署順序：合併 main → Railway 自動部署 migration → 在 Railway 執行一次 `npm run venues:publish-candidates -- --apply` → 核對 active dataset／index／unknown 數量 → Cloudflare 以既有公開 Supabase build 設定重建 → 公開路線與 UI smoke。
+
+Google 評論新增室內、冷氣、冷氣可能不足與營業提醒，但只在單次 Place Details 回應內粗略分類，不寫入資料庫、核准欄位、排序、索引或訓練。1,120 筆 Place ID 與 1 筆 not_found 的既有 production 證據未變。
+
 ## 本輪優先入口（2026-09-06）
 
 Google 即時評論情境線索已上線：PR #25 merge `030de8b9e48151eb959c2e5d97ebe8dd358b46a3`，Cloudflare Worker version `4a13b1cc-6930-4c85-ad64-9059ebc8f914`。每個行程地點最多顯示五則評論，單次請求內固定規則輸出最多十個正向／提醒線索與提及次數，並明示不作硬篩選或核准事實。完整 `npm run check:all` 82 項測試、GitHub backend／frontend checks、公開首頁與 `/api/runtime` 200、正式 bundle 文案、雙瀏覽器邀請加入，以及 Maps JavaScript／Places／Routes／Geocoding 與底圖目視均通過。評論及衍生線索不落盤、不進排序、索引、RAG、訓練或評測；尚未逐一證明 13 個正式場地在當下評論都會命中線索。

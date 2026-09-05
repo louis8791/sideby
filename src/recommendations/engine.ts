@@ -11,7 +11,7 @@ export const executionSlotSchema = z.strictObject({
   slotId: z.uuid(), venueId,
   opensAt: z.iso.datetime({ offset: true }), closesAt: z.iso.datetime({ offset: true }),
   durationMinutes: z.number().int().min(15).max(480),
-  outdoor: z.boolean(), weatherStatus: z.enum(['not_applicable', 'verified_suitable', 'unknown', 'unsuitable']),
+  outdoor: z.boolean().nullable(), weatherStatus: z.enum(['not_applicable', 'verified_suitable', 'unknown', 'unsuitable']),
   areaName: z.string().trim().min(1).max(80).optional(),
   airConditioned: z.boolean().nullable().optional(),
   bookingStatus: z.enum(['not_required', 'available', 'required', 'unknown']),
@@ -21,7 +21,7 @@ export const executionSlotSchema = z.strictObject({
   allergensPresent: z.array(z.string().min(1).max(40)).max(30),
   accessibilitySupport: z.array(z.string().min(1).max(40)).max(30),
   minimumAge: z.number().int().min(0).max(120).nullable(),
-  sourceCheckedAt: z.iso.datetime({ offset: true }), status: z.literal('verified_current'),
+  sourceCheckedAt: z.iso.datetime({ offset: true }), status: z.enum(['verified_current', 'provisional']),
   sponsored: z.boolean().default(false),
 });
 
@@ -32,7 +32,8 @@ export const travelLegSchema = z.strictObject({
 });
 
 type Query = NonNullable<Extract<ReturnType<typeof acceptParserOutput>, { status: 'parsed' }>['result']>;
-type Slot = z.infer<typeof executionSlotSchema>;
+export type ExecutionSlot = z.infer<typeof executionSlotSchema>;
+type Slot = ExecutionSlot;
 type Leg = z.infer<typeof travelLegSchema>;
 type Candidate = { venue: VenueRecord; slot: Slot; attributes: Map<VenueAttribute, number> };
 
@@ -43,13 +44,14 @@ export interface PublicItinerary {
     stop_id: string; order_no: number; venue_id: string; venue_name: string; category: string; district: string;
     execution_slot_id?: string; area_name?: string;
     arrival_at: string; leave_at: string; travel_mode: z.infer<typeof travelMode>;
-    travel_minutes: number; estimated_cost: number; locked: boolean;
+    travel_minutes: number; estimated_cost: number | null; locked: boolean;
+    verification_status: 'verified' | 'needs_confirmation'; unknown_fields: string[];
     booking_status: Slot['bookingStatus']; booking_url: null; google_maps_url: string; google_place_id?: string;
   }>;
-  total_cost: number; total_duration_minutes: number; travel_minutes: number; couple_score: number;
+  total_cost: number | null; total_duration_minutes: number; travel_minutes: number; couple_score: number;
   score_breakdown: { min_fit: number; mean_fit: number; context_fit: number; novelty: number; route_efficiency: number };
   public_reason: string; sponsored_content: boolean; offers: [];
-  validation: { hard_constraints_passed: true; privacy_guard_passed: true; source_ids_verified: true; checked_at: string; data_freshness_note: string };
+  validation: { hard_constraints_passed: boolean; confirmation_required: boolean; privacy_guard_passed: true; source_ids_verified: true; checked_at: string; data_freshness_note: string };
   version: number;
 }
 
@@ -67,11 +69,13 @@ export const publicItinerarySchema = z.strictObject({
     execution_slot_id: z.uuid().optional(), area_name: z.string().min(1).max(80).optional(),
     venue_name: z.string().min(1), category: z.string().min(1), district: z.string().min(1),
     arrival_at: z.iso.datetime(), leave_at: z.iso.datetime(), travel_mode: travelMode,
-    travel_minutes: z.number().int().min(0), estimated_cost: z.number().min(0),
+    travel_minutes: z.number().int().min(0), estimated_cost: z.number().min(0).nullable(),
+    verification_status: z.enum(['verified', 'needs_confirmation']),
+    unknown_fields: z.array(z.string().min(1).max(80)).max(12),
     locked: z.boolean(), booking_status: executionSlotSchema.shape.bookingStatus, booking_url: z.null(),
     google_maps_url: z.url(), google_place_id: z.string().regex(/^[A-Za-z0-9_-]{1,300}$/).optional(),
   })).min(2).max(4),
-  total_cost: z.number().min(0), total_duration_minutes: z.number().int().min(1),
+  total_cost: z.number().min(0).nullable(), total_duration_minutes: z.number().int().min(1),
   travel_minutes: z.number().int().min(0), couple_score: z.number().min(0).max(1),
   score_breakdown: z.strictObject({
     min_fit: z.number().min(0).max(1), mean_fit: z.number().min(0).max(1),
@@ -80,7 +84,7 @@ export const publicItinerarySchema = z.strictObject({
   }),
   public_reason: z.string().min(1).max(500), sponsored_content: z.boolean(), offers: z.tuple([]),
   validation: z.strictObject({
-    hard_constraints_passed: z.literal(true), privacy_guard_passed: z.literal(true),
+    hard_constraints_passed: z.boolean(), confirmation_required: z.boolean(), privacy_guard_passed: z.literal(true),
     source_ids_verified: z.literal(true), checked_at: z.iso.datetime(), data_freshness_note: z.string().min(1),
   }),
   version: z.number().int().min(1),
@@ -117,8 +121,21 @@ function userFit(query: Query, candidates: Candidate[], personalPenalties: Recor
 
 function venueCost(venue: VenueRecord) {
   const price = venue.facts.price;
-  if (price.maxTwd === null) return Number.POSITIVE_INFINITY;
+  if (price.maxTwd === null) return null;
   return price.basis === 'couple' ? price.maxTwd : price.maxTwd * 2;
+}
+
+function unknownFields(candidate: Candidate) {
+  const fields: string[] = [];
+  if (candidate.venue.facts.price.status !== 'verified_current') fields.push('price');
+  if (candidate.venue.facts.openingHours.status !== 'verified_current') fields.push('opening_hours');
+  if (candidate.slot.status === 'provisional') {
+    fields.push('execution_area', 'availability');
+    if (candidate.slot.outdoor === null) fields.push('indoor_outdoor');
+    if (candidate.slot.airConditioned == null) fields.push('air_conditioning');
+    if (candidate.slot.bookingStatus === 'unknown') fields.push('booking');
+  }
+  return fields;
 }
 
 function combinedHard(query: Query[], shared: SharedConditions) {
@@ -168,15 +185,16 @@ function combinedHard(query: Query[], shared: SharedConditions) {
 function candidateAllowed(candidate: Candidate, shared: SharedConditions, hard: ReturnType<typeof combinedHard>, queries: Query[]) {
   const { venue, slot } = candidate;
   if (hard.hardNo.has(venue.category) || hard.hardNo.has(venue.venueId.toLocaleLowerCase('zh-TW'))) return false;
-  if (!hard.outdoorAllowed && slot.outdoor) return false;
-  if (hard.setting === 'outdoor' && !slot.outdoor) return false;
-  if (hard.setting === 'indoor' && slot.outdoor) return false;
+  if (!hard.outdoorAllowed && slot.outdoor === true) return false;
+  if (hard.setting === 'outdoor' && slot.outdoor !== true) return false;
+  if (hard.setting === 'indoor' && slot.outdoor !== false) return false;
   if (hard.airConditioning === 'required' && slot.airConditioned !== true) return false;
   if (hard.airConditioning === 'excluded' && slot.airConditioned !== false) return false;
   if (slot.outdoor && slot.weatherStatus !== 'verified_suitable') return false;
   if (hard.weather && slot.weatherStatus !== 'verified_suitable') return false;
-  if (slot.bookingStatus === 'unknown') return false;
-  if ((!shared.bookingAllowed || hard.bookingRequired === false) && slot.bookingStatus !== 'not_required') return false;
+  if (slot.bookingStatus === 'unknown' && hard.bookingRequired !== null) return false;
+  if ((!shared.bookingAllowed || hard.bookingRequired === false) && slot.bookingStatus !== 'not_required'
+    && !(slot.status === 'provisional' && slot.bookingStatus === 'unknown')) return false;
   if (hard.bookingRequired === true && slot.bookingStatus === 'not_required') return false;
   if (shared.participantMinAge !== undefined && slot.minimumAge !== null && shared.participantMinAge < slot.minimumAge) return false;
   const supports = normalizeList(slot.dietarySupport), access = normalizeList(slot.accessibilitySupport);
@@ -191,7 +209,7 @@ function candidateAllowed(candidate: Candidate, shared: SharedConditions, hard: 
 function signature(itinerary: PublicItinerary) {
   const categories = [...new Set(itinerary.stops.map(stop => stop.category))].sort().join('|');
   const districts = [...new Set(itinerary.stops.map(stop => stop.district))].sort().join('|');
-  const budget = itinerary.total_cost <= 800 ? 'low' : itinerary.total_cost <= 1800 ? 'mid' : 'high';
+  const budget = itinerary.total_cost === null ? 'unknown' : itinerary.total_cost <= 800 ? 'low' : itinerary.total_cost <= 1800 ? 'mid' : 'high';
   const density = itinerary.travel_minutes / itinerary.total_duration_minutes < 0.15 ? 'low' : itinerary.travel_minutes / itinerary.total_duration_minutes < 0.3 ? 'mid' : 'high';
   return { categories, districts, budget, density };
 }
@@ -268,7 +286,7 @@ export function composeItineraries(input: {
   }
   const route = (from: string, to: string) => routeMap.get(`${from}\0${to}`);
 
-  const visit = (chosen: Candidate[], stops: PublicItinerary['stops'], from: string, current: number, cost: number, travel: number) => {
+  const visit = (chosen: Candidate[], stops: PublicItinerary['stops'], from: string, current: number, cost: number, unknownPrice: boolean, travel: number) => {
     if (chosen.length === input.shared.stops) {
       if ([...required].some(id => !chosen.some(item => item.venue.venueId === id))) return;
       if (cost > hard.budget || travel > hard.maxTotalTravel) return;
@@ -282,19 +300,25 @@ export function composeItineraries(input: {
       const minFit = Math.min(fitA, fitB), meanFit = (fitA + fitB) / 2, contextFit = 1;
       const score = .45 * minFit + .25 * meanFit + .15 * contextFit + .10 * novelty + .05 * efficiency;
       const categories = [...new Set(chosen.map(item => item.venue.category))];
+      const confirmationRequired = chosen.some(item => unknownFields(item).length > 0);
       options.push({
         itinerary_id: input.itineraryId ?? randomUUID(), session_id: input.sessionId,
         title: `${categories.slice(0, 2).join('＋')}約會`, stops,
         data_mode: input.dataMode ?? 'synthetic_demo',
         dataset_version: input.datasetVersion ?? 'synthetic-test',
         route_matrix_version: input.routeMatrixVersion ?? 'synthetic-test',
-        total_cost: cost, total_duration_minutes: duration, travel_minutes: travel, couple_score: round(score),
+        total_cost: unknownPrice ? null : cost, total_duration_minutes: duration, travel_minutes: travel, couple_score: round(score),
         score_breakdown: { min_fit: round(minFit), mean_fit: round(meanFit), context_fit: 1, novelty: round(novelty), route_efficiency: round(efficiency) },
-        public_reason: `符合共同時間與預算，安排 ${categories.join('、')}，並控制移動時間。`,
+        public_reason: confirmationRequired
+          ? `依政府地點資料安排 ${categories.join('、')} 並控制移動時間；缺漏價格、營業或區域資訊請於出發前確認。`
+          : `符合共同時間與預算，安排 ${categories.join('、')}，並控制移動時間。`,
         sponsored_content: chosen.some(item => item.slot.sponsored), offers: [],
-        validation: { hard_constraints_passed: true, privacy_guard_passed: true, source_ids_verified: true,
+        validation: { hard_constraints_passed: !confirmationRequired, confirmation_required: confirmationRequired,
+          privacy_guard_passed: true, source_ids_verified: true,
           checked_at: (input.now ?? new Date()).toISOString(), data_freshness_note: input.dataMode === 'approved_dataset'
-            ? '使用核准資料集與作用中交通矩陣產生。'
+            ? confirmationRequired
+              ? '使用已發布政府候選池與作用中交通矩陣產生；未知欄位保留為待確認，Google 評論只在畫面即時顯示。'
+              : '使用核准資料集與作用中交通矩陣產生。'
             : '使用明確標示的合成展示資料與合成交通矩陣產生；不是現實世界推薦。' },
         version: input.version,
       });
@@ -314,22 +338,25 @@ export function composeItineraries(input: {
       const arrival = Math.max(current + leg.minutes * 60000, Date.parse(candidate.slot.opensAt));
       const leave = arrival + candidate.slot.durationMinutes * 60000;
       if (arrival < start || leave > end || leave > Date.parse(candidate.slot.closesAt)) continue;
-      const nextCost = cost + venueCost(candidate.venue);
+      const candidateCost = venueCost(candidate.venue);
+      const nextCost = cost + (candidateCost ?? 0);
       if (nextCost > hard.budget) continue;
       visit([...chosen, candidate], [...stops, {
         stop_id: input.lockedStopIdsByVenue?.[candidate.venue.venueId] ?? randomUUID(), order_no: orderNo, venue_id: candidate.venue.venueId,
         venue_name: candidate.venue.name, category: candidate.venue.category, district: candidate.venue.location.district,
         execution_slot_id: candidate.slot.slotId,
-        area_name: candidate.slot.areaName ?? (candidate.slot.outdoor ? '戶外區' : '室內區'),
+        area_name: candidate.slot.areaName ?? (candidate.slot.outdoor === true ? '戶外區' : candidate.slot.outdoor === false ? '室內區' : '實際使用區域待確認'),
         arrival_at: new Date(arrival).toISOString(), leave_at: new Date(leave).toISOString(),
-        travel_mode: leg.mode, travel_minutes: leg.minutes, estimated_cost: venueCost(candidate.venue),
+        travel_mode: leg.mode, travel_minutes: leg.minutes, estimated_cost: candidateCost,
+        verification_status: unknownFields(candidate).length ? 'needs_confirmation' : 'verified',
+        unknown_fields: unknownFields(candidate),
         locked: required.has(candidate.venue.venueId), booking_status: candidate.slot.bookingStatus, booking_url: null,
         google_maps_url: googleMapsUrl(candidate.venue.name, candidate.venue.google_place_id),
         ...(candidate.venue.google_place_id ? { google_place_id: candidate.venue.google_place_id } : {}),
-      }], candidate.venue.venueId, leave, nextCost, travel + leg.minutes);
+      }], candidate.venue.venueId, leave, nextCost, unknownPrice || candidateCost === null, travel + leg.minutes);
     }
   };
-  visit([], [], meetingKey, start, 0, 0);
+  visit([], [], meetingKey, start, 0, false, 0);
   const selected: PublicItinerary[] = [];
   for (const option of options.sort((a, b) => b.couple_score - a.couple_score)) {
     if (selected.every(existing => materiallyDifferent(existing, option))) selected.push(option);

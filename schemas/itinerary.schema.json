@@ -63,7 +63,7 @@
       }
     },
     "total_cost": {
-      "type": "number",
+      "type": ["number", "null"],
       "minimum": 0
     },
     "total_duration_minutes": {
@@ -150,6 +150,8 @@
         "travel_mode",
         "travel_minutes",
         "estimated_cost",
+        "verification_status",
+        "unknown_fields",
         "locked",
         "booking_status",
         "booking_url",
@@ -209,8 +211,17 @@
           "minimum": 0
         },
         "estimated_cost": {
-          "type": "number",
+          "type": ["number", "null"],
           "minimum": 0
+        },
+        "verification_status": {
+          "type": "string",
+          "enum": ["verified", "needs_confirmation"]
+        },
+        "unknown_fields": {
+          "type": "array",
+          "maxItems": 12,
+          "items": { "type": "string", "minLength": 1, "maxLength": 80 }
         },
         "locked": {
           "type": "boolean"
@@ -276,6 +287,7 @@
       "additionalProperties": false,
       "required": [
         "hard_constraints_passed",
+        "confirmation_required",
         "privacy_guard_passed",
         "source_ids_verified",
         "checked_at",
@@ -283,7 +295,10 @@
       ],
       "properties": {
         "hard_constraints_passed": {
-          "const": true
+          "type": "boolean"
+        },
+        "confirmation_required": {
+          "type": "boolean"
         },
         "privacy_guard_passed": {
           "const": true

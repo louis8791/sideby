@@ -1,5 +1,13 @@
 # Sideby — MVP ROADMAP
 
+## 2026-09-06 全候選正式發布（本機完成、部署待驗）
+
+- 已實作：把最新 1,121 筆合格政府候選建立為版本化正式推薦池；13 筆保留完整驗證，其餘標為出發前待確認，不再要求每筆先補齊價格、時段、區域、室內外與冷氣。
+- 已實作：nullable 價格、provisional slot、逐站未知欄位、前端確認警示、全量批次發布／索引及每日更新接線。一般需求可使用全池；明確環境與安全硬條件對未知值仍 fail closed。
+- 已驗收本機：`npm run check:all` 共 84 項測試及後端／前端 build 通過；包含全候選發布、資料庫索引保留未知值、三套 provisional 路線與評論即時線索。
+- 待驗：合併 GitHub、Railway migration 012、production release／索引實數、Cloudflare 新 UI 與公開三套路線。完成前 production 現況仍只能寫 13 筆。
+- 不納入此次完成宣稱：以 Google 評論驗證場地事實、訓練新模型、證明推薦品質提升、兩支實體手機與 Owner 最終驗收。
+
 ## 2026-09-06 評論資訊模擬
 
 - `feat/live-review-signals` 已完成單次 Google 評論的固定規則粗分類、最多五則評論／十個情境線索、提及次數與 UI 免責文字；完整 `npm run check:all` 82 項測試通過。

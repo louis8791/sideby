@@ -95,6 +95,7 @@ type Plan = {
   stops: Stop[];
   reason: string;
   dataMode?: "approved_dataset" | "synthetic_demo";
+  confirmationRequired?: boolean;
 };
 type PreferenceFeedbackSignal = "too_dark" | "too_noisy" | "too_childish" | "too_formal" | "too_much_walking";
 
@@ -119,7 +120,7 @@ function fromSidebyItinerary(itinerary: SidebyItinerary, index: number): Plan {
     subtitle: itinerary.public_reason,
     color: planColors[index % planColors.length]!,
     score: Math.round(itinerary.couple_score * 100),
-    total: `NT$ ${itinerary.total_cost.toLocaleString("zh-TW")}`,
+    total: itinerary.total_cost === null ? "部分價格待確認" : `NT$ ${itinerary.total_cost.toLocaleString("zh-TW")}`,
     movement: `移動 ${itinerary.travel_minutes} 分鐘`,
     stops: itinerary.stops.map((stop, stopIndex) => ({
       backendStopId: stop.stop_id,
@@ -127,7 +128,7 @@ function fromSidebyItinerary(itinerary: SidebyItinerary, index: number): Plan {
       time: clock(stop.arrival_at),
       name: stop.venue_name,
       type: stop.category,
-      meta: `${Math.max(1, Math.round((new Date(stop.leave_at).getTime() - new Date(stop.arrival_at).getTime()) / 60000))} 分鐘 · NT$${stop.estimated_cost}${stop.area_name ? ` · ${stop.area_name}` : ""}`,
+      meta: `${Math.max(1, Math.round((new Date(stop.leave_at).getTime() - new Date(stop.arrival_at).getTime()) / 60000))} 分鐘 · ${stop.estimated_cost === null ? "價格待確認" : `NT$${stop.estimated_cost}`}${stop.area_name ? ` · ${stop.area_name}` : ""}`,
       color: stopColors[stopIndex % stopColors.length]!,
       query: stop.venue_name,
       locked: stop.locked,
@@ -137,6 +138,7 @@ function fromSidebyItinerary(itinerary: SidebyItinerary, index: number): Plan {
     })),
     reason: itinerary.public_reason,
     dataMode: itinerary.data_mode,
+    confirmationRequired: itinerary.validation.confirmation_required,
     durationMinutes: itinerary.total_duration_minutes,
   };
 }
@@ -1581,6 +1583,7 @@ function Home() {
                       <div>
                         <h3>{plan.title}</h3>
                         <p>{plan.subtitle}</p>
+                        {plan.confirmationRequired && <span className="confirmation-badge">價格／營業／區域請於出發前確認</span>}
                       </div>
                       <button
                         className={`favorite-btn ${favorites.includes(plan.id) ? "favorited" : ""}`}
