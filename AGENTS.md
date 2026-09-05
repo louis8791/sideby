@@ -7,7 +7,7 @@
 - PR #4 已合併至 `main`（merge `16cfd04`）。Railway `chic-bravery` 的 PostgreSQL 與根 Next.js 服務已上線；`DATABASE_URL` 使用資料庫 reference，健康路徑為 `/api/runtime`，公開網域指向實際 `PORT=8080`。`https://sideby-production.up.railway.app/api/runtime` 已回 200／`standard`。
 - Cloudflare Worker `https://louis8791-sideby-frontend.louis8791.workers.dev` 已部署；`SIDEBY_API_ORIGIN`、`SIDEBY_PUBLIC_ORIGIN` 與 Google server secret 已設，首頁、`/maps-check`、同源 `/api/runtime` 回 200，經代理建立匿名身分回 201。秘密值未輸出或提交。
 - `npm run check:all` 通過 47 根測試＋15 Maps／proxy 測試，GitHub PR checks 全綠。這證明公開基礎 Runtime，不等於真實場地、Gemini、Google 正式金鑰限制、雙手機或 Owner 驗收。
-- 正式 `/maps-check` 顯示兩把 Google key 存在，但實際檢查只有 Maps JavaScript 程式載入；底圖回報授權錯誤，Places／Routes／Geocoding 未通過。登入中的 Google 帳號可見兩個專案且都沒有 API key，無法替實際金鑰修改來源限制；須由擁有該金鑰的帳號／專案加入 `https://pairpath-date.dynamic-portfolio-analyzer-worker.workers.dev/*` 與 `https://louis8791-sideby-frontend.louis8791.workers.dev/*`，再重跑驗收。不得冒稱 production Google PASS。
+- 正式 `/maps-check` 已目視載入 Maps JavaScript 底圖，browser referrer 修正完成；Places／Routes／Geocoding 的 Worker server calls 仍未通過。`GOOGLE_MAPS_SERVER_API_KEY` 已用本機可成功呼叫三項服務的同一值重新上傳，故下一步只查 server key 的應用限制／API restriction、帳務與配額；三項未綠前不得冒稱 production Google 全通過。
 
 ## 2026-09-05 環境選項、持續發展與需求證據
 
@@ -26,13 +26,14 @@
 - 金鑰例外澄清：受網站來源限制的 `VITE_GOOGLE_MAPS_API_KEY` 必須交給 Maps JavaScript，屬瀏覽器可見設定；不同的 `GOOGLE_MAPS_SERVER_API_KEY` 僅放伺服器，用 Places／Routes／Geocoding，禁止 VITE_、Git、日誌及回應。此項優先於下方「所有 API key 不下放瀏覽器」舊概括句。
 
 - 使用者指定 `louis8791/sideby` 為唯一主 Repo；Lovable 程式已匯入 `frontend/`，根後端保留 `app/api/`、`src/`、`db/`。共同操作入口為 `docs/TEAM_INTEGRATION.md`，部署依 `docs/DEPLOYMENT.md`。
-- 本輪採 Gemini＋Google Maps API 型 MVP，不排模型訓練／自管生成／Embedding／RAG。下方相關舊禁止及訓練工作包是歷史／延後參考，不阻擋本輪；權限、硬限制、來源與隱私守門保持必要。
+- 本輪黑客松主線採 Google Maps＋確定性規則；Owner 決定不主打 Gemini。既有 Gemini adapter 與三接點契約保留為可選／延後項，不阻擋提交；模型訓練、自管生成、Embedding／RAG 同樣延後。權限、硬限制、來源與隱私守門仍為必要。
 - 外部 API 只按已配置服務執行，不把失敗默默切成假成功。私密資料送模型須告知與同意；不得公開原文、憑證或原始供應商錯誤。
 - 根後端的 `rule_baseline_v1` 與零外部呼叫結果仍是既有基準；不得把其通過宣稱為 frontend 的 Gemini／Google Maps 已驗收。
 - Google 即時查詢／展示已獲本次方向授權；既有自有資料政策繼續阻擋 Google 評論、照片及衍生標籤進共用 RAG／訓練，不由匯入程式碼推定所有保存行為合法。
 - 前端與後端是同一 Repo 的兩個執行元件，lockfile 與編譯範圍分開。原 Lovable 連線仍在隊友 Repo，沒有自動改接此子目錄；共同修改以本 Repo feature 分支為準。
 - 最新 Lovable 主畫面已接根 API 的匿名房間、邀請碼、共享條件、本人私密需求、雙方確認、三套合成行程、反應／重排、finalize 與本人偏好回饋；根後端仍是房間、權限與定案唯一來源。Supabase 未配置時採明示免登入黑客松流程，不把本地 state 當後端成功。正式公開部署、兩支實體手機與 Owner 驗收仍分開回報。
 - 黑客松展示可保留固定邀請碼與範例行程；兩者須標示為 demo／synthetic，且外部服務或 API 失敗時不得把範例冒充成新生成結果。固定邀請碼不阻擋本輪，但正式產品前須改為真正房間流程。
+- 黑客松正式後端可在啟動時冪等載入版本化 `sideby-showcase-*` 展示資料：9 個前端既有地點、11 個區域 slot、24 條 Sideby 展示交通關係。Google 只長存 optional Place ID；位置、導航與場地詳情在前端即時查詢，展示時間／價格／屬性／分數必須明示不是即時商家事實。
 - Owner 用語「CP 寫寫」代表：完成本輪內容、同步 Obsidian 的 AGENTS／PRD／TDD／ROADMAP，再 commit 並 push；執行前仍須排除金鑰、私密資料與不屬本輪的其他人改動。
 - 舊 `phase3-itineraries` 成果已保存於遠端 `archive/phase3-itineraries-checkpoint-20260905` commit `63cfe6c`。它是待審候選，不是 main 已採用功能；不得直接刪除或整包合併，須逐項比對現行 main。
 
@@ -74,7 +75,7 @@
 
 ## Model contract
 
-- 本輪黑客松使用 Gemini API 處理自然語言；自行部署生成模型、Embedding 與 RAG 為延後選項，不是 MVP 前置。
+- 本輪黑客松不主打 Gemini，預設以有限 `rule_baseline_v1` 與結構化選項處理需求；Gemini adapter、自行部署生成模型、Embedding 與 RAG 都是延後選項，不是 MVP 前置。
 - 外部模型只在已配置、已告知且取得有效同意時呼叫；失敗、非法輸出或缺額度都要誠實回報，不得改用固定內容冒充成功。
 - Gemini MVP 只允許三個明確接點：私密需求送出後轉成 schema-valid 偏好 JSON；約會後將使用者自己輸入的評論轉成候選標籤並由本人確認；推薦通過全部程式驗證後，將 allowlist 公開理由資料改寫成中性文字。不得在每次按鍵、地圖操作或背景輪詢時呼叫。
 - 評論標籤是待確認候選，未經本人確認不得寫入 `user_tags`、偏好事件、場地屬性或訓練候選；不得把 Google 評論、照片、評分摘要或其衍生標籤送入此流程。
@@ -90,7 +91,7 @@
 - 生成與 Embedding 的型號、版本、量化、維度、執行工具、硬體與授權尚待確認；不得沿用封存版的雲端模型設定或因本機已有模型就擅自選用。
 - 正式專案根目錄為 `E:\sideby`。專案專用模型、索引與執行環境須置於其下明確子目錄，模型權重、索引與私密資料不提交 Git。
 - 2026-09-05 Owner 將自管分類器／生成模型評測與場地 RAG 延後；它們不阻擋本輪黑客松 Phase 1／2 驗收，必須標 `DEFERRED`，不得改寫為 PASS。未來若恢復，仍依本節與 Roadmap Phase 3／4 獨立驗收。
-- 2026-09-05 Owner 已選定上述三個 Gemini 接點；私密需求 adapter 已接入主畫面，輸出只作後端 allowlist 規則的正規化提示，後端仍保存原文且不公開正規化內容。缺 `GEMINI_API_KEY` 時畫面明示使用本機規則 fallback；真實 Gemini 尚未驗收。評論候選標籤與安全理由改寫仍為 `PLANNED`。
+- 2026-09-05 Owner 決定本輪不主打 Gemini；私密需求 adapter 仍保留為 opt-in，缺 `GEMINI_API_KEY` 時明示使用本機規則。真實 Gemini、評論候選標籤與安全理由改寫均為 `DEFERRED`，不列入本輪提交完成條件。
 
 ## 黑客松訓練契約（需求資料契約已實作，訓練待執行）
 

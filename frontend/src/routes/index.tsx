@@ -1629,7 +1629,7 @@ function Home() {
                           <p>{stop.meta}</p>
                         </div>
                         {venue && <VenueDetails venue={venue} />}
-                        {index < currentPlan.stops.length - 1 && (currentPlan.dataMode === "synthetic_demo" ? (
+                        {index < currentPlan.stops.length - 1 && (currentPlan.dataMode === "synthetic_demo" && legs.length === 0 ? (
                           <div className="travel-line"><span>合成交通矩陣：{stop.travelMinutes ?? 0} 分鐘</span></div>
                         ) : <TravelChips leg={legFor(index)} />)}
                       </div>
@@ -1683,12 +1683,17 @@ function Home() {
                   <p className="venue-address">實際場館資料暫時取不到，稍後會自動重試。</p>
                 )}
               </div>
-              {currentPlan.dataMode === "synthetic_demo" ? (
+              {currentPlan.dataMode === "synthetic_demo" && mapStops.length === 0 ? (
                 <aside className="map-card live-map">
-                  <div className="map-status"><MapPin size={15} /> 合成展示場地不對應真實商家，因此不顯示真實地圖。</div>
-                  <div className="map-label">資料來源：Sideby synthetic demo</div>
+                  <div className="map-status"><MapPin size={15} /> 正在以核准的 Google Place ID 載入場地；方案時間、價格與分數仍是展示資料。</div>
+                  <div className="map-label">Sideby 展示方案 × Google 即時地圖資料</div>
                 </aside>
-              ) : <DateMap stops={mapStops} />}
+              ) : <>
+                <DateMap stops={mapStops} />
+                {currentPlan.dataMode === "synthetic_demo" && (
+                  <div className="map-label">場地位置與導航由 Google 即時載入；時間、價格、屬性與推薦分數為 Sideby 黑客松展示設定。</div>
+                )}
+              </>}
             </div>
 
             <div className="final-actions">

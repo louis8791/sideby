@@ -2,13 +2,16 @@
 
 ## 最新部署接續（優先於下方歷史基線）
 
+- `feature/showcase-data-integration` 已完成待提交：九個既有前端站點、十一個環境 slot、二十四條展示 travel matrix 會由 Railway `prestart` 冪等寫入 PostgreSQL；三套生成結果保存 dataset／matrix version，前端以 Google Place ID 即時載入地點與導航。展示價格、時長、屬性仍明示 `synthetic_demo`，不保存 Google 地址、照片、評分、評論或路線回應。
+- Google Maps JavaScript 正式底圖已因 Worker referrer 補齊而通過；Places API (New)／Routes API／Geocoding 的 production server 呼叫仍失敗，且相同 server key 在本機可解析九個 Place ID。下一個外部動作是由 key 擁有者核對 server key 的應用程式限制、API 限制、帳務與配額。
+- Owner 決定本次不主打 Gemini；它已從提交阻斷移為後續加值，不得用未驗收的 Gemini 能力包裝主流程。
 - PR #4 已合併 `main`，merge commit `16cfd041899356432caa1c4cc914fa94b7541902`；feature commit `db618d0` 已保存在遠端。產品介紹 `output/` 仍未追蹤，其他 worktree／archive 未動。
 - Railway 專案 `chic-bravery` 已建立 PostgreSQL 與根 Next.js 服務。GitHub source 是 `louis8791/sideby`／`main`，自動部署已開啟，`DATABASE_URL` 使用 Postgres reference，migration 成功，健康路徑 `/api/runtime`，公開 target port 已由錯誤的 3000 修正為平台實際 `PORT=8080`。
 - 後端 `https://sideby-production.up.railway.app`：`/api/runtime` 200／`standard`；直接匿名身分建立 201。
 - Cloudflare Worker `https://louis8791-sideby-frontend.louis8791.workers.dev` 已部署；`SIDEBY_API_ORIGIN`／`SIDEBY_PUBLIC_ORIGIN` 已設，Google server key 以 secret 上傳，browser key 由 Vite build 使用。首頁、`/maps-check` 與同源 `/api/runtime` 均 200，經代理匿名建立 201。
 - 最新 `npm run check:all` 通過 47 根＋15 Maps／proxy 測試，GitHub PR checks 全綠；未輸出、記錄或提交任何 secret。
-- Google production 未通過：兩把 key 均存在，但 Maps 底圖來源授權失敗，Places／Routes／Geocoding 亦失敗。登入帳號只可見兩個無 API key 的專案，故不能修改實際 key。下一步由 key 擁有者加入 partner 與本 Worker referrer，核對三項 server API 限制、帳務與配額後重跑 `/maps-check`。
-- 真實 Gemini、核准場地、兩支手機、跨網路效能與 Owner sign-off 仍未驗；不要重做已完成的 GitHub／Railway／PostgreSQL／Cloudflare 部署。
+- Google production 部分通過：Maps JavaScript 正式底圖成功，Places／Routes／Geocoding 仍失敗。下一步由 key 擁有者核對三項 server API 限制、帳務與配額後重跑 `/maps-check`。
+- Railway／PostgreSQL／Cloudflare 基礎部署已完成；新 showcase 資料版尚待本分支合併後的公開 Runtime 驗收。兩支手機、跨網路效能與 Owner sign-off 仍未驗；不要重建既有服務。
 
 ## 本輪功能內容（已由 PR #4 推送合併）
 
@@ -70,21 +73,19 @@ git -C E:\sideby rev-parse origin/main
 
 ## 4. 尚未完成，禁止宣稱 PASS
 
-- Google browser key 的正式 referrer 與 server key 的 API restriction 尚未由實際 key 擁有者完成；production 四項檢查目前失敗。
-- 真實 Gemini 尚未用有效金鑰驗收。
-- Gemini「評論候選標籤＋本人確認」與「合法推薦後安全理由改寫」仍是 `PLANNED`。
+- Google browser key 的正式 referrer 已完成，Maps JavaScript production 底圖通過；server key 的應用程式／API restriction 尚未由實際 key 擁有者完成，production Places／Routes／Geocoding 仍失敗。
+- Gemini「評論候選標籤＋本人確認」與「合法推薦後安全理由改寫」仍是後續規劃，不是本次提交主線或阻斷。
 - Google 評論沒有接入，也不得拿來建立 Sideby 場地標籤、RAG、Embedding 或訓練資料。
 - 真實核准場地、兩支實體手機、跨網路效能與 Owner sign-off 未完成；正式網域本身已建立並通過基本 API。
 - 持續學習只有本人 `too_dark` 偏好事件已實作；`training_candidates` 與版本化場地索引重建仍未完成／延後。
 
 ## 5. 下一個對話的施工順序
 
-1. 不重建 Railway、PostgreSQL、Cloudflare Worker 或既有 production origins；先核對本文頂部網址與 `main`。
-2. 由實際 Google key 擁有者在正確專案加入 partner 與本 Worker HTTP referrer；server key 只允許 Places API (New)、Routes API、Geocoding API，並設定配額／預算告警。
-3. 從正式 `/maps-check` 重跑四項；底圖目視與三項 server API 都成功後才改 production Google 狀態。
-4. 要驗 Gemini 時才設定 `GEMINI_API_KEY` server secret，並先確認帳務、告知／同意與誠實 fallback。
-5. 用公開網址、兩支手機完成：建立／加入、共享同步、雙方私密互不可見、兩人確認、三套方案、重排、雙方定案、刷新保存、Google 成功／失敗與未授權 Gemini fallback。
-6. 只有上述證據成立後才更新 Phase／Owner 狀態；否則維持 `NOT_READY`／部分完成。
+1. 不重建 Railway、PostgreSQL、Cloudflare Worker 或既有 production origins；先將 showcase 分支合併並核對 Railway seed、公開 API 與前端版本。
+2. 由實際 Google key 擁有者在正確專案核對 server key 的應用程式限制；server key 只允許 Places API (New)、Routes API、Geocoding API，並設定配額／預算告警。
+3. 從正式 `/maps-check` 重跑四項；Maps JavaScript 已通過，三項 server API 成功後才改 production Google 為全數通過。
+4. 用公開網址、兩支手機完成：建立／加入、共享同步、雙方私密互不可見、兩人確認、三套方案、重排、雙方定案、刷新保存，以及 Google 成功／失敗 fallback。
+5. 只有上述證據成立後才更新 Phase／Owner 狀態；否則維持 `NOT_READY`／部分完成。
 
 ## 6. 收尾規則
 
