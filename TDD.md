@@ -147,6 +147,22 @@ MVP 採模組化單體，不拆微服務。以 React、Next.js、TypeScript、Se
 
 `private_remembered` 只在當期條款有效且 `personalization_enabled=true` 時接受；關閉設定時，既有 session_inputs visibility 與 parsed result visibility 一併降為 `private_session`。原始私密輸入不會因 `model_improvement_opt_in` 自動進 training candidate 或共用索引。
 
+### 4.3 Gemini MVP 三接點契約
+
+Gemini adapter 一律在伺服器執行，`GEMINI_API_KEY` 不得使用 `VITE_` 前綴或出現在 bundle、請求回應、一般日誌與 Git。模型名稱與 prompt／schema 版本須可追蹤；日誌只記 request id、用途、模型版本、schema 版本、狀態、延遲與 token／錯誤分類，不記輸入、輸出、API key 或供應商原始錯誤本文。免費／未付費 API 只接受合成或非敏感輸入；真實私密偏好須使用連結有效帳務的 API 專案並完成告知／同意。此規則依 Google [Gemini API Terms](https://ai.google.dev/gemini-api/terms)／[Billing](https://ai.google.dev/gemini-api/docs/billing)，查核日 2026-09-05，部署前重查。
+
+三個允許用途如下：
+
+1. `private_preference_parse`：只在使用者送出時接收本人私密文字與已選標籤，輸出 `parsed／needs_clarification／unavailable` envelope；`parsed` 必須通過 preference schema，硬限制仍由程式解析與驗證。
+2. `review_tag_suggestion`：只接收本人新輸入、最多 300 字的 Sideby 評論，輸出有限數量、受字數與 taxonomy 限制的候選標籤及可選本人偏好 signal。回應必須維持 `suggested`，第二次由本人明確確認後才能寫 `user_tags` 或偏好事件；禁止傳入 Google 評論或其衍生內容。
+3. `public_reason_rewrite`：只在推薦已通過確定性驗證後接收 public-reason allowlist DTO；輸出短中性文字。輸入與輸出都不得含 private text、user_id、角色來源、淘汰原因、未核准場地事實、價格／時間／優惠補猜或可反推哪一方偏好的敘述。
+
+客戶端不得直接呼叫 Gemini；三個用途不得在 keypress、地圖事件、背景輪詢或頁面 render 觸發。每次請求須有 timeout、每人頻率限制與有界輸入／輸出；429／5xx、逾時、非法 JSON、schema 不符或安全檢查失敗都回真實失敗。需求解析可回人工明確選項；評論保留未標籤原文；公開理由可顯示標記為 deterministic 的既有程式安全理由，但任何降級不得標成 Gemini 成功。
+
+最小測試需證明：三用途不交叉、評論標籤未確認不落盤、同一確認冪等、另一方不可讀取原文／候選、PublicState／SSE／日誌零私密內容、禁止 Google 衍生輸入、非法模型輸出 fail closed、程式理由不被模型新增事實、API key 不進 client bundle。真實驗收另以兩個瀏覽器／兩支手機檢查送出一次只呼叫一次、確認流程、供應商失敗、刷新保存與公開畫面。
+
+2026-09-05 狀態：`private_preference_parse` 在匯入前端已有 Gemini JSON adapter 原始碼，但尚未完成根後端身分、主流程與真實服務 Runtime；`review_tag_suggestion`、`public_reason_rewrite` 尚未實作。本節是已核准契約，不是功能 PASS。
+
 ### 4.1 場地回饋、可見性與同意
 
 `venue_feedback` 至少保存 `feedback_id`、`user_id`、`venue_id`、`note_text`、`user_tags`、`rating_1_to_5`、`visit_state`、`visibility`、`moderation_status`、建立／更新／刪除時間及偏好版本。`visibility` 僅為 private／public；`moderation_status` 分開保存 pending／approved／rejected／hidden／deleted，避免把「作者想公開」冒充「已可公開顯示」。

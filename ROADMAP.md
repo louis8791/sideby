@@ -8,6 +8,8 @@
 
 本輪採 Gemini＋Google Maps 的 API 型 MVP；訓練、自管生成、Embedding 與 RAG 均為 `DEFERRED`，不屬目前主線前置條件。進階需求句只作人工核准後的回歸驗收。既有後端規則／隱私測試仍需通過；前端原始碼匯入、建置成功及 `/api` 代理連通都不代表畫面按鈕已串上根後端，也不代表真實 Gemini／Google Maps 已驗收。最新分工與驗收界線見 `docs/TEAM_INTEGRATION.md`。
 
+Owner 已將 Gemini MVP 固定為三個接點，不新增頂層 Phase：私密需求送出後產生偏好 JSON；約會後評論產生待本人確認的候選標籤；合法推薦完成後只改寫 public allowlist 安全理由。三者只在明確送出／完成事件呼叫，不在 keypress、地圖或輪詢呼叫；API key 僅在伺服器。依 Google [Gemini API Terms](https://ai.google.dev/gemini-api/terms)／[Billing](https://ai.google.dev/gemini-api/docs/billing)，免費／未付費 API 只用合成或非敏感展示，真實私密輸入須改用連結有效帳務的 API 專案並完成告知／同意。評論與理由兩項目前仍未實作，需求 adapter 也尚未完成主流程 Runtime，不得因文件完成改標 PASS。
+
 現場協作入口：`docs/TEAM_INTEGRATION.md`。所有人從同一主 Repo 的最新 `main` 開自己的 feature 分支；前端負責 `frontend/` 與應用 API 串接，後端負責根 API、資料、權限及決策規則。本輪不增加新的頂層 Phase，維持下列八階段。
 
 ## 交付原則
@@ -37,10 +39,10 @@
 |---|---|---|---|---|
 | 1 | 契約、資料治理與驗收基線 | 完成（文件／契約層） | 無 | Phase 2～4 可依契約並行 |
 | 2 | 匿名雙人房間與共享狀態 | 部分完成 | Phase 1 | 前端串接可與 Phase 3、4 並行 |
-| 3 | 條款、私密輸入與 Gemini 需求解析 | 部分完成（後端基準；Gemini 尚未接線） | Phase 1、2 | 既有規則基準可作 fallback／對照 |
+| 3 | 條款、私密輸入與 Gemini 需求解析 | 部分完成（後端基準＋前端 adapter 原始碼；主流程 Runtime 未驗） | Phase 1、2 | 既有規則基準可作 fallback／對照 |
 | 4 | 場地資料與 Google Maps 整合基礎 | 部分完成（本機四 API PASS；正式整合未驗） | Phase 1 | 資料政策與外部服務接線可分工 |
-| 5 | 雙人推薦與三套可執行行程 | 部分完成（合成資料後端） | Phase 2～4 | 公開理由只能在合法行程後並行 |
-| 6 | 局部重排、私人清單與回饋治理 | 部分完成 | Phase 1、2；重排依 Phase 5 | 私人清單／內容治理可先行 |
+| 5 | 雙人推薦與三套可執行行程 | 部分完成（合成資料後端；Gemini 安全理由待接） | Phase 2～4 | 公開理由只能在合法行程後並行 |
+| 6 | 局部重排、私人清單與回饋治理 | 部分完成（Gemini 評論候選標籤待接） | Phase 1、2；重排依 Phase 5 | 私人清單／內容治理可先行 |
 | 7 | 手機整合、外部跳轉與誠實降級 | 部分完成（前端已匯入，主流程未串接） | Phase 2～6 | 前端負責串接，後端提供契約與修正 |
 | 8 | 端到端、效能、隱私與 Owner 驗收 | 部分完成（底層技術證據） | Phase 7 | 底層證據不能取代完整驗收 |
 
@@ -287,7 +289,7 @@
 
 ## 下一刀
 
-截止前 16 小時依 `docs/TEAM_INTEGRATION.md` 三線並行：使用者主責房間、權限、私密資料與核心 API；後端支援者負責 Gemini／場地／推薦規則、測試與問題重現；前端成員只做網頁細修與展示流程。固定邀請碼／範例可保留且須標示 demo／synthetic。第 11 小時後不再加功能，專注兩瀏覽器／手機、隱私、外部失敗、fresh clone、部署與演示備援。
+先審查並匯入隊友最新前端，再依 `docs/TEAM_INTEGRATION.md` 接三個 Gemini 用途：第一優先讓私密需求 adapter 走唯一身分／Session 並完成 schema 與真實 API 驗收；第二優先加入評論候選標籤與本人確認；第三優先在合法行程後加入 public allowlist 安全理由改寫。每一項都先補 fail-closed、隱私與呼叫次數測試，再做雙瀏覽器／手機 Runtime。固定邀請碼／範例可保留且須標示 demo／synthetic；截止前最後時段只修阻斷、部署與演示備援，不再擴大模型用途。
 
 ## 橫向品質門檻
 
