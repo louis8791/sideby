@@ -12,6 +12,8 @@ Railway PostgreSQL 現有 1,121 筆可追溯候選，其中 1,120 筆已長期�
 
 首批核准僅使用官方可核對的票價、營業、地址、座標與室內參觀區；未從名稱、Google 評論或照片推論明亮、浪漫、安靜等主觀標籤。冷氣、飲食、過敏及無障礙狀態未知時仍 fail closed，因此這一版能正式處理時間、預算、距離、室內與訂位條件，但不能宣稱 34 個偏好都有真實場地證據。
 
+PR #15（`4e39cf3`）與 PR #16（`84e5d3a`）已合併並部署。Production PostgreSQL 實查 active 為 13 筆 records、950 個 90 天 slots、468 條交通矩陣，latest staging 為 13 筆 approved。公開 Cloudflare 同源 API 的三個不同日期／集合點案例，均各生成 3 套、每套 3 站，且全部回傳 Place ID 與 `approved_dataset`。
+
 ## 2026-09-05 公開部署狀態
 
 PR #4 已合併至 `main`（`16cfd04`）。Railway PostgreSQL 與根 Next.js 已公開，`/api/runtime` 回 200／`standard`；Cloudflare Worker `https://louis8791-sideby-frontend.louis8791.workers.dev` 已設定正式 API／public origins 與 Google server secret，首頁、地圖檢查頁、同源 API 與匿名身分建立已通過公開 HTTPS 驗證。47 根＋15 Maps／proxy 測試及 GitHub checks 全綠。
