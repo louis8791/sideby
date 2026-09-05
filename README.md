@@ -2,6 +2,8 @@
 
 雙人私密需求共決策的約會行程 MVP。唯一共同開發 Repo：[louis8791/sideby](https://github.com/louis8791/sideby)。
 
+下一個對話或新協作者請先讀 [跨對話交接](docs/NEXT_SESSION_HANDOFF.md)，再核對目前 `main`；不要從舊 Run Note 或未合併分支接續。
+
 ## 三人從這裡開始
 
 1. clone 本 Repo，從最新 main 開自己的 feature 分支。

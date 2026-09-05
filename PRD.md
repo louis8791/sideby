@@ -2,6 +2,8 @@
 
 ## 2026-09-05 本輪範圍更新
 
+跨對話接續以 `docs/NEXT_SESSION_HANDOFF.md` 為操作入口；本 PRD 定義產品需求，交接檔只整理已驗證狀態、未完成項與下一步，不得用它降低本文件的隱私、資料權利與 Owner 驗收門檻。
+
 Google 地圖入口為 `/maps-check`：不依賴 Supabase／Gemini，可填自己的兩把金鑰再人工啟動查詢；Maps JavaScript、Places (New)、Routes 與獨立 Geocoding 直接連 Google。2026-09-05 已在本機完成四項單次真實服務驗收；正式環境新增 `SIDEBY_PUBLIC_ORIGIN` 同來源 HTTPS 閘門，但尚未部署或驗收公開網域。空值、配額／授權失敗、未知交通仍不得假裝成功；細節見 `docs/GOOGLE_MAPS_LOCAL_SETUP.md`。
 
 使用者已指定 `louis8791/sideby` 為三人唯一共同 Repo：Lovable 前端在 `frontend/`，現有後端／資料庫維持根目錄路徑。採 Gemini＋Google Maps API 型 MVP，不排訓練、自管模型或 RAG；需求句作人工核准後的回歸驗收。下方舊模型、零 API 及訓練章節保留為歷史／未來參考，本輪以此更新與 `docs/TEAM_INTEGRATION.md` 為準。

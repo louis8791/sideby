@@ -2,6 +2,8 @@
 
 ## 2026-09-05 本輪最新路徑
 
+跨對話唯一接續入口為 `docs/NEXT_SESSION_HANDOFF.md`。目前施工點固定在公開部署與雙手機驗收；不得回頭把已延後的訓練／RAG 誤設為部署前置，也不得把本機 synthetic Runtime 當公開 PASS。
+
 本輪新增 Google 接線子項（不新增 Phase）：官方 Maps JavaScript／Places (New)／Routes／Geocoding、私密設定範本與 `/maps-check` 已實作，2026-09-05 已在本機單次真實驗收四項 PASS。production 已加 `SIDEBY_PUBLIC_ORIGIN` 同來源 HTTPS 閘門，但尚未部署或驗收公開網域。操作與證據見 `docs/GOOGLE_MAPS_LOCAL_SETUP.md`、`docs/GOOGLE_MAPS_VERIFICATION.md`。
 
 使用者指定主 Repo `louis8791/sideby`。`frontend/` 已匯入隊友的 Lovable 前端，根目錄保留既有後端；兩者仍是獨立執行元件。最新分工為使用者主責後端、一人支援後端、一人持續前端細修。黑客松可保留固定邀請碼與範例行程，只要清楚標示 demo／synthetic 且不掩蓋真實失敗；Manus 只增指定元件。

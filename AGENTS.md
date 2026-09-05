@@ -2,6 +2,8 @@
 
 ## 2026-09-05 最新共同開發決策（優先於下方歷史模型規劃）
 
+- 跨對話唯一接續入口為 `docs/NEXT_SESSION_HANDOFF.md`；下一個 Agent 先核對該檔記載的 main hash、未完成部署、秘密設定與驗收邊界，不從舊 Run Note 猜現在狀態。
+
 - Google 接線改走官方服務，不依賴 Lovable gateway；操作見 `docs/GOOGLE_MAPS_LOCAL_SETUP.md`。2026-09-05 已在本機 `/maps-check` 驗收 Maps JavaScript、Places (New)、Routes、Geocoding 四項成功。正式環境只允許 `SIDEBY_PUBLIC_ORIGIN` 指定的同來源 HTTPS 網域；帳務餘額、公開部署與手機仍須另驗，不能沿用本機 PASS。
 - 金鑰例外澄清：受網站來源限制的 `VITE_GOOGLE_MAPS_API_KEY` 必須交給 Maps JavaScript，屬瀏覽器可見設定；不同的 `GOOGLE_MAPS_SERVER_API_KEY` 僅放伺服器，用 Places／Routes／Geocoding，禁止 VITE_、Git、日誌及回應。此項優先於下方「所有 API key 不下放瀏覽器」舊概括句。
 

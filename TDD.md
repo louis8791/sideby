@@ -2,6 +2,8 @@
 
 ## 2026-09-05 單一 Repo 整合更新
 
+跨對話接續先讀 `docs/NEXT_SESSION_HANDOFF.md`，再用目前 Git、環境欄位存在性、測試與 Runtime 重驗；交接記錄不是部署或外部服務成功證據。
+
 Google 接線：`frontend/src/lib/google-maps.server.ts` 使用官方 Places／Routes／Geocoding REST；`maps.functions.ts` 在 development 檢查 loopback＋同 Origin，在 production 只接受 `SIDEBY_PUBLIC_ORIGIN` 指定的同來源 HTTPS 請求。瀏覽器 loader 只用 `VITE_GOOGLE_MAPS_API_KEY`，其餘用不同 `GOOGLE_MAPS_SERVER_API_KEY`。無全域 Places／照片快取；照片保留作者歸屬；逾時／拒絕不洩漏 key／原始錯誤。2026-09-05 本機四項服務已單次驗收成功；正式網域與手機仍分開驗收。
 
 唯一主 Repo 為 `louis8791/sideby`。根 Next.js／PostgreSQL 管既有應用狀態；`frontend/` 為 TanStack Start／Vite＋Supabase／Gemini／Google Maps 來源程式，包含獨立伺服器功能，不能當成純靜態網頁。根 npm lockfile、前端 Bun lockfile 各自安裝；根 TypeScript 排除 frontend 及 .local。
