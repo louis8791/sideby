@@ -1,5 +1,5 @@
-import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { readFile, readdir } from 'node:fs/promises';
+import { basename, resolve } from 'node:path';
 import { Pool } from 'pg';
 
 export async function migrate(connectionString: string) {
@@ -9,10 +9,13 @@ export async function migrate(connectionString: string) {
     await client.query('BEGIN');
     await client.query('SELECT pg_advisory_xact_lock(738921)');
     await client.query('CREATE TABLE IF NOT EXISTS schema_migrations(version text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())');
-    const done = await client.query("SELECT 1 FROM schema_migrations WHERE version='001_rooms'");
-    if (!done.rowCount) {
-      await client.query(await readFile(resolve('db/001_rooms.sql'), 'utf8'));
-      await client.query("INSERT INTO schema_migrations(version) VALUES ('001_rooms')");
+    const migrations = (await readdir(resolve('db'))).filter(file => /^\d{3}_[a-z0-9_-]+\.sql$/.test(file)).sort();
+    for (const file of migrations) {
+      const migrationVersion = basename(file, '.sql');
+      const done = await client.query('SELECT 1 FROM schema_migrations WHERE version=$1', [migrationVersion]);
+      if (done.rowCount) continue;
+      await client.query(await readFile(resolve('db', file), 'utf8'));
+      await client.query('INSERT INTO schema_migrations(version) VALUES ($1)', [migrationVersion]);
     }
     await client.query('COMMIT');
   } catch (error) {

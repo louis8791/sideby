@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { venueId } from '../venues/schema';
 
 export const id = z.uuid();
 export const version = z.number().int().min(0).max(2147483646);
@@ -25,6 +26,37 @@ export const sharedConditions = z.strictObject({
   }
 });
 export type SharedConditions = z.infer<typeof sharedConditions>;
+
+export const CURRENT_TERMS_VERSION = '2026-09-05-v1';
+const plainText = (max: number) => z.string().trim().min(1).max(max)
+  .refine(value => !/[<>\u0000-\u001f\u007f]/u.test(value) && !/(?:https?:\/\/|www\.)/iu.test(value));
+const uniqueTags = z.array(plainText(24)).max(8).refine(values => new Set(values).size === values.length);
+
+export const consentUpdate = z.strictObject({
+  termsVersion: z.literal(CURRENT_TERMS_VERSION),
+  acceptTerms: z.literal(true),
+  personalizationEnabled: z.boolean(),
+  modelImprovementOptIn: z.boolean(),
+});
+
+export const feedbackInput = z.strictObject({
+  noteText: plainText(300).nullable(),
+  userTags: uniqueTags,
+  rating: z.number().int().min(1).max(5).nullable(),
+  visitState: z.enum(['saved', 'want_to_go', 'visited']),
+});
+
+export const feedbackPatch = z.strictObject({
+  noteText: plainText(300).nullable().optional(),
+  userTags: uniqueTags.optional(),
+  rating: z.number().int().min(1).max(5).nullable().optional(),
+  visitState: z.enum(['saved', 'want_to_go', 'visited']).optional(),
+  visibility: z.enum(['private', 'public']).optional(),
+}).refine(value => Object.keys(value).length > 0);
+
+export { venueId };
+export type FeedbackInput = z.infer<typeof feedbackInput>;
+export type FeedbackPatch = z.infer<typeof feedbackPatch>;
 
 export interface PublicState {
   sessionId: string;

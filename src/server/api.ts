@@ -1,6 +1,10 @@
 import { setTimeout as delay } from 'node:timers/promises';
 import { z } from 'zod';
-import { ApiError, id, sharedConditions, version, type PublicState } from './contracts';
+import {
+  ApiError, consentUpdate, feedbackInput, feedbackPatch, id, sharedConditions, venueId, version,
+  type PublicState,
+} from './contracts';
+import * as feedback from './feedback';
 import * as rooms from './rooms';
 
 const headers = { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' };
@@ -80,6 +84,45 @@ export async function handle(request: Request): Promise<Response> {
       return json(await rooms.anonymous(), 201);
     }
     const userId = await rooms.identify(request);
+    if (path === '/api/me/consents') {
+      if (request.method === 'GET') return json(await feedback.getConsents(userId));
+      if (request.method === 'PUT') {
+        const input = await body(request, consentUpdate);
+        return json(await feedback.updateConsents(userId, input));
+      }
+      throw new ApiError(405, 'METHOD_NOT_ALLOWED');
+    }
+    const ownVenueFeedback = path.match(/^\/api\/me\/venues\/([^/]+)\/feedback$/);
+    if (ownVenueFeedback) {
+      const selectedVenueId = venueId.parse(ownVenueFeedback[1]);
+      if (request.method === 'GET') return json(await feedback.getOwnFeedback(userId, selectedVenueId));
+      if (request.method === 'PUT') {
+        const input = await body(request, feedbackInput);
+        return json(await feedback.putOwnFeedback(userId, selectedVenueId, input));
+      }
+      throw new ApiError(405, 'METHOD_NOT_ALLOWED');
+    }
+    const ownFeedback = path.match(/^\/api\/me\/venue-feedback\/([^/]+)$/);
+    if (ownFeedback) {
+      const feedbackId = id.parse(ownFeedback[1]);
+      if (request.method === 'PATCH') {
+        const input = await body(request, feedbackPatch);
+        return json(await feedback.patchOwnFeedback(userId, feedbackId, input));
+      }
+      if (request.method === 'DELETE') {
+        await feedback.deleteOwnFeedback(userId, feedbackId);
+        return new Response(null, { status: 204, headers });
+      }
+      throw new ApiError(405, 'METHOD_NOT_ALLOWED');
+    }
+    const publicReviews = path.match(/^\/api\/venues\/([^/]+)\/public-reviews$/);
+    if (publicReviews) {
+      if (request.method !== 'GET') throw new ApiError(405, 'METHOD_NOT_ALLOWED');
+      const selectedVenueId = venueId.parse(publicReviews[1]);
+      const limit = z.coerce.number().int().min(1).max(50).parse(url.searchParams.get('limit') ?? 20);
+      const offset = z.coerce.number().int().min(0).max(100000).parse(url.searchParams.get('cursor') ?? 0);
+      return json(await feedback.listPublicReviews(selectedVenueId, limit, offset));
+    }
     if (path === '/api/couples' && request.method === 'POST') {
       await body(request, empty);
       return json(await rooms.createCouple(userId), 201);

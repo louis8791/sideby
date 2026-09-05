@@ -1,6 +1,6 @@
 # Phase 1B 後端串接契約
 
-2026-09-04：已實作房間與公開條件骨架。模型／RAG、私密輸入、推薦與 UI 尚未接入。
+2026-09-05：已實作房間／公開條件骨架，以及版本化同意、私人場地清單與待審公開評論後端。模型／RAG、私密 Session 輸入、偏好更新器、內容管理、推薦與 UI 尚未接入。
 
 ## 啟動與驗證
 
@@ -21,7 +21,7 @@ npm run build
 npm test
 ```
 
-`npm test` 必須先 build，會使用 `.local/tests/<timestamp>/` 的獨立 PostgreSQL 叢集與隨機 HTTP 埠，啟動正式建置產物。只使用合成資料；測後關閉程序、保留資料便於除錯。不要將這些本機密碼或日誌上傳。測試是本機 HTTP 整合證據，不能代替兩支手機、正式部署或負載驗收。
+`npm test` 會先重新 build，避免測到舊的 `.next` 產物，再使用 `.local/tests/<timestamp>/` 的獨立 PostgreSQL 叢集與隨機 HTTP 埠啟動正式建置。只使用合成資料；測後關閉程序、保留資料便於除錯。不要將這些本機密碼或日誌上傳。測試是本機 HTTP 整合證據，不能代替兩支手機、正式部署或負載驗收。
 
 ## 匿名身分
 
@@ -48,10 +48,49 @@ npm test
 | PUT `/api/sessions/:id/shared` | `{ "version": 0, "shared": {…} }` | 200，最新 PublicState |
 | POST `/api/sessions/:id/confirm` | `{ "version": 1 }` | 200，最新 PublicState |
 | GET `/api/sessions/:id/events` | 無 | SSE：`state`、`heartbeat`、`error` |
+| GET `/api/me/consents` | 無 | 200，目前條款版本與兩項設定 |
+| PUT `/api/me/consents` | 見下方 | 200，持久化後的條款與設定 |
+| GET `/api/me/venues/:venueId/feedback` | 無 | 200，本人的私人回饋；無資料或非本人為 404 |
+| PUT `/api/me/venues/:venueId/feedback` | 見下方 | 200，新增／取代本人的私人回饋 |
+| PATCH `/api/me/venue-feedback/:id` | 見下方 | 200，修改本人內容或切換可見性 |
+| DELETE `/api/me/venue-feedback/:id` | 無 | 204，軟刪除本人回饋 |
+| GET `/api/venues/:venueId/public-reviews` | query：`limit=1..50&cursor=0..100000` | 200，只列 approved 公開回饋 |
 
 邀請碼是 24 隨機 bytes 的 32 字元 base64url，可包成邀請連結（建議 URL fragment，由 UI 讀取後清除）；有效 24 小時，只有建房回應給建立者，伺服器僅存雜湊。加入交易鎖住房間，資料庫限制 A／B 各一名，第三人回 409。已加入成員重送加入請求回原角色，不新增席位。
 
 Phase 1B 每房間一個 Session；任一成員建立或重送會取得同一 sessionId。新一輪約會／歷史 Session 留待後續產品流程。建房／建立匿名身分每次會產生新資源，前端防止連點；網路結果不明時不可無限自動重試建房。
+
+## 條款、私人清單與公開評論
+
+`GET /api/me/consents` 在尚未接受時回傳目前必要版本、`termsAccepted: false` 與兩項 false 設定。接受與設定使用：
+
+```json
+{
+  "termsVersion": "2026-09-05-v1",
+  "acceptTerms": true,
+  "personalizationEnabled": true,
+  "modelImprovementOptIn": false
+}
+```
+
+兩項設定彼此獨立，可用相同 PUT 改成 false；接受條款本身不以設定關閉視為撤銷。服務必要的場地回饋儲存要求接受目前版本。這只是工程契約，正式法務文字及重大改版的重新同意條件尚未完成。
+
+新增或完整取代本人對一個場地的回饋：
+
+```json
+{
+  "noteText": "下午窗邊很明亮",
+  "userTags": ["明亮", "約會"],
+  "rating": 4,
+  "visitState": "visited"
+}
+```
+
+`noteText` 可為 null，否則 1～300 字；最多 8 個不重複標籤，每個 1～24 字；`rating` 為 null 或 1～5 整數；`visitState` 為 `saved`、`want_to_go`、`visited`。純文字拒絕控制字元、HTML 括號及 URL。`venueId` 必須符合 `venue_[a-z0-9_-]{1,120}`；目前尚未接正式場地資料表，只驗證格式，不代表該場地確實存在。
+
+PUT 固定建立 private，不能夾帶 visibility。取得 `feedbackId` 後，才可 PATCH 部分欄位或 `{ "visibility": "public" }`。切成 public 只表示作者希望公開，狀態固定變成 pending；內容變更會重新 pending。取消公開立即變成 private／none，DELETE 立即從本人讀取與公開列表消失。
+
+公開列表只回傳仍為 public、approved 且未刪除的固定欄位：`feedbackId, venueId, noteText, userTags, rating, authorAlias, createdAt`。目前沒有對外的核准、檢舉或隱藏 API，測試只在資料庫層設定 approved 以驗證出口；在管理流程完成前不得開放陌生使用者自由投稿。公開與否不會修改 `modelImprovementOptIn`，也不會把內容送入場地事實、共用標籤、RAG 或模型訓練。
 
 ## 共同條件
 
@@ -145,8 +184,9 @@ data: {"code":"UNAUTHENTICATED"}
 | 409 | VERSION_CONFLICT | 取得最新條件後再編輯／確認 |
 | 409 | SHARED_REQUIRED | 先設定共同條件 |
 | 409 | PARTNER_REQUIRED | 等另一人加入 |
+| 409 | TERMS_REQUIRED | 先接受目前條款版本 |
 | 413 | BODY_TOO_LARGE | JSON 超過 8 KiB |
 | 415 | JSON_REQUIRED | 設定 application/json |
 | 503 | SERVICE_UNAVAILABLE | 服務／資料庫未就緒，顯示錯誤並退避 |
 
-尚未實作的 private-inputs、generate、itineraries 等路由不會回傳假成功。目前只可串接上表，其他功能按 Roadmap 後續接入。
+尚未實作的 private-inputs、generate、itineraries、公開評論檢舉／管理等路由不會回傳假成功。目前只可串接上表，其他功能按 Roadmap 後續接入。

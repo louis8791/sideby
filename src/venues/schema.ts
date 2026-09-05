@@ -10,6 +10,8 @@ export const venueCategories = [
   'entertainment', 'cultural', 'market', 'other',
 ] as const;
 
+export const venueId = z.string().regex(/^venue_[a-z0-9_-]{1,120}$/);
+
 const sourceEvidence = z.strictObject({
   evidenceId: z.string().regex(/^evidence_[a-z0-9_-]+$/),
   sourceType: z.enum([
@@ -55,7 +57,7 @@ export const venueRecordSchema = z.strictObject({
   schemaVersion: z.literal('1.0'),
   datasetVersion: z.string().trim().min(1).max(80),
   dataOwner: z.string().trim().min(1).max(120),
-  venueId: z.string().regex(/^venue_[a-z0-9_-]+$/),
+  venueId,
   name: z.string().trim().min(1).max(160),
   category: z.enum(venueCategories),
   location: z.strictObject({

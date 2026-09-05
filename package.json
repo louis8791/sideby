@@ -13,7 +13,7 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "test:backend": "tsx --test --test-concurrency=1 tests/backend.test.ts",
     "test:venue-data": "tsx --test tests/venue-data.test.ts",
-    "test": "npm run test:backend && npm run test:venue-data"
+    "test": "npm run build && npm run test:backend && npm run test:venue-data"
   },
   "engines": {
     "node": ">=22.13.0"

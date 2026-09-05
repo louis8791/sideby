@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { spawn, type ChildProcess } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { once } from 'node:events';
 import { resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { Pool } from 'pg';
 import { freePort, localPostgres } from '../scripts/postgres';
 import { migrate } from '../scripts/migrate';
-import type { PublicState } from '../src/server/contracts';
+import { CURRENT_TERMS_VERSION, type PublicState } from '../src/server/contracts';
 
 const shared = {
   mode: 'future', startsAt: '2026-10-10T12:00:00+08:00', endsAt: '2026-10-10T18:00:00+08:00',
@@ -50,7 +51,8 @@ test('Phase 1B: real PostgreSQL + built Next.js over HTTP', { timeout: 120000 },
       body: data === undefined ? undefined : JSON.stringify(data), signal: AbortSignal.timeout(5000),
     });
     assert.equal(response.headers.get('cache-control'), 'no-store');
-    return { status: response.status, data: await response.json() };
+    const responseText = await response.text();
+    return { status: response.status, data: responseText ? JSON.parse(responseText) : null };
   }
   const a = (await call('POST', '/api/auth/anonymous', undefined, {})).data.token;
   const b = (await call('POST', '/api/auth/anonymous', undefined, {})).data.token;
@@ -178,6 +180,89 @@ test('Phase 1B: real PostgreSQL + built Next.js over HTTP', { timeout: 120000 },
     await start();
     const state = (await call('GET', main, b)).data;
     assert.equal(state.version, 3); assert.equal(state.shared.stops, 4);
+  });
+  await t.test('versioned consent is persistent and private feedback stays owner-only', async () => {
+    const consentPath = '/api/me/consents';
+    const before = await call('GET', consentPath, a);
+    assert.deepEqual(before.data, {
+      requiredTermsVersion: CURRENT_TERMS_VERSION, termsAccepted: false, acceptedAt: null,
+      personalizationEnabled: false, modelImprovementOptIn: false, updatedAt: null,
+    });
+    const venuePath = '/api/me/venues/venue_example_001/feedback';
+    const feedback = {
+      noteText: '下午窗邊很明亮', userTags: ['明亮', '約會'], rating: 4, visitState: 'visited',
+    };
+    assert.equal((await call('PUT', venuePath, a, feedback)).data.error.code, 'TERMS_REQUIRED');
+    assert.equal((await call('PUT', consentPath, a, {
+      termsVersion: 'outdated', acceptTerms: true,
+      personalizationEnabled: true, modelImprovementOptIn: false,
+    })).status, 400);
+    const accepted = await call('PUT', consentPath, a, {
+      termsVersion: CURRENT_TERMS_VERSION, acceptTerms: true,
+      personalizationEnabled: true, modelImprovementOptIn: false,
+    });
+    assert.equal(accepted.data.termsAccepted, true);
+    assert.equal(accepted.data.personalizationEnabled, true);
+    assert.equal(accepted.data.modelImprovementOptIn, false);
+    assert.equal((await call('PUT', venuePath, a, { ...feedback, visibility: 'public' })).status, 400);
+    const saved = await call('PUT', venuePath, a, feedback);
+    assert.equal(saved.status, 200);
+    assert.equal(saved.data.visibility, 'private');
+    assert.equal(saved.data.moderationStatus, 'none');
+    assert.deepEqual((await call('GET', venuePath, a)).data.userTags, ['明亮', '約會']);
+    assert.equal((await call('GET', venuePath, b)).status, 404);
+    assert.equal((await call('PUT', '/api/me/venues/venue_example_002/feedback', b, feedback)).data.error.code, 'TERMS_REQUIRED');
+    const legacyId = '00000000-0000-4000-8000-000000000099';
+    await db.query(`INSERT INTO venue_feedback(id,user_id,venue_id,visit_state)
+      SELECT $1,id,'venue_legacy_001','saved' FROM anonymous_users WHERE token_hash=$2`, [
+      legacyId, createHash('sha256').update(b).digest('hex'),
+    ]);
+    assert.equal((await call('PATCH', `/api/me/venue-feedback/${legacyId}`, b, { rating: 3 })).data.error.code, 'TERMS_REQUIRED');
+    assert.equal((await call('DELETE', `/api/me/venue-feedback/${legacyId}`, b)).status, 204);
+    assert.equal((await call('PUT', venuePath, a, { ...feedback, noteText: '<script>alert(1)</script>' })).status, 400);
+    assert.equal((await call('PUT', venuePath, a, { ...feedback, noteText: '詳情 https://example.test' })).status, 400);
+  });
+  await t.test('public reviews require explicit publication and approval, and can be withdrawn', async () => {
+    const own = (await call('GET', '/api/me/venues/venue_example_001/feedback', a)).data;
+    const publicPath = '/api/venues/venue_example_001/public-reviews';
+    assert.equal((await call('PATCH', `/api/me/venue-feedback/${own.feedbackId}`, b, { visibility: 'public' })).status, 404);
+    assert.equal((await call('DELETE', `/api/me/venue-feedback/${own.feedbackId}`, b)).status, 404);
+    let published = await call('PATCH', `/api/me/venue-feedback/${own.feedbackId}`, a, { visibility: 'public' });
+    assert.equal(published.data.moderationStatus, 'pending');
+    assert.deepEqual((await call('GET', publicPath, b)).data.reviews, []);
+    await db.query("UPDATE venue_feedback SET moderation_status='approved' WHERE id=$1", [own.feedbackId]);
+    const publicResult = await call('GET', publicPath + '?limit=1&cursor=0', b);
+    assert.equal(publicResult.data.reviews.length, 1);
+    assert.deepEqual(Object.keys(publicResult.data.reviews[0]).sort(), [
+      'authorAlias', 'createdAt', 'feedbackId', 'noteText', 'rating', 'userTags', 'venueId',
+    ]);
+    const serialized = JSON.stringify(publicResult.data);
+    for (const secret of [a, b, own.userId, 'personalizationEnabled', 'modelImprovementOptIn']) {
+      if (secret) assert.ok(!serialized.includes(secret));
+    }
+    published = await call('PATCH', `/api/me/venue-feedback/${own.feedbackId}`, a, { visibility: 'private' });
+    assert.equal(published.data.moderationStatus, 'none');
+    assert.deepEqual((await call('GET', publicPath, b)).data.reviews, []);
+    await call('PATCH', `/api/me/venue-feedback/${own.feedbackId}`, a, { visibility: 'public' });
+    await db.query("UPDATE venue_feedback SET moderation_status='approved' WHERE id=$1", [own.feedbackId]);
+    assert.equal((await call('DELETE', `/api/me/venue-feedback/${own.feedbackId}`, a)).status, 204);
+    assert.equal((await call('GET', '/api/me/venues/venue_example_001/feedback', a)).status, 404);
+    assert.deepEqual((await call('GET', publicPath, b)).data.reviews, []);
+    assert.equal((await call('GET', publicPath + '?cursor=-1', b)).status, 400);
+  });
+  await t.test('model improvement consent changes independently from publication', async () => {
+    const result = await call('PUT', '/api/me/consents', a, {
+      termsVersion: CURRENT_TERMS_VERSION, acceptTerms: true,
+      personalizationEnabled: false, modelImprovementOptIn: true,
+    });
+    assert.equal(result.data.personalizationEnabled, false);
+    assert.equal(result.data.modelImprovementOptIn, true);
+    const stored = await call('GET', '/api/me/consents', a);
+    assert.equal(stored.data.personalizationEnabled, false);
+    assert.equal(stored.data.modelImprovementOptIn, true);
+    assert.equal((await db.query(
+      'SELECT count(*)::int AS n FROM venue_feedback WHERE visibility=\'public\' AND deleted_at IS NULL',
+    )).rows[0].n, 0);
   });
   await t.test('database query failure returns a safe 503 instead of a fake success or SQL details', async () => {
     await db.query('ALTER TABLE anonymous_users RENAME TO unavailable_users');

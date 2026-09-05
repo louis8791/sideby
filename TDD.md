@@ -115,6 +115,8 @@ MVP 採模組化單體，不拆微服務。建議以 React、Next.js、TypeScrip
 | POST | /api/public-reviews/:id/reports | 檢舉公開評論 |
 | GET／PUT | /api/me/consents | 讀寫條款接受、個人化與模型改進設定 |
 
+2026-09-05 已實作並以正式建置產物做 HTTP 整合測試：`GET／PUT /api/me/consents`、`GET／PUT /api/me/venues/:venueId/feedback`、`PATCH／DELETE /api/me/venue-feedback/:id`、`GET /api/venues/:venueId/public-reviews`。`POST /api/public-reviews/:id/reports`、管理者審核／隱藏介面、頻率限制、前端及模型學習出口尚未實作。現在只有場地 ID 格式驗證；正式場地資料表尚未接入，因此尚未驗證該 ID 確實存在。
+
 私密輸入 endpoint 只能由輸入者與受信任的伺服器決策流程使用；對方的讀取 API 不得回傳 raw_text、structured_input 或可辨識來源的錯誤訊息。
 
 ### 4.1 場地回饋、可見性與同意

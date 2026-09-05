@@ -18,7 +18,7 @@
     },
     "venueId": {
       "type": "string",
-      "pattern": "^venue_[a-z0-9_-]+$"
+      "pattern": "^venue_[a-z0-9_-]{1,120}$"
     },
     "name": {
       "type": "string",
