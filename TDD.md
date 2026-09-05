@@ -85,6 +85,9 @@ MVP 採模組化單體，不拆微服務。建議以 React、Next.js、TypeScrip
 - venues、venue_attributes、offers：場地、人工屬性與合作內容。
 - itineraries、itinerary_stops：方案與站點。
 - reactions、date_reviews：雙人意見與約會後回饋。
+- venue_feedback：每位使用者對場地的補充、分類、1～5 分、想去／去過與可見性；私人內容和公開投影分離。
+- terms_acceptances、consent_preferences：條款版本／時間，以及可撤回的個人化與模型改進設定。
+- review_reports、training_candidates：公開評論檢舉／審核，以及經同意、去識別和人工核准的下一版離線訓練候選。
 
 原始 session_inputs 與公開 itinerary 必須分離。private input 不得透過共用查詢、共用 cache key、Realtime payload 或一般 log 洩漏。
 
@@ -106,8 +109,25 @@ MVP 採模組化單體，不拆微服務。建議以 React、Next.js、TypeScrip
 | POST | /api/itineraries/:id/replan | 局部重排 |
 | POST | /api/sessions/:id/finalize | 選定最終方案 |
 | POST | /api/sessions/:id/reviews | 評分與偏好更新 |
+| GET／PUT | /api/me/venues/:venueId/feedback | 讀寫本人的私人場地清單、補充、分類與 1～5 分 |
+| PATCH／DELETE | /api/me/venue-feedback/:id | 改變本人回饋、公開／取消公開或刪除 |
+| GET | /api/venues/:venueId/public-reviews | 取得已核准公開評論的分頁列表 |
+| POST | /api/public-reviews/:id/reports | 檢舉公開評論 |
+| GET／PUT | /api/me/consents | 讀寫條款接受、個人化與模型改進設定 |
 
 私密輸入 endpoint 只能由輸入者與受信任的伺服器決策流程使用；對方的讀取 API 不得回傳 raw_text、structured_input 或可辨識來源的錯誤訊息。
+
+### 4.1 場地回饋、可見性與同意
+
+`venue_feedback` 至少保存 `feedback_id`、`user_id`、`venue_id`、`note_text`、`user_tags`、`rating_1_to_5`、`visit_state`、`visibility`、`moderation_status`、建立／更新／刪除時間及偏好版本。`visibility` 僅為 private／public；`moderation_status` 分開保存 pending／approved／rejected／hidden／deleted，避免把「作者想公開」冒充「已可公開顯示」。
+
+新回饋固定為 private。作者切換 public 時建立待審核公開投影；取消公開立即從公開讀取與快取移除，但保留本人私人內容，除非作者另行刪除。公開 endpoint 只回傳 approved、未刪除、目前仍為 public 的純文字、1～5 分、公開標籤、匿名顯示名稱與日期；不得回傳 user_id、私密偏好、情侶關係、原始需求或內部審核資訊。
+
+MVP 的公開評論為短純文字，建議限制 300 個 Unicode 字元並禁止 HTML、可點擊外部連結與圖片。輸出必須轉義，另以資料庫長度限制、頻率限制、內容審核、檢舉、隱藏及刪除處理濫用。評論是 untrusted user content，前端不得插入 HTML，自管模型／RAG 也不得執行其中指令。
+
+`terms_acceptances` 保存 `terms_version`、接受時間與適用用途；服務必要儲存以有效條款接受為前置。`personalization_enabled` 控制後續私人回饋能否更新本人長期偏好，`model_improvement_opt_in` 控制去識別後能否進入訓練候選。設定有效時不逐則重問；撤回後停止新增長期更新或訓練候選。公開可見性與兩項設定相互獨立。
+
+公開評論及私人回饋均不得直接寫入共用 RAG、官方事實或共用場地屬性。只有在擷取時有有效模型改進同意、通過去識別與人工核准、保留來源回饋 ID／同意版本／資料版本的內容，才能進 `training_candidates`；候選仍須依第 11 節切分、評測與版本閘門，不能在線自動重訓或立即替換正式模型。
 
 ## 5. 計分與生成
 
@@ -171,13 +191,18 @@ Privacy Guard 必須在公開輸出前執行：
 - CoupleScore 對一方 0 分的情況不被平均掩蓋。
 - 三套方案有實質差異。
 - replan 保留 locked stop，替換後重新驗證整條路線。
-- 「太暗」等回饋只在 session 或經同意後寫入 long-term。
+- 「太暗」等回饋立即影響本次 session；只有有效 `personalization_enabled` 才寫入本人 long-term，且不影響其他使用者。
 
 ### 隱私
 
 - A 的 API token、查詢參數與 Realtime payload 不能取得 B 的 raw_text 或 structured_input。
 - public_reason 不含私密原句、來源身分或可反推資訊。
 - 伺服器日誌只保留 ID、事件類型與錯誤類型。
+- 私人 `venue_feedback` 無法被另一位使用者、伴侶、公開列表、搜尋、統計、RAG 或快取讀取。
+- 新評論預設 private；只有作者可切換公開、取消公開或刪除，且 pending／rejected／hidden／deleted 均不出現在公開列表。
+- 公開評論輸出不含 user_id、情侶關係、私密需求或內部偏好；HTML／腳本／外部連結不會成為可執行內容。
+- 條款、個人化與模型改進同意的版本、時間與撤回行為有整合測試；公開設定不會暗中打開模型改進同意，反之亦然。
+- 訓練候選匯出只包含同意有效、去識別及人工核准的列；私人原文、已撤回的後續資料及未核准評論必須被排除。
 
 ### 整合與真實操作
 
