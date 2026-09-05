@@ -122,7 +122,7 @@ test('Owner-approved government venues produce three real-data daytime itinerari
   const byVenue = new Map(records.map(record => [record.venueId, record]));
   const realShared = {
     ...shared, startsAt: `${date}T10:30:00+08:00`, endsAt: `${date}T18:00:00+08:00`,
-    meetingPoint: { label: '板橋車站', latitude: 25.0143, longitude: 121.4638, matrixKey: 'meeting_user' },
+    meetingPoint: { label: '板橋車站', latitude: 25.0143, longitude: 121.4638 },
     budgetTwdTotal: 2200, stops: 3, outdoorAllowed: false,
     dietaryRequirements: [], allergensToAvoid: [], accessibilityRequirements: [],
     maxLegTravelMinutes: 120, maxTotalTravelMinutes: 240,

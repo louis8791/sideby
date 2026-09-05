@@ -4,7 +4,7 @@
 
 - `src/recommendations/approved-real-data.ts` 固定首批 13 筆 Owner 核准記錄、Google Place ID、政府來源證據、週期營業規則與票價。`assessVenue` 必須讓 13 筆全部 `itineraryEligible=true`；attributes 保持空陣列，不用政府敘述冒充主觀體驗。
 - 標準 `prestart` 啟用 `approved_dataset` 與對應交通矩陣；只有 `SIDEBY_DATA_MODE=synthetic_demo` 才載入九筆展示資料。核准版按臺北日期產生未來 90 天 slots，查詢時只載入與 Session 時段相交的列，避免不同日期重複候選。
-- 場地間及集合點到首站使用政府座標的確定性時間估算做硬限制前置值；Google Routes 仍只在前端即時顯示，不把回應寫入 PostgreSQL。這不是即時路況，Google 顯示值不得回寫覆蓋矩陣。
+- 場地間及集合點到首站使用政府座標的確定性時間估算做硬限制前置值；前端只傳集合點座標、沒有內部 `matrixKey` 時，`approved_dataset` 必須統一使用 `meeting_user` 且仍能生成。Google Routes 仍只在前端即時顯示，不把回應寫入 PostgreSQL。這不是即時路況，Google 顯示值不得回寫覆蓋矩陣。
 - 核准 slots 目前只證明室內參觀區；`airConditioned=null`、過敏／飲食／無障礙未知。相應硬限制必須回無可行方案，不可因正式資料模式而放寬。
 - 行為測試須證明：標準 seed 的 active dataset／matrix 均為 `approved_dataset`、13 筆通過政策、90 天 slots 與 468 條矩陣存在；日間案例可由核准資料生成三套三站行程且每站有 Place ID。
 - Migration 009 新增 `venue_sources`、`venue_import_runs`、`venue_staging_records`。來源 metadata、SHA-256、城市範圍、來源／範圍／staged／rejected 數量及 rejection summary 可追溯。

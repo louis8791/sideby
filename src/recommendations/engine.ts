@@ -233,7 +233,9 @@ export function composeItineraries(input: {
     if (!excluded.has(record.data.venueId) && candidateAllowed(candidate, input.shared, hard, queries)) candidates.push(candidate);
   }
   const legs = input.legs.map(item => travelLegSchema.safeParse(item)).filter(item => item.success).map(item => item.data);
-  if (!input.shared.meetingPoint.matrixKey || candidates.length < input.shared.stops) return [];
+  const meetingKey = input.shared.meetingPoint.matrixKey
+    ?? (input.dataMode === 'approved_dataset' ? 'meeting_user' : undefined);
+  if (!meetingKey || candidates.length < input.shared.stops) return [];
   const start = hard.start, end = hard.end;
   const options: PublicItinerary[] = [];
   const route = (from: string, to: string) => legs
@@ -299,7 +301,7 @@ export function composeItineraries(input: {
       }], candidate.venue.venueId, leave, nextCost, travel + leg.minutes);
     }
   };
-  visit([], [], input.shared.meetingPoint.matrixKey, start, 0, 0);
+  visit([], [], meetingKey, start, 0, 0);
   const selected: PublicItinerary[] = [];
   for (const option of options.sort((a, b) => b.couple_score - a.couple_score)) {
     if (selected.every(existing => materiallyDifferent(existing, option))) selected.push(option);
