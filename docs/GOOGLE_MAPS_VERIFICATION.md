@@ -1,6 +1,13 @@
 # Google 本機接線驗證紀錄
 
-日期：2026-09-05；基底 `2b961f0`；狀態 **LOCAL_LIVE_PASS / PRODUCTION_NOT_VERIFIED**。
+日期：2026-09-05；本機基底 `2b961f0`；狀態 **LOCAL_LIVE_PASS / PRODUCTION_LIVE_FAIL**。
+
+## 正式 Worker 驗證
+
+- 網址：`https://louis8791-sideby-frontend.louis8791.workers.dev/maps-check`；頁面 200，browser／server key 均顯示已填入，secret 值未顯示。
+- 按下四項檢查後，Maps JavaScript 程式載入，但底圖顯示「這個網頁並未正確載入 Google 地圖」；Places API (New)、Routes API、Geocoding API 均回未通過。
+- Google Cloud 目前登入帳號只可見 `Xuanji Search Monitor` 與 `Essence Flow`，兩個專案的 API 金鑰清單皆為空，因此無法在此帳號替實際 key 修改網站來源或 API 限制。
+- 待 key 擁有者加入 `https://pairpath-date.dynamic-portfolio-analyzer-worker.workers.dev/*` 與 `https://louis8791-sideby-frontend.louis8791.workers.dev/*`，核對 server key 的三項 API、帳務與配額，再由正式網址重跑。完成前不得把下方本機 PASS 延伸成 production PASS。
 
 - Windows Node 24.16.0，前端 Bun 1.4.2 frozen-lockfile 乾淨安裝通過，沒有新增依賴。
 - `npm run test:maps`：10 個離線子案例＋1 個總測試，11 passed、0 failed。所有 HTTP 由 mock 攔截，真實 Google 呼叫為 0；驗缺 key、同來源本機限制、三項 web service 官方 URL／header、無全域快取、精度／查無資料、錯誤去敏、照片歸屬與 browser/server key 分離。

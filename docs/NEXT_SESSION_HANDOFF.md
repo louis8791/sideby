@@ -2,21 +2,22 @@
 
 ## 最新部署接續（優先於下方歷史基線）
 
-- 仍在 `feat/environment-preferences-and-evidence`，HEAD 基底 `31e354c`，既有環境／研究變更完整保留；本輪未 commit／push／merge，不動其他 worktree、archive 或產品介紹 PDF。
-- Worker preview 已修復：固定 Wrangler 4.129.0、使用 `.output/server/wrangler.json`，新增保留 vars 的 deploy 指令。跨來源 POST 原本會使 workerd 下一請求 500／程序結束，已改為拒絕前串流完整讀 body，403／503 和零轉送不變；cancel-only 不可用。
-- 最新 frozen-lockfile 安裝、`check:all` 通過 47 根＋15 Maps／proxy 測試、前端 typecheck／client／SSR／Cloudflare build；deploy dry-run 通過（47 modules、20 assets）。真 workerd 經 10 輪拒絕／正常 POST、API／Bearer／SSE、首頁與 10 個建置資源驗收。僅本機，不是公開 PASS。
-- 測試用 5312 demo 後端與 5310 Worker 已停止，資料保留；3000／5173 本輪核對時也未監聽。接手先查程序，不以舊分頁判定服務存在。
-- Railway 與 Cloudflare 網頁已由 Owner 登入；Railway 專案數為 0、GitHub repo 清單為空，須 Owner 完成 Configure GitHub App（只選 `louis8791/sideby`）。Cloudflare 既有其他 Worker 不碰；本機 Wrangler 舊授權過期，已開 OAuth 頁由 Owner 自行授權，接續先查是否成功／逾時。不要索取密碼、token 或 key。
-- 尚未建立 Railway／PostgreSQL 或上傳 Cloudflare Worker，尚無本專案公開網址。下一步在授權完成、Git 版本核對後依 `docs/DEPLOYMENT.md` 建立服務；不要新增已淘汰的 railway.toml／json。正式場地、Gemini、Google 正式來源限制、兩手機與 Owner gate 保持未驗。
+- PR #4 已合併 `main`，merge commit `16cfd041899356432caa1c4cc914fa94b7541902`；feature commit `db618d0` 已保存在遠端。產品介紹 `output/` 仍未追蹤，其他 worktree／archive 未動。
+- Railway 專案 `chic-bravery` 已建立 PostgreSQL 與根 Next.js 服務。GitHub source 是 `louis8791/sideby`／`main`，自動部署已開啟，`DATABASE_URL` 使用 Postgres reference，migration 成功，健康路徑 `/api/runtime`，公開 target port 已由錯誤的 3000 修正為平台實際 `PORT=8080`。
+- 後端 `https://sideby-production.up.railway.app`：`/api/runtime` 200／`standard`；直接匿名身分建立 201。
+- Cloudflare Worker `https://louis8791-sideby-frontend.louis8791.workers.dev` 已部署；`SIDEBY_API_ORIGIN`／`SIDEBY_PUBLIC_ORIGIN` 已設，Google server key 以 secret 上傳，browser key 由 Vite build 使用。首頁、`/maps-check` 與同源 `/api/runtime` 均 200，經代理匿名建立 201。
+- 最新 `npm run check:all` 通過 47 根＋15 Maps／proxy 測試，GitHub PR checks 全綠；未輸出、記錄或提交任何 secret。
+- Google production 未通過：兩把 key 均存在，但 Maps 底圖來源授權失敗，Places／Routes／Geocoding 亦失敗。登入帳號只可見兩個無 API key 的專案，故不能修改實際 key。下一步由 key 擁有者加入 partner 與本 Worker referrer，核對三項 server API 限制、帳務與配額後重跑 `/maps-check`。
+- 真實 Gemini、核准場地、兩支手機、跨網路效能與 Owner sign-off 仍未驗；不要重做已完成的 GitHub／Railway／PostgreSQL／Cloudflare 部署。
 
-## 本輪新增，尚未推送
+## 本輪功能內容（已由 PR #4 推送合併）
 
-- Scope：project-specific；Evidence：verified code／automated tests／public research。工作分支為 `feat/environment-preferences-and-evidence`，從 `31e354c974878d9ff4123640027cad37551f5beb` 開出；本輪工作尚未 commit／push。下方「須 HEAD 等於 origin/main 才能接續」只適用原乾淨部署基線，不可因此丟棄本次未提交變更。
+- Scope：project-specific；Evidence：verified code／automated tests／public research。工作分支 `feat/environment-preferences-and-evidence` 的 `db618d0` 已由 PR #4 合併到 `main` `16cfd04`；下方舊基線僅保留追溯用途。
 - 新增室內／戶外（含戶外區）、冷氣／無冷氣的 UI、結構化 API、區域硬限制及鎖 slot 重排。30 舊選項中 11 有近似映射、19 待補；加環境共 34。詳見 PRD、`docs/KEYWORDS_AND_GROWTH.md`。
-- 重新執行 check:all 通過（47 根測試、14 Maps／代理測試、前端 typecheck／client／SSR／Cloudflare build）；有真正 PostgreSQL＋HTTP＋SSE 行為測試。此結果不是公開部署驗收。
+- 重新執行 check:all 通過（47 根測試、15 Maps／代理測試、前端 typecheck／client／SSR／Cloudflare build）；有真正 PostgreSQL＋HTTP＋SSE 行為測試，且已另完成公開基礎 Runtime 驗證。
 - 需求研究完成 6 組第一手來源、12 指標的 Markdown＋JSON；並非 Sideby 大數據、採用／留存驗證或訓練資料。四份權威已更新。
-- 本輪瀏覽器用另開的 5311 dev 入口驗到新四選項與單選互斥，390／1280 寬度可讀；測後關閉該測試程序。原 3000／5173 程序未重啟，5173 仍曾顯示舊畫面，接手須確認來源後重啟，勿拿舊頁驗新功能。`vite preview` 讀取不存在的 dist/server/server.js 而失敗；Cloudflare build 輸出在 .output，此 preview 問題未擴 scope 修復，正式 Worker 執行仍待驗。5311 不在既有 Google Maps 瀏覽器金鑰允許的來源內，不能把該頁當新一次 Google 整合驗收；本輪沒有擴大 key 權限。
-- 部署下一步保持 Railway＋PostgreSQL／Cloudflare；由 Owner 自行登入，不索取憑證。未更動其他 worktree／archive，未推送或遠端部署。
+- 本輪瀏覽器用另開的 5311 dev 入口驗到新四選項與單選互斥，390／1280 寬度可讀；測後關閉該測試程序。原 `vite preview` 路徑問題後續已改用 Nitro／Wrangler 正式產物修復並公開部署。正式 Google referrer 仍未由實際 key 擁有者補齊。
+- Railway＋PostgreSQL／Cloudflare 已部署；未更動其他 worktree／archive。下一步只處理 Google key 擁有者設定、外部服務與 Owner gates。
 
 這是下一個對話的唯一接續入口。若本文件與舊 Run Note 不同，以 `AGENTS.md`、`PRD.md`、`TDD.md`、`ROADMAP.md` 與目前 Git／Runtime 為準。
 
@@ -60,39 +61,30 @@ git -C E:\sideby rev-parse origin/main
 
 ## 3. 本機設定狀態
 
-`E:\sideby\frontend\.env.local` 存在且被 Git ignore；已填兩把 Google key。下列仍未填：
+`E:\sideby\frontend\.env.local` 存在且被 Git ignore；已填兩把 Google key。Cloudflare 已設定兩個 production origin 與 Google server secret；本機檔下列仍未填：
 
 - `GEMINI_API_KEY`
 - Supabase 設定
-- `SIDEBY_API_ORIGIN`
-- `SIDEBY_PUBLIC_ORIGIN`
 
 不要讀出、回傳、記錄或提交任何 key 值。交接前已確認 Git 追蹤檔沒有 API key。
 
 ## 4. 尚未完成，禁止宣稱 PASS
 
-- 尚無公開網址；Railway 專案、PostgreSQL 與 Cloudflare Worker 都還沒建立／部署。
-- Railway 與 Cloudflare 網頁已登入，但 repo／部署工具授權尚待完成；以本文頂部最新核對為準，不得索取帳密。
+- Google browser key 的正式 referrer 與 server key 的 API restriction 尚未由實際 key 擁有者完成；production 四項檢查目前失敗。
 - 真實 Gemini 尚未用有效金鑰驗收。
 - Gemini「評論候選標籤＋本人確認」與「合法推薦後安全理由改寫」仍是 `PLANNED`。
 - Google 評論沒有接入，也不得拿來建立 Sideby 場地標籤、RAG、Embedding 或訓練資料。
-- 真實核准場地、兩支實體手機、正式網域、跨網路效能與 Owner sign-off 未完成。
+- 真實核准場地、兩支實體手機、跨網路效能與 Owner sign-off 未完成；正式網域本身已建立並通過基本 API。
 - 持續學習只有本人 `too_dark` 偏好事件已實作；`training_candidates` 與版本化場地索引重建仍未完成／延後。
 
 ## 5. 下一個對話的施工順序
 
-1. 先確認使用者已在 Railway 與 Cloudflare 登入；不得要求貼密碼或 secret。
-2. Railway 從 `louis8791/sideby` 的 `main` 建立根目錄 Node 服務，再加入 PostgreSQL；確認 `DATABASE_URL` 存在，啟動命令為 `npm start`，健康檢查使用 `/api/runtime`。
-3. 取得 Railway HTTPS 網域後，先驗 `/api/runtime` 與一個匿名建房請求；不得在 production seed synthetic 資料。
-4. 從 `frontend/` 建置並部署 Cloudflare Worker。第一次可先取得公開網址；之後設定：
-   - `SIDEBY_API_ORIGIN=https://<Railway 後端網域>`
-   - `SIDEBY_PUBLIC_ORIGIN=https://<Cloudflare 公開前端網域>`
-   - `VITE_GOOGLE_MAPS_API_KEY`（browser build setting）
-   - `GOOGLE_MAPS_SERVER_API_KEY`（server secret）
-   - 要驗 Gemini 時才設定 `GEMINI_API_KEY`（server secret）
-5. Google browser key 加入正式前端 HTTP referrer；server key 只允許 Places API (New)、Routes API、Geocoding API，並設定配額／預算告警。
-6. 用公開網址、兩支手機完成：建立／加入、共享同步、雙方私密互不可見、兩人確認、三套方案、重排、雙方定案、刷新保存、Google 成功／失敗與未授權 Gemini fallback。
-7. 只有上述證據成立後才更新 Phase／Owner 狀態；否則維持 `NOT_READY`／部分完成。
+1. 不重建 Railway、PostgreSQL、Cloudflare Worker 或既有 production origins；先核對本文頂部網址與 `main`。
+2. 由實際 Google key 擁有者在正確專案加入 partner 與本 Worker HTTP referrer；server key 只允許 Places API (New)、Routes API、Geocoding API，並設定配額／預算告警。
+3. 從正式 `/maps-check` 重跑四項；底圖目視與三項 server API 都成功後才改 production Google 狀態。
+4. 要驗 Gemini 時才設定 `GEMINI_API_KEY` server secret，並先確認帳務、告知／同意與誠實 fallback。
+5. 用公開網址、兩支手機完成：建立／加入、共享同步、雙方私密互不可見、兩人確認、三套方案、重排、雙方定案、刷新保存、Google 成功／失敗與未授權 Gemini fallback。
+6. 只有上述證據成立後才更新 Phase／Owner 狀態；否則維持 `NOT_READY`／部分完成。
 
 ## 6. 收尾規則
 
