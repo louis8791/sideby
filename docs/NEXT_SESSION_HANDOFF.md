@@ -2,6 +2,8 @@
 
 ## 本輪優先入口（2026-09-06）
 
+`feat/live-review-signals` 本機新增 Google 即時評論情境線索：每個行程地點最多五則評論，單次請求內固定規則輸出最多十個正向／提醒標籤與提及次數，並明示不作硬篩選或核准事實。完整 `npm run check:all` 82 項測試通過；尚未完成 commit／push／PR／Cloudflare 部署及正式目視，不能當成已上線。評論及衍生線索不落盤、不進排序、索引、RAG、訓練或評測。
+
 PR #22／#23 已合併，功能 commit `85e5ccd` 已部署；日常回到 `main`。Railway `724d3cbf-a31a-4a17-985c-9285541fc0f5`、Cloudflare `38e9fe98-8a69-4aff-85e3-cc2ff8a7bfdd`；81 tests／CI／正式同源 API 34 選項、雙人加入、3 套真實三站路線通過，登入表單可開。先讀 `docs/RECOMMENDATION_GROWTH.md`；末段「成長功能接續」是部署前歷史，SSH 阻塞已解決，不能再當現行 blocker。
 
 正式 Migration 011、13 筆推薦索引與完整 refresh-all 已執行；候選快照 `tourism-tpe-ntpc-2026-09-06-38445b4239`：1,121 候選／1,120 Place IDs／128 營業文字／19 明確入場費／425 缺街道地址。核准場地仍 13，學習候選 0。新模型訓練、候選證據補齊、主觀標籤觀察及實體手機未完成。Google 單次 IDs-only 查詢成功，未啟用付費。
@@ -14,7 +16,7 @@ PR #22／#23 已合併，功能 commit `85e5ccd` 已部署；日常回到 `main`
 - 2026-09-06 Gemini 免費層展示 Runtime 已接通：Owner 明確選擇零付費方案；專用 Free tier key 已更新至 Cloudflare `GEMINI_API_KEY` encrypted secret，未設定預付或付款。兩個獨立瀏覽器完成 32 碼邀請加入、共同條件、雙方合成／非敏感偏好、最新版確認與三套 `approved_dataset` 路線；Server Function 200 且無 provider error。免費層告知文案已部署至 Cloudflare Worker version `10aea24f-755f-47a7-8b96-32ab3b3a8954`，並以 `frontend/nitro.config.ts` 固定已被 Cloudflare 接受的 compatibility date `2026-09-05`；部署後加密 secrets、兩個 origin variables 均保留，診斷用 invocation logs 已關閉。這不等於真實私密 Gemini、完整失敗矩陣、兩支實體手機或 Owner 驗收；免費層只能用合成／非敏感展示內容。
 - 2026-09-06 首次使用阻斷已修復：PR #18 merge `45cac2de24498f09fb38a9b5e0e6534dc4caa4c4`；Railway deployment `108b916d-6954-46a5-a418-1c60063b22fa` 與 Cloudflare Worker version `49a0e177-7dae-4d49-8728-f0bdf90fedcf` 成功。邀請欄位由錯誤的 12 碼改為完整 32 碼、保留大小寫並關閉手機自動校正。正式 Worker 已用兩個獨立瀏覽器實測建立、加入、建立者 SSE 同步與加入後進入共同條件頁；登入入口也已用既有團隊 Supabase 公開設定重建，表單可開、無效測試帳密會回安全錯誤且按鈕恢復。沒有建立測試帳號；兩支實體手機仍待最後驗收。
 - 2026-09-06 首批正式推薦已上線：PR #15 merge `4e39cf307d4a3a15bf3e13b1fbecb2f11b7b09de`；公開實測發現前端集合點無內部 `matrixKey` 會無解，治本修正 PR #16 merge `84e5d3a12aa6db583c7ee11bd63f79a705baa1f7`。Railway backend deployment `60042a23-4865-4411-9aa9-088a5136e307`、cron deployment `7663da99-782f-4eab-9e4d-5f75b95fc19d`與 Cloudflare Worker version `ddb20462-0bcb-4276-b8b5-0dd358e9523d` 成功。Production DB 為 13 records、950 slots、468 legs。13 staging approvals；Cloudflare 同源公開 API 三個日間案例都回 3 套三站、`approved_dataset`與每站 Place ID。標準模式已不再使用九筆 `synthetic_demo`；冷氣與主觀屬性未知仍 fail closed。兩支真實手機與 Google 詳情目視是尚未完成的 Owner gate。
-- 2026-09-06 PR #13 已合併 `main` `e3e6336cb9403614b829a331f6efa5bba5c8fdc1`：migration 010、政府候選 ID-only Google Text Search 批次對應、Place ID 跨快照沿用、100 筆審查隊列，以及行程頁即時名稱／地址／營業時間／評分／照片／最多三則評論／路線顯示均已上線。Railway 正式 DB 實際為 1,121 筆候選、1,120 筆 matched、1 筆 not_found、0 筆 retry；Cron deployment `71aa7dff-06a5-4b63-a12b-78f753f88af6` 已改用 `npm run venues:refresh-all`。根後端 deployment `ab075dba-e37d-4ebf-bad4-ad93ba9250f7` 成功，Cloudflare Worker version `772bd542-38f9-478a-96b1-5b7698454cc4` 已部署；後端與前端首頁均回 200。此證據不等於 1,120 筆已人工核准。
+- 2026-09-06 PR #13 已合併 `main` `e3e6336cb9403614b829a331f6efa5bba5c8fdc1`：migration 010、政府候選 ID-only Google Text Search 批次對應、Place ID 跨快照沿用、100 筆審查隊列，以及行程頁即時名稱／地址／營業時間／評分／照片／最多三則評論／路線顯示均已上線；後續 `feat/live-review-signals` 將評論上限與即時模擬分類列於本檔開頭，尚未部署。Railway 正式 DB 實際為 1,121 筆候選、1,120 筆 matched、1 筆 not_found、0 筆 retry；Cron deployment `71aa7dff-06a5-4b63-a12b-78f753f88af6` 已改用 `npm run venues:refresh-all`。根後端 deployment `ab075dba-e37d-4ebf-bad4-ad93ba9250f7` 成功，Cloudflare Worker version `772bd542-38f9-478a-96b1-5b7698454cc4` 已部署；後端與前端首頁均回 200。此證據不等於 1,120 筆已人工核准。
 
 - PR #11 已合併 `main`（`0452445`）：交通部觀光署每日景點／餐飲更新管線讀到全臺 9,818、臺北／新北 1,138，Railway PostgreSQL 已寫入 1,121 筆 draft、拒絕 17，migration 009 與相同內容冪等回用已在 production 驗證。獨立 `venue-refresh-daily` 每日 00:00 UTC 執行；公開 runtime 維持 200。active 推薦仍是 9 個 `synthetic_demo`，下一刀是人工核准首批真實場地、補 execution slots／交通資料並跑三案例 Runtime；不得把候選庫冒充已核准場地。操作見 `docs/VENUE_REFRESH.md`。
 - PR #9 已合併 `main`，merge commit `94ab10583738b8ac4b48bf4f882d63bb1e0c1e13`：本人偏好回饋由單一「太暗」擴充為太暗、太吵、太幼稚、太正式、走太多五種伺服器固定映射。Railway deployment `93b584c5-d3df-40b4-9cf4-6a409a019bab` 成功，migration 008 已隨 `prestart` 執行；公開 API 實測雙人確認、三套生成、「太吵」寫入與三套重生均通過。Cloudflare Worker version `999b5641-7d0c-4dbb-b957-d0383f949418` 已部署，首頁 200 且公開 bundle 含五種回饋。GitHub backend／frontend checks 與本機 `npm run check:all` 全綠（49 根＋15 Maps／proxy）。
@@ -91,7 +93,7 @@ git -C E:\sideby rev-parse origin/main
 
 - Google browser／server key 限制已核對，production Maps JavaScript／Places／Routes／Geocoding 四項通過；尚未完成的是兩支實體手機上的完整流程與失敗降級驗收。
 - Gemini「評論候選標籤＋本人確認」與「合法推薦後安全理由改寫」仍是後續規劃，不是本次提交主線或阻斷。
-- Google 評論沒有接入，也不得拿來建立 Sideby 場地標籤、RAG、Embedding 或訓練資料。
+- Google 評論已作行程頁即時顯示；`feat/live-review-signals` 另在單次回應內產生不落盤的模擬線索。兩者都不得建立 Sideby 核准場地標籤、推薦事實、RAG、Embedding、訓練或評測資料。
 - 真實核准場地、兩支實體手機、跨網路效能與 Owner sign-off 未完成；正式網域本身已建立並通過基本 API。
 - 持續學習的本人偏好路徑已擴充為五種 allowlist 事件：尚無 reaction／finalize choice 時可立即重生三套；已有決策進度則拒絕重生並保留資料。定案後只有個人化有效才接受回饋並跨 Session 保留。`training_candidates` 與版本化場地索引重建仍未完成／延後，不得把偏好門檻更新稱為模型訓練。
 

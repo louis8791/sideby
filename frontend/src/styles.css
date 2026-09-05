@@ -1865,6 +1865,38 @@ label small,
   font-size: 11px;
   line-height: 1.55;
 }
+.review-signals {
+  margin-top: 10px;
+  padding: 9px;
+  border: 1px dashed #111;
+  border-radius: 9px;
+  background: #fff;
+  font-size: 10px;
+}
+.review-signals-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: baseline;
+}
+.review-signals-title span,
+.review-signals small {
+  opacity: 0.68;
+}
+.review-signal-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 7px 0;
+}
+.review-signal {
+  border: 1px solid #111;
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-weight: 800;
+}
+.review-signal.positive { background: #c9f4e4; }
+.review-signal.caution { background: #ffe29a; }
 .venue-live-details summary {
   cursor: pointer;
   font-weight: 800;
