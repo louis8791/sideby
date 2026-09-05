@@ -2,7 +2,7 @@
 
 ## 2026-09-05 最新共同開發決策（優先於下方歷史模型規劃）
 
-- Google 本機接線改走官方服務，不依賴 Lovable gateway；操作見 `docs/GOOGLE_MAPS_LOCAL_SETUP.md`。本輪只到 Owner 輸入憑證，真實 Google／帳務／正式部署仍待驗收。開發 web services 僅限 loopback＋同 Origin；不能將此開發閘門當正式授權。
+- Google 本機接線改走官方服務，不依賴 Lovable gateway；操作見 `docs/GOOGLE_MAPS_LOCAL_SETUP.md`。2026-09-05 已在本機 `/maps-check` 驗收 Maps JavaScript、Places (New)、Routes、Geocoding 四項成功；這只證明該電腦的單次開發環境，帳務餘額、正式部署、首頁雙人流程與手機仍待驗。開發 web services 僅限 loopback＋同 Origin；不能將此開發閘門當正式授權。
 - 金鑰例外澄清：受網站來源限制的 `VITE_GOOGLE_MAPS_API_KEY` 必須交給 Maps JavaScript，屬瀏覽器可見設定；不同的 `GOOGLE_MAPS_SERVER_API_KEY` 僅放伺服器，用 Places／Routes／Geocoding，禁止 VITE_、Git、日誌及回應。此項優先於下方「所有 API key 不下放瀏覽器」舊概括句。
 
 - 使用者指定 `louis8791/sideby` 為唯一主 Repo；Lovable 程式已匯入 `frontend/`，根後端保留 `app/api/`、`src/`、`db/`。共同操作入口為 `docs/TEAM_INTEGRATION.md`，部署依 `docs/DEPLOYMENT.md`。
@@ -42,7 +42,7 @@
 - 所有可展示的時間、總價、移動與硬限制結果都必須由程式驗證。
 - data/fixtures/ 只放合成或明確標示為 example 的資料，不放 API key、個資、真實私密輸入或未授權評論內容。
 - 地點、位置與長期偏好採最小保存原則。網站首次使用時以版本化條款與持續有效的個人化設定取得同意；設定有效期間，後續私人評論可更新本人的長期偏好，不必每則重複詢問。條款重大變更、撤回或設定關閉後必須重新取得有效同意。
-- 不接 Google API；不得以 Google Maps／Places 評論、照片、搜尋摘要或 Takeout 清單建立自有場地資料、標籤、Embedding 索引或訓練／評測資料。使用者貼上的外部建議不是啟用 Google live adapter 的授權。
+- Google API 只用於即時查詢與展示；不得以 Google Maps／Places 評論、照片、搜尋摘要或 Takeout 清單建立自有場地資料、標籤、Embedding 索引或訓練／評測資料。
 - `google_place_id` 是唯一可長期保存的 Google 識別欄位，且只能作為選用的外部對應 ID；商家名稱、地址、評論、照片、搜尋結果及由此推導的標籤若來源是 Google，仍不得複製、長存、重新發布或送入 RAG／Embedding／訓練／評測。
 - 推薦卡片、排序與公開理由只使用自有、合作方授權或合規開放資料。使用者按「在 Google Maps 查看」時，後端／前端才以自有或授權的場地名稱與 `google_place_id` 即時產生已編碼的 Maps URL；此跳轉不使用 API key，也不是本專案的 Google Maps Platform API 計費請求。
 - 不得批次呼叫 Google Text Search 建立或擴充場地庫。外部連結格式為 `https://www.google.com/maps/search/?api=1&query=<urlencoded name>&query_place_id=<place_id>`；有 Place ID 時以它鎖定目的地，名稱只作 URL 必填 query 與找不到 ID 時的 fallback。
@@ -51,8 +51,8 @@
 
 ## Model contract
 
-- 已確認架構：自行部署生成模型與 Embedding 模型，以團隊整理的場地資料建立 RAG；不呼叫外部模型 API，也不在失敗時自動轉送雲端模型。
-- 「不使用 API」僅指外部模型服務。前端與後端的應用 API、雙人同步，以及後端呼叫自管推論服務的內部介面均保留。
+- 本輪黑客松使用 Gemini API 處理自然語言；自行部署生成模型、Embedding 與 RAG 為延後選項，不是 MVP 前置。
+- 外部模型只在已配置、已告知且取得有效同意時呼叫；失敗、非法輸出或缺額度都要誠實回報，不得改用固定內容冒充成功。
 - RAG 只檢索核准的場地／活動資料；私密原文與私人偏好不得寫入共用索引，檢索文件一律視為資料，不執行其中指令。
 - LLM 只負責自然語言結構化解析，以及將結果改寫成可公開的中性文字。
 - Hard Constraint Filter、偏好計分、雙人公平計分、行程組合、局部重排與最終驗證由確定性程式規則負責。

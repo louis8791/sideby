@@ -2,13 +2,13 @@
 
 ## 2026-09-05 本輪最新路徑
 
-本輪新增 Google 本機接線子項（不新增 Phase）：官方 Maps JavaScript／Places (New)／Routes／Geocoding、私密設定範本與 `/maps-check` 已實作；憑證／帳務輸入、真實服務及正式部署為待辦，不標整體 PASS。操作見 `docs/GOOGLE_MAPS_LOCAL_SETUP.md`；其他工作同時進行的 Roadmap 重整不由本次覆蓋。
+本輪新增 Google 本機接線子項（不新增 Phase）：官方 Maps JavaScript／Places (New)／Routes／Geocoding、私密設定範本與 `/maps-check` 已實作，2026-09-05 已在本機單次真實驗收四項 PASS。這不代表帳務餘額、正式部署、首頁雙人流程或手機通過。操作與證據見 `docs/GOOGLE_MAPS_LOCAL_SETUP.md`、`docs/GOOGLE_MAPS_VERIFICATION.md`。
 
-使用者指定主 Repo `louis8791/sideby`。本輪先完成同 Repo 的 `frontend/`、根後端、獨立 lockfile／建置與共同文件，再依序接建房／加入、私密輸入、確認、Gemini／Google Maps、生成／定案，最後驗雙裝置及正式網址。Manus 只增指定元件。
+使用者指定主 Repo `louis8791/sideby`。`frontend/` 已匯入隊友的 Lovable 前端，根目錄保留既有後端；兩者仍是獨立執行元件。下一步由前端負責人依共同契約接建房／加入、私密輸入、確認、Gemini／Google Maps、生成／重排／定案，最後才驗雙裝置及正式網址。後端工作不代做或覆蓋前端，除非 Owner 另行重新分工；Manus 只增指定元件。
 
-不排訓練、自管生成、Embedding 或 RAG；進階需求句改作核准後的回歸驗收。下方八階段與舊自管／零 API 工作包保留歷史對照，相關項目為 DEFERRED，不能當作 API 型 MVP 的必要訓練前置。既有後端規則／隱私測試仍需通過，前端匯入與代理不代表主流程串接完成。最新分工與驗收界線見 `docs/TEAM_INTEGRATION.md`。
+本輪採 Gemini＋Google Maps 的 API 型 MVP；訓練、自管生成、Embedding 與 RAG 均為 `DEFERRED`，不屬目前主線前置條件。進階需求句只作人工核准後的回歸驗收。既有後端規則／隱私測試仍需通過；前端原始碼匯入、建置成功及 `/api` 代理連通都不代表畫面按鈕已串上根後端，也不代表真實 Gemini／Google Maps 已驗收。最新分工與驗收界線見 `docs/TEAM_INTEGRATION.md`。
 
-現場協作入口：`docs/TEAM_INTEGRATION.md`。先固定後端與唯一展示主線，再接 Lovable；Manus 先交指定畫面／元件。本輪整合不增加新的頂層 Phase，現有八階段與模型／RAG 的延後決策維持適用。
+現場協作入口：`docs/TEAM_INTEGRATION.md`。所有人從同一主 Repo 的最新 `main` 開自己的 feature 分支；前端負責 `frontend/` 與應用 API 串接，後端負責根 API、資料、權限及決策規則。本輪不增加新的頂層 Phase，維持下列八階段。
 
 ## 交付原則
 
@@ -21,7 +21,7 @@
 - 不以 Google Places／Maps API 或批次 Google Text Search 建庫。唯一可長期保存的 Google 識別欄位是 optional `google_place_id`。
 - Google 衍生的名稱、地址、評論、照片、搜尋結果與標籤不得進持久層、RAG、Embedding、訓練或評測；推薦、排序與公開理由只用自有、合作方授權或合規開放資料。
 - 硬限制、雙人公平計分、行程組合、局部重排與最終合法性由確定性程式負責；模型只做受控解析與公開文字改寫。
-- 模型、索引、資料或外部服務未就緒時，回傳真實未就緒／無可行方案；不得用文件、schema、fixture 或固定結果冒充成功。
+- 模型、資料或外部服務未就緒時，回傳真實未就緒／無可行方案；不得用文件、schema、fixture 或固定結果冒充成功，也不得靜默切換成未揭露的供應商或假資料。
 
 ## 狀態定義與盤點摘要
 
@@ -29,18 +29,18 @@
 - `部分完成`：已有可執行交付或相應測試，但仍缺必要功能或較高層驗收。
 - `未開始`：只有需求、schema、fixture 或測試計畫，沒有對應可執行功能。
 
-2026-09-05 盤點基線為 clean `main` commit `8cb9df6`，其後本機 HEAD 為 `cef9bc7` 且工作樹尚未提交。工作樹已加入確定性推薦、reaction／locked／局部重排／定案、本人 `too_dark` 偏好更新，以及正式手機優先首頁；Chrome＋Edge 已跑完一個合成主流程。仍沒有真實場地／RAG、兩支實體手機、正式部署或 Owner 驗收。
+2026-09-05 整合基線為 `main` commit `2b961f0`，且當時與 `origin/main` 一致。根後端已有匿名房間、私密輸入、合成三套推薦、reaction／locked／局部重排／定案與本人 `too_dark` 偏好更新；整合驗證記錄為 42 項後端測試通過。`frontend/` 已匯入且可建置，開發代理可連根 API，但固定邀請碼、範例行程、Supabase 身分與畫面 state 尚未逐項改接根後端。Google 四項本機檢查已通過；真實 Gemini、完整前端主流程、兩支實體手機、正式部署及 Owner 驗收都尚未完成。
 
 | Phase | 名稱 | 目前狀態 | 主要依賴 | 可平行資訊 |
 |---|---|---|---|---|
-| 1 | 契約、資料治理與驗收基線 | 已完成（文件／契約層） | 無 | Phase 2～4 可依契約並行 |
+| 1 | 契約、資料治理與驗收基線 | 完成（文件／契約層） | 無 | Phase 2～4 可依契約並行 |
 | 2 | 匿名雙人房間與共享狀態 | 部分完成 | Phase 1 | 前端串接可與 Phase 3、4 並行 |
-| 3 | 條款、私密輸入與需求解析 | 部分完成 | Phase 1、2 | 本輪用有限規則基準；模型與進階資料可日後獨立進行 |
-| 4 | 場地資料、RAG 與 Google Maps 跳轉基礎 | 部分完成 | Phase 1 | 資料整理、索引與 URL builder 可分工 |
+| 3 | 條款、私密輸入與 Gemini 需求解析 | 部分完成（後端基準；Gemini 尚未接線） | Phase 1、2 | 既有規則基準可作 fallback／對照 |
+| 4 | 場地資料與 Google Maps 整合基礎 | 部分完成（本機四 API PASS；正式整合未驗） | Phase 1 | 資料政策與外部服務接線可分工 |
 | 5 | 雙人推薦與三套可執行行程 | 部分完成（合成資料後端） | Phase 2～4 | 公開理由只能在合法行程後並行 |
 | 6 | 局部重排、私人清單與回饋治理 | 部分完成 | Phase 1、2；重排依 Phase 5 | 私人清單／內容治理可先行 |
-| 7 | 手機整合、外部跳轉與誠實降級 | 部分完成（合成展示） | Phase 2～6 | 私人清單與外部失效仍可並行 |
-| 8 | 端到端、效能、隱私與 Owner 驗收 | 部分完成（單一雙瀏覽器案例） | Phase 7 | 自動與實機驗收可分層準備 |
+| 7 | 手機整合、外部跳轉與誠實降級 | 部分完成（前端已匯入，主流程未串接） | Phase 2～6 | 前端負責串接，後端提供契約與修正 |
+| 8 | 端到端、效能、隱私與 Owner 驗收 | 部分完成（底層技術證據） | Phase 7 | 底層證據不能取代完整驗收 |
 
 ## Phase 1 — 契約、資料治理與驗收基線
 
@@ -64,7 +64,7 @@
 
 ### 目前狀態
 
-`已完成（文件／契約層）`。相關權威、schema、fixtures 與 no-fake-success 規則已存在；不代表 UI、模型、RAG、推薦或實機完成。
+`完成（文件／契約層）`。`docs/TEAM_INTEGRATION.md` 已固定單一 Repo、API 型 MVP、分工及證據邊界；AGENTS／PRD／TDD 的舊自管模型／零 Google API 敘述已改為歷史或延後選項，schema、fixtures 與 no-fake-success 規則也已存在。這不等於後續功能、Runtime 或 Owner 驗收完成。
 
 ### 相依／可平行
 
@@ -92,71 +92,71 @@
 
 ### 目前狀態
 
-`部分完成`。後端匿名身分、邀請、兩人上限、共享條件、版本、確認、GET／SSE 與重連已實作並有 PostgreSQL／HTTP 測試證據；正式首頁與 Chrome＋Edge 單一合成案例也已完成。尚無兩支實體手機、跨網路重連、正式 HTTPS、憑證撤銷／刪除或濫用防護。
+`部分完成（後端已實作，正式前端未串接）`。根後端已有匿名身分、邀請、兩人上限、共享條件、版本、確認、GET／SSE 與重連，並有 PostgreSQL／HTTP 測試。前端開發代理已證明可轉送同源 API、Bearer 與 SSE，但匯入前端仍使用固定邀請碼／本地畫面 state，尚未完成實際建房、加入與同步串接；兩支實體手機、跨網路重連、正式 HTTPS、憑證撤銷／刪除及濫用防護也未驗收。
 
 ### 相依／可平行
 
 依賴 Phase 1。前端可依 BACKEND_API 串接；Phase 3 沿用同一身分／Session，Phase 4 可獨立整理資料。
 
-## Phase 3 — 條款、私密輸入與需求解析
+## Phase 3 — 條款、私密輸入與 Gemini 需求解析
 
 ### 目標
 
-在不向伴侶、共享事件、日誌或 RAG 洩漏原文的前提下，把每人的需求轉為可計算且可拒判的 preference-query。
+在不向伴侶、共享事件或一般日誌洩漏原文的前提下，把每人的需求交由受控 Gemini 解析，再轉為可計算且可拒判的 preference-query。
 
 ### 交付
 
 - 版本化條款與可撤回的 `personalization_enabled`、`model_improvement_opt_in`。
 - private_session／private_remembered 本人 CRUD、同意閘門與撤回後降級。
 - parsed／needs_clarification／unavailable envelope、schema 驗證、Privacy Guard 與公開 allowlist。
-- 有限規則基準、數字／單位／否定規則及模糊語意追問。
-- 需求 JSONL、人工答案、原文證據、group split、資料版本；字元 TF-IDF＋Logistic Regression 與固定基準／保留題評測。
+- Gemini server-side adapter、最小必要輸入、逾時／額度／非法輸出失敗狀態及 schema 驗證。
+- 有限規則基準、數字／單位／否定規則及人工核准需求句，作為回歸對照；不要求本輪訓練分類器。
 
 ### 完成條件
 
 - A 無法從 API、Realtime、畫面、cache、log 或錯誤取得 B 的私密資料或可反推理由。
 - remembered 只在有效個人化同意下使用；撤回後停止長期使用。
 - 支援語句產出合法 schema；模糊、衝突、未支援或非法輸出一律追問／阻擋。
-- 分類器以分組未見案例逐屬性報告 precision／recall／F1、support、macro-F1 與硬限制退步；無真實資料與評測不得稱已訓練。
-- Phase 2 驗收交接所列 storage/parser/guard、RAG integration、two-browser privacy 三列全 PASS。
+- 私密需求送 Gemini 前有清楚告知與有效同意，只送最小必要資料；原文、憑證及供應商錯誤全文不進公開 API、SSE 或一般日誌。
+- Gemini 成功、逾時、額度不足與非法輸出都有可驗證結果；非法或不完整輸出不得進推薦。
 
 ### 目前狀態
 
-`部分完成`。commit `8cb9df6` 已實作私密輸入 migration／本人 API、同意與撤回降級、三態 envelope、有限規則解析與 Privacy Guard；目前本機完整測試已通過。Chrome＋Edge 的單一合成案例確認共同畫面未出現 A／B 私密原句，兩邊 console error／warning 為 0。Owner 已核准 15 筆／5 群組合成句作基本展示需求，並將自管模型與場地 RAG 延後；單一展示仍不能代替對抗性兩裝置隱私驗收。
+`部分完成（後端基準已實作，Gemini 尚未接線）`。根後端已有私密輸入 migration／本人 API、同意與撤回降級、三態 envelope、有限規則解析及 Privacy Guard。匯入前端含 Gemini 相關程式，但尚未依根後端身分、同意與 schema 契約接合，也未使用真實憑證驗證成功／失敗路徑。15 筆／5 群組合成句只作回歸資料，不是模型訓練或真實需求研究證據。
 
 ### 相依／可平行
 
-依賴 Phase 1、2。進階需求句、離線分類器與 parser adapter 均為後續可選工作，不阻擋本輪前端與雙瀏覽器驗收。
+依賴 Phase 1、2。前端負責 Gemini 畫面與串接；後端負責同意、私密邊界、schema、硬限制及公開出口。離線分類器、自管模型與進階資料評測均為後續選項，不阻擋本輪 API 型 MVP。
 
-## Phase 4 — 場地資料、RAG 與 Google Maps 跳轉基礎
+## Phase 4 — 場地資料與 Google Maps 整合基礎
 
 ### 目標
 
-建立可追溯、可合法使用、可供確定性驗證與自管 RAG 檢索的場地基礎，只以窄例外保存 Google Place ID。
+建立可追溯、可合法使用、可供確定性驗證的場地基礎，並把 Google Maps 即時展示與 Sideby 自有／授權資料分開。
 
 ### 交付
 
 - venue schema／資料表：穩定 venue_id、類型、座標、價格、營業／活動時段、停留、來源、權利、查核／更新、人工審核與情境屬性。
 - optional `google_place_id`；不保存其他 Google 衍生內容，也不作排名特徵或 RAG 文本。
 - 政府資料 draft 匯入、第一方事實核對、團隊觀察／自有照片證據與人工審核。
-- 小區域 12～20 筆核准真實場地、版本化交通矩陣、更新／失效／刪除流程。
-- 自管 Embedding、版本化索引、Recall@K、惡意文件與來源違規測試；私人回饋不進共用 RAG。
-- Maps URL builder：自有／授權名稱正確 URL encoding；有 Place ID 時 `query_place_id` 優先，無 ID 時名稱 fallback；無 API key。
+- API 型 MVP 所需的核准場地／交通資料、更新／失效／刪除流程；Google 即時展示內容不得自動回存成 Sideby 推薦事實。
+- Google Maps server／browser gateway 的憑證、來源限制、額度、歸屬標示與失敗狀態。
+- Maps URL builder：自有／授權名稱正確 URL encoding；有 Place ID 時 `query_place_id` 優先，無 ID 時名稱 fallback；無 API key 的 click-out 仍可保留。
 
 ### 完成條件
 
-- 發布、排序與 RAG 共用政策守門；必要事實未知、未核准、過期或權利不足不得成為可執行候選。
+- 發布與排序共用政策守門；必要事實未知、未核准、過期或權利不足不得成為可執行候選。
 - 政府匯入不推論主觀標籤；情境屬性不脫離時段／區域；每筆可追溯來源、權利、更新與審核。
-- 至少 12 筆核准真實場地通過固定 Recall@K、索引版本及外部模型 API=0 證據。
-- 測試證明 Place ID optional／優先、名稱正確編碼、無 key，且 Google 衍生內容被拒絕進持久層與 RAG。
+- 真實 Google Maps 成功與失敗路徑、憑證限制、來源標示及 Sideby 資料不被覆寫均有證據。
+- 測試證明 Place ID optional／優先、名稱正確編碼、click-out 無 key，且 Google 衍生內容不被批次存成持久推薦資料或訓練／RAG 語料。
 
 ### 目前狀態
 
-`部分完成`。已有 venue-record schema、政府 draft 匯入、來源／權利／審核政策守門、版本化場地／交通矩陣資料表、optional `google_place_id`、Maps URL builder 與合成測試。尚無真實核准資料、正式交通內容、Embedding／索引或 Recall@K；資料缺少時推薦 API 會回 `RECOMMENDATION_DATA_UNAVAILABLE`。
+`部分完成（本機四 API PASS；正式整合未驗）`。已有 venue-record schema、政府 draft 匯入、來源／權利／審核政策守門、版本化場地／交通矩陣資料表、optional `google_place_id`、Maps URL builder 與合成測試。2026-09-05 `/maps-check` 已用真實服務通過 Maps、Places、Routes、Geocoding；尚未驗正式網域／伺服器限制、首頁流程、根後端資料邊界、失敗路徑與手機行為。資料缺少時推薦 API 仍須回 `RECOMMENDATION_DATA_UNAVAILABLE`。Embedding／RAG／Recall@K 已移到延後工作，不是本輪完成條件。
 
 ### 相依／可平行
 
-依賴 Phase 1。真實資料、索引與 URL builder 可分工；Phase 5 等待可執行場地與交通證據，Phase 7 可先用明確合成資料開發按鈕狀態。
+依賴 Phase 1。資料政策、Google Maps 接線與 URL builder 可分工；Phase 5 只接受可驗證的場地／交通輸入，Phase 7 可先用明確標示的合成資料開發狀態，但不得冒充真實服務。
 
 ## Phase 5 — 雙人推薦與三套可執行行程
 
@@ -180,7 +180,7 @@
 
 ### 目前狀態
 
-`部分完成（合成前後端）`。已實作確定性硬限制、UserFit／CoupleScore、三套差異組合、作用中場地／交通版本、`generate`／strict `itineraries`、版本失效、Privacy Guard 與正式行程卡；36 個本機測試通過，Chrome＋Edge 單一案例實際顯示三套。資料仍是明確 `synthetic_demo`。`5 engine/api` 為 PASS；fairness 最低門檻、真實核准場地／交通、RAG、三案例 Runtime 與 Owner 仍 BLOCKED，overall 是 `NOT_READY`。
+`部分完成（合成資料後端）`。根後端已有確定性硬限制、UserFit／CoupleScore、三套差異組合、作用中場地／交通版本、`generate`／strict `itineraries`、版本失效及 Privacy Guard；整合後的根後端測試總數為 42 項。資料仍是明確 `synthetic_demo`，匯入前端的行程卡仍使用自己的固定資料，尚未串接根推薦 API。fairness 最低門檻、真實服務資料、正式前端 Runtime、三案例與 Owner 均未完成，overall 維持 `NOT_READY`。
 
 ### 相依／可平行
 
@@ -211,7 +211,7 @@
 
 ### 目前狀態
 
-`部分完成（合成前後端）`。除既有私人場地回饋外，已加入 reaction、雙方 locked、保留 stop 身分與順序的局部重排、全路線重驗、雙人 finalize，以及不可變 `too_dark` 事件。當次只改回報者；個人化有效才遞增本人長期版本，重送冪等且不進公共出口。正式首頁已串接，Chrome＋Edge 單一案例通過；三案例 Runtime、兩支實體手機、管理審核、檢舉／隱藏、頻率限制、私人清單 UI、Owner 與 training candidates 仍未完成，overall 維持 `NOT_READY`。
+`部分完成（後端）`。根後端已有 reaction、雙方 locked、保留 stop 身分與順序的局部重排、全路線重驗、雙人 finalize，以及不可變 `too_dark` 事件。當次只改回報者；個人化有效才遞增本人長期版本，重送冪等且不進公共出口。這些 API 尚未由匯入前端完整串接；三案例 Runtime、兩支實體手機、管理審核、檢舉／隱藏、頻率限制、前端私人清單、Owner 與 training candidates 仍未完成，overall 維持 `NOT_READY`。
 
 ### 相依／可平行
 
@@ -226,7 +226,7 @@
 ### 交付
 
 - 房間、共同條件、私密需求、三套方案、完整行程、意見／重排、finalize、私人清單與回饋畫面。
-- 生成／檢索／同步狀態、版本衝突、身分到期、索引未就緒、無候選與 503 降級 UI。
+- 生成／外部服務／同步狀態、版本衝突、身分到期、無候選與 503 降級 UI。
 - 場地卡「在 Google Maps 查看」按鈕，只讀 Sideby 自有／授權資訊與 Phase 4 URL builder。
 - 外部訂位／購票、合作標示；不保證座位、不代理付款。
 - Google／網路不可用時，Sideby 結果仍可閱讀，外部詳情標示暫時無法開啟且不回存 Google 頁面。
@@ -239,11 +239,11 @@
 
 ### 目前狀態
 
-`部分完成（第一刀可驗收，Owner 真手機 BLOCKED）`。正式手機優先首頁已串房間、共同條件、版本狀態、私密需求、三套方案、Maps click-out、reaction、局部重排、finalize、本人私人清單與回饋；loading、empty、版本衝突、無資料、503、身分失效及外部不可用皆有誠實中文。正式模式不自動帶合成條件；`demo:local` 使用獨立 `.local` 合成資料庫並在 UI／payload 明示資料與交通版本。Chrome 雙分頁已跑通一個合成主流程至定案／回饋，IAB 390px／1280px 無水平 overflow、鍵盤 focus 可見、console error／warning 為 0；Maps click-out 與受控外部失效後原頁仍保留三套結果。外部訂位／購票欄位有連結才顯示且明示不保證座位、不代付款，贊助內容必須標示。兩支實體手機與 Owner 驗收仍缺，因此 Phase 7 不得標完成；證據入口為 `docs/PHASE7_ACCEPTANCE.md` 與 `npm run phase7:check`。
+`部分完成（前端已匯入，主流程未串接）`。`frontend/` 已納入主 Repo，獨立安裝、型別檢查、client／SSR build 及開發 `/api` 代理通過；獨立 `/maps-check` 也已用真實 Google 四項服務通過。這些只證明程式、基礎代理與地圖檢查頁可用。匯入前端仍含固定邀請碼、固定行程、獨立 Supabase 身分與本地畫面 state，尚未逐項接上根後端；真實 Gemini、完整首頁、失敗狀態、兩支實體手機及 Owner 驗收均未完成。
 
 ### 相依／可平行
 
-完整整合依賴 Phase 2～6 的穩定 API。UI 可先用明確合成資料，但不能宣稱真實推薦、RAG 或同步完成。
+完整整合依賴 Phase 2～6 的穩定 API。前端可用明確合成資料開發，但固定畫面資料、代理連通或 build PASS 都不能宣稱真實推薦、Gemini／Google Maps、同步或雙人定案完成。
 
 ## Phase 8 — 端到端、效能、隱私與 Owner 驗收
 
@@ -255,7 +255,7 @@
 
 - clean install／migration／build／test 與目標部署啟動證據。
 - 兩瀏覽器、兩手機完整主流程：邀請、同步、私密輸入、生成、投票、重排、finalize、回饋。
-- 對抗性隱私、跨使用者、日誌、cache、Realtime、惡意 RAG 文件與公開理由測試。
+- 對抗性隱私、跨使用者、日誌、cache、Realtime、外部模型非法輸出與公開理由測試。
 - 同步、第一輪行程、局部重排的 p50／p95，附硬體、模型、資料量、冷／暖啟動、併發與失敗條件。
 - Google Maps 有／無 Place ID、URL encoding、手機開啟、Google／網路失效與不回存資料的實機證據。
 - Demo 紀錄、已知限制與 Owner sign-off。
@@ -264,12 +264,12 @@
 
 - 自動測試、HTTP、兩裝置、公開畫面、外部跳轉與 Owner 各有可追溯證據。
 - 公開同步 2 秒、第一輪三套 15 秒、局部重排 8 秒，以預先定義環境與多次樣本量測。
-- 硬限制違反 0、locked stops 保留 100%、私密洩漏 0；失敗顯示真實狀態且無雲端 fallback。
+- 硬限制違反 0、locked stops 保留 100%、私密洩漏 0；失敗顯示真實狀態，且不切換成未揭露供應商或假資料。
 - Owner 明確接受前，不稱產品完成或可交付。
 
 ### 目前狀態
 
-`部分完成（單一雙瀏覽器合成案例）`。已有 schema／單元、本機 PostgreSQL＋HTTP 行為、單一 SSE 延遲樣本，以及 Chrome＋Edge 從邀請到回饋的完整主流程；兩邊 console error／warning 為 0。仍沒有三案例、兩支實體手機、真實模型／RAG／場地、p50／p95、Maps 手機開啟與失效、正式部署或 Owner sign-off。
+`部分完成（底層技術證據）`。現有 schema、後端測試、前端 build、代理 smoke 與 `/maps-check` 真實 Google 四項本機 PASS 可作底層證據，但沒有證明匯入前端已完成根 API 串接。正式整合版尚未跑通真實 Gemini、完整雙人主流程、三案例、兩支實體手機、p50／p95、正式部署或 Owner sign-off，因此不得沿用底層檢查或舊合成頁的「完整主流程」結論。
 
 ### 相依／可平行
 
@@ -281,11 +281,11 @@
 - `Feature Complete`：Phase 1～7 完成，仍不得稱 Owner 已接受。
 - `Accepted MVP`：Phase 8 全部通過且 Owner sign-off。
 - 黑客松可縮小場地區域、筆數與解析屬性，但不得刪除隱私、資料權利、硬限制、失敗誠實或證據分層。
-- 2026-09-05 本輪 cut：Owner 核准的合成基本需求可作展示資料；自管模型評測與場地 RAG 在 Phase 1／2 相容閘門列 `DEFERRED`，雙瀏覽器與隱私 Runtime 仍不可省略。
+- 2026-09-05 本輪 cut：採 Gemini＋Google Maps API 型 MVP；Owner 核准的合成需求只作開發／回歸資料。自管模型、Embedding、RAG 與分類器訓練列為 `DEFERRED`，不得當成目前主線前置；正式前端雙瀏覽器、雙手機與隱私 Runtime 仍不可省略。
 
 ## 下一刀
 
-先補 Phase 4 的小區域核准真實場地、正式交通矩陣、自管 Embedding／RAG 與 Recall@K，再以至少三個完整案例重跑 Phase 5／6。Phase 7 補私人清單、Google／網路失效與兩支實體手機；Phase 6 補管理審核、檢舉／隱藏、頻率限制與 training candidates。缺資料維持 `RECOMMENDATION_DATA_UNAVAILABLE`，不得把本輪合成展示升格成真實推薦或 Owner 驗收。
+截止前 16 小時依 `docs/TEAM_INTEGRATION.md` 三線並行：前端移除固定邀請碼／INITIAL_PLANS 並接完整根 API；後端只補契約、權限、Gemini 安全轉接與資料守門；整合者鎖定契約、審 PR、合併與驗收。第 11 小時後不再加功能，專注兩瀏覽器／手機、隱私、外部失敗、fresh clone、部署與演示備援。缺資料或外部服務時維持真實不可用，不以固定行程補成功。
 
 ## 橫向品質門檻
 
@@ -301,7 +301,7 @@
 
 ### 失敗誠實
 
-- 模型、索引、資料、外部連結或同步失敗時回真實錯誤；不切雲端、不捏造場地、不放寬硬限制、不把 fixture 當真實結果。
+- 模型、資料、外部連結或同步失敗時回真實錯誤；不切換未揭露供應商、不捏造場地、不放寬硬限制、不把 fixture 當真實結果。
 
 ### 證據分層
 
@@ -311,7 +311,7 @@
 
 CRM、商家管理後台／自助上架、廣告管理、App 內付款、退款、發票、訂閱、完整社群（追蹤、好友、回覆串、按讚、私訊）、即時聊天、遊戲化、驚喜約會、住宿、SPA、酒吧／夜生活、過夜、長途旅遊、全臺／海外資料、大型生成模型微調平台，以及大量未授權評論／照片／私人對話 RAG。
 
-受控短文字評論、私人清單、離線訓練候選與核准小型場地 RAG 已列入 Phase 4、6，不屬上述排除項目。
+受控短文字評論與私人清單仍在 Phase 6；離線訓練候選、自管模型、Embedding 與小型場地 RAG 為延後選項，不在本輪 API 型 MVP 主線。
 
 ## 舊名稱對照與相容入口
 
@@ -327,9 +327,9 @@ CRM、商家管理後台／自助上架、廣告管理、App 內付款、退款�
 
 `docs/PHASE1_ACCEPTANCE.md`、`docs/PHASE2_ACCEPTANCE.md`、`docs/BACKEND_API.md`、`npm run phase1:check` 與 `npm run phase2:check` 暫保留既有名稱作交接／證據入口，不再定義 Roadmap 的 Phase 數量或依賴。兩個相容閘門依本輪黑客松 cut 將模型／RAG 列為 `DEFERRED`，但仍要求雙瀏覽器證據。
 
-## 附錄 A — 黑客松六小時應變安排
+## 附錄 A — 舊自管訓練／RAG 應變安排（DEFERRED）
 
-這是材料到位時的壓縮施工／止損方案，不是產品 Phase、工期承諾或完成證據。
+以下只保存方案修改前的歷史規劃，不是目前施工順序、產品 Phase、工期承諾或完成證據；除非 Owner 日後明確恢復自管模型／RAG 路線，否則不得照此開工。
 
 | 時間 | 工作 | 必須產生的證據 |
 |---|---|---|

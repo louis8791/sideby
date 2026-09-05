@@ -44,7 +44,7 @@
 
 ## 本機與驗收
 
-Google 地圖已取消 Lovable gateway 依賴；各人填自己的 `frontend/.env.local`，依 [Google 本機設定](GOOGLE_MAPS_LOCAL_SETUP.md) 開 `/maps-check`，不需要先配置 Supabase／Gemini。此次只到憑證輸入；真實 Google 與正式部署、首頁雙人流程仍另驗。
+Google 地圖已取消 Lovable gateway 依賴；各人填自己的 `frontend/.env.local`，依 [Google 本機設定](GOOGLE_MAPS_LOCAL_SETUP.md) 開 `/maps-check`，不需要先配置 Supabase／Gemini。2026-09-05 本機 Maps、Places、Routes、Geocoding 已單次真實驗收通過；正式部署、首頁雙人流程與手機仍另驗。
 
 根目錄先執行 npm ci、npm run frontend:install。後端終端用 npm run demo:local（3000，明示 synthetic_demo），正常無種子模式為 npm run dev:local；前端終端用 npm run frontend:dev（5173）。
 
@@ -55,5 +55,15 @@ npm run check:all 驗證後端及前端建置。正式部署另見 [DEPLOYMENT](
 ## 下一刀與證據界線
 
 匯入前端仍含固定邀請碼、INITIAL_PLANS、畫面 state 與獨立 Supabase 流程。目錄合併及 /api 代理不會把按鈕自動接上根後端。下一刀依序接建房／加入、私密輸入、確認、生成／重排、定案。
+
+## 截止前 16 小時分工
+
+| 工作區／角色 | 唯一可寫範圍 | 截止前必交 |
+|---|---|---|
+| `feature/sprint-frontend`／前端 | `frontend/` | 移除固定邀請碼與 INITIAL_PLANS，接建房／加入、條件、私密輸入、確認、三套方案、reaction／重排／finalize；呈現 API／Google／Gemini 真實失敗。 |
+| `feature/sprint-backend`／後端 | `app/api/`、`src/server/`、`src/model/`、`src/recommendations/`、`src/venues/`、`db/`、`schemas/` | 只補前端串接所需的契約、權限、Gemini 安全轉接與資料守門；不得重做 UI。 |
+| `feature/sprint-integration`／整合驗收 | `docs/`、`tests/`、CI／部署設定 | 鎖定 API 契約、審 PR、合併、跑兩瀏覽器／手機與 fresh clone；不得與功能負責人同時改同一檔。 |
+
+時間盒：前 1 小時固定基線；第 1～7 小時前後端並行；第 7～11 小時整合完整主流程；第 11～14 小時做雙瀏覽器／手機、隱私與失敗路徑；最後 2 小時只修阻斷、部署、演示與備援，不再加功能。
 
 兩個獨立瀏覽器／手機需另驗同房、私密隔離、實際 Gemini／Google Maps、雙人定案與刷新保存。程式匯入不代表完整串接、正式部署或雲端帳號已移交。

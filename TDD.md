@@ -2,7 +2,7 @@
 
 ## 2026-09-05 單一 Repo 整合更新
 
-Google 本機接線：`frontend/src/lib/google-maps.server.ts` 使用官方 Places／Routes／Geocoding REST；`maps.functions.ts` 驗輸入並檢查 development／loopback／同 Origin。瀏覽器 loader 只用 `VITE_GOOGLE_MAPS_API_KEY`，其餘用不同 `GOOGLE_MAPS_SERVER_API_KEY`。Node 開發入口讀 `.env.local`，`maps:config` 僅檢查欄位，`/maps-check` 由使用者觸發真實公開地標查詢。無全域 Places／照片快取；照片保留作者歸屬；逾時／拒絕不洩漏 key／原始錯誤。離線 `test:maps` 與真實 API、主流程、正式部署分開驗收。Supabase token 附加僅在有瀏覽器配置時使用，私密函式的伺服器授權不移除。
+Google 本機接線：`frontend/src/lib/google-maps.server.ts` 使用官方 Places／Routes／Geocoding REST；`maps.functions.ts` 驗輸入並檢查 development／loopback／同 Origin。瀏覽器 loader 只用 `VITE_GOOGLE_MAPS_API_KEY`，其餘用不同 `GOOGLE_MAPS_SERVER_API_KEY`。Node 開發入口讀 `.env.local`，`maps:config` 僅檢查欄位，`/maps-check` 由使用者觸發真實公開地標查詢。無全域 Places／照片快取；照片保留作者歸屬；逾時／拒絕不洩漏 key／原始錯誤。2026-09-05 本機四項服務已單次驗收成功；離線 `test:maps`、首頁主流程、正式部署與手機仍分開驗收。Supabase token 附加僅在有瀏覽器配置時使用，私密函式的伺服器授權不移除。
 
 唯一主 Repo 為 `louis8791/sideby`。根 Next.js／PostgreSQL 管既有應用狀態；`frontend/` 為 TanStack Start／Vite＋Supabase／Gemini／Google Maps 來源程式，包含獨立伺服器功能，不能當成純靜態網頁。根 npm lockfile、前端 Bun lockfile 各自安裝；根 TypeScript 排除 frontend 及 .local。
 
@@ -16,7 +16,7 @@ Google 本機接線：`frontend/src/lib/google-maps.server.ts` 使用官方 Plac
 
 實作狀態依 ROADMAP 的 Phase 1～8 八個頂層階段回報；舊 1A／1B 與 4A～4E 僅保留為歷史工作包與證據入口，不能作為現行額外 Phase 或整階段通過證據。
 
-MVP 採模組化單體，不拆微服務。建議以 React、Next.js、TypeScript、Server Routes、PostgreSQL、匿名身分與 Realtime 實作；本次不接 Google API，地點／路線以核准資料與本地交通矩陣提供。
+MVP 採模組化單體，不拆微服務。以 React、Next.js、TypeScript、Server Routes、PostgreSQL、匿名身分與 Realtime 實作；Google API 提供即時地圖／地點／路線展示，核心推薦仍只接受核准資料與可驗證輸入。
 
 核心展示以整理好的大臺北場地資料與本地交通矩陣為基線，不能因外部 API 暫時不可用就無法產生結果。
 
@@ -197,7 +197,7 @@ Privacy Guard 必須在公開輸出前執行：
 
 ## 7. 外部服務與降級
 
-本次不接 Google API，也不建 Google Places live adapter。展示使用核准的 curated data、營業快照與本地交通矩陣；其他資料服務仍須個別確認來源與權利，不能自動接入。介面必須標示資料時間或無法確認的狀態，不可把估算說成即時確認；必要事實未知時不能通過可執行驗證。
+本輪已建 Google Places／Routes／Geocoding live adapter 與 Maps JavaScript 檢查頁，僅作即時查詢與展示。核心推薦使用核准的 curated data、營業快照與可驗證交通輸入；其他資料服務仍須個別確認來源與權利，不能自動接入。介面必須標示資料時間或無法確認的狀態，不可把估算說成即時確認；必要事實未知時不能通過可執行驗證。
 
 外部訂位／購票只提供連結跳轉，不在 MVP 內代理付款、保證座位或處理退款。
 
@@ -342,7 +342,7 @@ bright 等初始程度對應的區間由人工錨點及設定定義；未校準�
 
 ### 12.1 來源及更新
 
-- 不接 Google API，不將 Google Maps／Places／搜尋摘要／Takeout 衍生內容寫入場地資料、標籤、訓練或索引。貼上的 Google live adapter 建議未被採用。
+- Google API 只作即時查詢與展示；不將 Google Maps／Places／搜尋摘要／Takeout 衍生內容寫入場地資料、標籤、訓練或索引。
 - Place ID 是上述保存限制的窄例外：只可保存為 optional `google_place_id`，不得連帶保存 Google 回傳的名稱、地址、評論、照片、搜尋結果或依其推導的標籤。MVP 不批次呼叫 Google Text Search 建庫。
 - 採集名單從有授權的開放資料、團隊自有觀察與商家直接提供資料開始；資料集授權、文字、照片、衍生分析及發布權利分開記錄，來源不明先隔離不用。
 - 商家官網可用來核對事實及保留出處，但不得因公開可見就批量轉存全文或照片。主觀宣傳描述只作有限證據，不能當現場體驗已驗證。

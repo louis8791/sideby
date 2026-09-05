@@ -2,7 +2,7 @@
 
 ## 2026-09-05 本輪範圍更新
 
-Google 地圖本機入口為 `/maps-check`：不依賴 Supabase／Gemini，可先填自己的兩把金鑰再人工啟動查詢；Maps JavaScript、Places (New)、Routes 與獨立 Geocoding 直接連 Google。空值、配額／授權失敗、未知交通均不得假裝成功。本輪交付止於憑證輸入，真實服務、公開部署與主流程未驗收；細節見 `docs/GOOGLE_MAPS_LOCAL_SETUP.md`。
+Google 地圖本機入口為 `/maps-check`：不依賴 Supabase／Gemini，可填自己的兩把金鑰再人工啟動查詢；Maps JavaScript、Places (New)、Routes 與獨立 Geocoding 直接連 Google。2026-09-05 已在本機完成四項單次真實服務驗收；空值、配額／授權失敗、未知交通仍不得假裝成功。公開部署、首頁雙人流程與手機尚未驗收；細節見 `docs/GOOGLE_MAPS_LOCAL_SETUP.md`。
 
 使用者已指定 `louis8791/sideby` 為三人唯一共同 Repo：Lovable 前端在 `frontend/`，現有後端／資料庫維持根目錄路徑。採 Gemini＋Google Maps API 型 MVP，不排訓練、自管模型或 RAG；需求句作人工核准後的回歸驗收。下方舊模型、零 API 及訓練章節保留為歷史／未來參考，本輪以此更新與 `docs/TEAM_INTEGRATION.md` 為準。
 
@@ -44,9 +44,9 @@ Phase 1 已先完成版本化 JSONL 契約、人工核准欄位、原文證據�
 
 第一版產品分清三種能力：離線分類器辨識需求、RAG 檢索已有場地證據、個人回饋調整門檻。「這間太暗」不會自動重新訓練通用模型。網站以版本化條款與可撤回設定一次取得個人化／模型改進同意，有效期間不逐則重問；個人化記憶、公開評論及模型改進用途分開記錄。
 
-### 不依賴 Google 的場地策略
+### Google 即時展示與自有場地資料分界
 
-不接 Google API，也不把 Maps／Places 評論、照片或搜尋摘要轉入自有 RAG。可使用有適當授權的開放資料、團隊自有觀察、商家直接提供資料；照片、全文重用與訓練權利各自確認，不把官網公開或 Takeout 匯出當作再利用授權。
+Google API 只用於即時查詢與展示，不把 Maps／Places 評論、照片或搜尋摘要轉入自有 RAG。可使用有適當授權的開放資料、團隊自有觀察、商家直接提供資料；照片、全文重用與訓練權利各自確認，不把官網公開或 Takeout 匯出當作再利用授權。
 
 `google_place_id` 是唯一可長期保存的 Google 識別欄位，且為 optional。Sideby 不保存由 Google 取得的商家名稱、地址、評論、照片、搜尋結果或衍生標籤；推薦卡片、排序與理由一律使用自有／授權資料。使用者需要 Google 的即時詳情時，按「在 Google Maps 查看」跳到外部 Google Maps；系統以自有／授權的場地名稱與 Place ID 即時組成 URL，不需 API key，也不產生本專案的 GMP API 計費請求。MVP 不以批次 Google Text Search 建庫。
 
