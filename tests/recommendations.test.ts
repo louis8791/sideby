@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import { parseWithRuleBaseline } from '../src/model/preference-query';
 import { applyBrightPreferenceDelta } from '../src/model/preference-learning';
 import { composeItineraries, materiallyDifferent, publicItinerarySchema } from '../src/recommendations/engine';
+import { showcaseDatasetVersion, showcaseExecutionSlots, showcaseMatrixVersion, showcaseRecords, showcaseTravelLegs } from '../src/recommendations/showcase-data';
 import {
   recommendationLegs, recommendationParserOutputs, recommendationSessionId as sessionId,
   recommendationShared as shared, recommendationSlot, recommendationVenues,
@@ -89,6 +90,26 @@ test('composer returns three schema-valid, diverse and hard-valid itineraries', 
   for (let i = 0; i < result.length; i++) for (let j = i + 1; j < result.length; j++) {
     assert.equal(materiallyDifferent(result[i], result[j]), true);
   }
+});
+
+test('frontend showcase places flow through backend generation with Google Place IDs', () => {
+  const records = showcaseRecords();
+  const slots = showcaseExecutionSlots('2026-10-10');
+  const byVenue = new Map(records.map(record => [record.venueId, record]));
+  const result = composeItineraries({
+    sessionId, version: 3,
+    shared: { ...shared, stops: 3, budgetTwdTotal: 2200,
+      dietaryRequirements: [], allergensToAvoid: [], accessibilityRequirements: [] },
+    parserOutputs,
+    venues: slots.map(execution => ({ record: byVenue.get(execution.venueId), execution })),
+    legs: showcaseTravelLegs(), dataMode: 'synthetic_demo',
+    datasetVersion: showcaseDatasetVersion, routeMatrixVersion: showcaseMatrixVersion,
+    now: new Date('2026-10-10T02:00:00Z'),
+  });
+  assert.equal(result.length, 3);
+  assert.ok(result.every(plan => plan.stops.length === 3));
+  assert.ok(result.every(plan => plan.stops.every(stop => stop.google_place_id && stop.google_maps_url.includes('query_place_id='))));
+  assert.ok(result.every(plan => plan.dataset_version === showcaseDatasetVersion));
 });
 
 test('sponsorship never changes CoupleScore', () => {

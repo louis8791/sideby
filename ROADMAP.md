@@ -4,7 +4,7 @@
 
 - 已完成：PR #4 合併 `main`（`16cfd04`）；Railway GitHub source、自動部署、PostgreSQL reference、migration、健康檢查與 8080 對外埠上線；Cloudflare Worker、兩個 production origin 與 Google server secret 上線。Railway 直接 API 與 Cloudflare 同源 `/api/runtime` 均回 200，匿名身分經公開前端代理回 201。
 - 已完成：`npm run check:all` 通過 47 根＋15 Maps／proxy 測試，GitHub checks 全綠；公開首頁與 `/maps-check` 回 200，兩把 Google key 均由頁面確認存在，秘密值未輸出或提交。
-- 仍待完成：Google production 實測失敗；實際 key 不在目前登入帳號可見的兩個 Google Cloud 專案中，須由金鑰擁有者替 browser key 加入 partner 與本次 Worker referrer，並核對 Places／Routes／Geocoding API restriction、帳務與配額後重驗。真實 Gemini、核准場地、兩支手機與 Owner gate 仍未通過。
+- 已完成 Maps JavaScript 正式 referrer 與底圖目視；Places／Routes／Geocoding 的 Worker server calls 仍待修正 server key 限制。前端三套既有地點已轉為後端版本化展示資料並保存 Google Place ID；Owner 決定本輪不主打 Gemini。兩支手機與 Owner gate 等功能穩定後再做。
 - 公開基礎 Runtime 已完成，不得回退至舊 main，也不得把部署綠燈升格成 Accepted MVP。
 
 ## 2026-09-05 追加：把可發展性做成可驗證功能
@@ -20,7 +20,7 @@
 | 產品採用驗證 | PLANNED | 探索性 30–50 對大臺北伴侶；定案時間、雙方完成率、限制漏接、實際出門、30 日再用；不是統計代表性承諾 |
 | RAG／訓練／跨城市／商家平台 | DEFERRED | 先驗本地資料、權利、使用需求與成本；不得列成現成能力 |
 
-Railway＋PostgreSQL 後端與 Cloudflare 前端已完成公開部署及基本 HTTPS／同源代理驗證。下一步只處理未通過的 Google 正式金鑰歸屬／限制、真實 Gemini、真實場地、兩支實機與 Owner 驗收；不可重做已完成部署。
+Railway＋PostgreSQL 後端與 Cloudflare 前端已完成公開部署及基本 HTTPS／同源代理驗證。下一步只處理 Google server API 限制、展示資料部署與完整單瀏覽器流程；功能穩定後才做兩支實機與 Owner 驗收。Gemini 不屬本輪阻斷。
 
 ## 2026-09-05 本輪最新路徑
 
@@ -30,9 +30,9 @@ Railway＋PostgreSQL 後端與 Cloudflare 前端已完成公開部署及基本 H
 
 使用者指定主 Repo `louis8791/sideby`。`frontend/` 已匯入隊友的 Lovable 前端，根目錄保留既有後端；兩者仍是獨立執行元件。最新分工為使用者主責後端、一人支援後端、一人持續前端細修。黑客松可保留固定邀請碼與範例行程，只要清楚標示 demo／synthetic 且不掩蓋真實失敗；Manus 只增指定元件。
 
-本輪採 Gemini＋Google Maps 的 API 型 MVP；訓練、自管生成、Embedding 與 RAG 均為 `DEFERRED`，不屬目前主線前置條件。進階需求句只作人工核准後的回歸驗收。最新 Lovable 主畫面已串根後端核心流程並通過本機 synthetic runtime；這不代表真實 Gemini、真實場地、兩支手機或公開網域已驗收。最新分工與驗收界線見 `docs/TEAM_INTEGRATION.md`。
+本輪採 Google Maps＋確定性規則 MVP；Gemini、訓練、自管生成、Embedding 與 RAG 均為 `DEFERRED`。前端三套既有路線改由後端版本化展示資料生成與保存，Google 僅保存 Place ID 並即時載入詳情；兩支手機與公開完整流程仍待驗。
 
-Owner 已將 Gemini MVP 固定為三個接點，不新增頂層 Phase：私密需求送出後產生偏好 JSON；約會後評論產生待本人確認的候選標籤；合法推薦完成後只改寫 public allowlist 安全理由。三者只在明確送出／完成事件呼叫，不在 keypress、地圖或輪詢呼叫；API key 僅在伺服器。依 Google [Gemini API Terms](https://ai.google.dev/gemini-api/terms)／[Billing](https://ai.google.dev/gemini-api/docs/billing)，免費／未付費 API 只用合成或非敏感展示，真實私密輸入須改用連結有效帳務的 API 專案並完成告知／同意。需求 adapter 已接主流程但尚未用真實金鑰驗收；評論與理由兩項仍未實作。
+Gemini 三接點契約保留為未來選項，但 Owner 已決定本輪不主打、不配置、不列入完成條件；前端未勾選時使用本機規則，不能宣稱 Gemini 已完成。
 
 現場協作入口：`docs/TEAM_INTEGRATION.md`。所有人從同一主 Repo 的最新 `main` 開自己的 feature 分支；前端負責 `frontend/` 與應用 API 串接，後端負責根 API、資料、權限及決策規則。本輪不增加新的頂層 Phase，維持下列八階段。
 
@@ -43,7 +43,7 @@ Owner 已將 Gemini MVP 固定為三個接點，不新增頂層 Phase：私密�
 跨階段固定邊界：
 
 - Sideby 是雙人私密需求共決策產品，不是地點清單或單人行程產生器。
-- 本輪採 Gemini＋Google Maps；自管生成、Embedding、RAG 及訓練為 DEFERRED。外部解析要驗同意、隱私、schema 與失敗狀態，不以固定範例假裝成功。
+- 本輪採 Google Maps＋確定性規則；Gemini、自管生成、Embedding、RAG 及訓練均為 DEFERRED，不以固定範例假裝外部服務成功。
 - 不以 Google Places／Maps API 或批次 Google Text Search 建庫。唯一可長期保存的 Google 識別欄位是 optional `google_place_id`。
 - Google 衍生的名稱、地址、評論、照片、搜尋結果與標籤不得進持久層、RAG、Embedding、訓練或評測；推薦、排序與公開理由只用自有、合作方授權或合規開放資料。
 - 硬限制、雙人公平計分、行程組合、局部重排與最終合法性由確定性程式負責；模型只做受控解析與公開文字改寫。
@@ -63,10 +63,10 @@ Owner 已將 Gemini MVP 固定為三個接點，不新增頂層 Phase：私密�
 |---|---|---|---|---|
 | 1 | 契約、資料治理與驗收基線 | 完成（文件／契約層） | 無 | Phase 2～4 可依契約並行 |
 | 2 | 匿名雙人房間與共享狀態 | 部分完成（公開 API／代理已通；雙手機待驗） | Phase 1 | 前端串接可與 Phase 3、4 並行 |
-| 3 | 條款、私密輸入與 Gemini 需求解析 | 部分完成（主流程＋規則 fallback；真實 Gemini 未驗） | Phase 1、2 | 既有規則基準可作 fallback／對照 |
-| 4 | 場地資料與 Google Maps 整合基礎 | 部分完成（本機四 API PASS；production 四項 FAIL） | Phase 1 | 資料政策與外部服務接線可分工 |
-| 5 | 雙人推薦與三套可執行行程 | 部分完成（合成資料後端；Gemini 安全理由待接） | Phase 2～4 | 公開理由只能在合法行程後並行 |
-| 6 | 局部重排、私人清單與回饋治理 | 部分完成（Gemini 評論候選標籤待接） | Phase 1、2；重排依 Phase 5 | 私人清單／內容治理可先行 |
+| 3 | 條款、私密輸入與需求解析 | 本輪完成（結構化選項＋規則；Gemini DEFERRED） | Phase 1、2 | Gemini 可日後另驗 |
+| 4 | 場地資料與 Google Maps 整合基礎 | 部分完成（展示資料已接；Maps JS production PASS，三項 server API 待修） | Phase 1 | 資料政策與外部服務接線可分工 |
+| 5 | 雙人推薦與三套可執行行程 | 部分完成（前端三套地點已接後端生成／保存；部署 Runtime 待驗） | Phase 2～4 | 公開理由使用確定性安全模板 |
+| 6 | 局部重排、私人清單與回饋治理 | 部分完成（重排已接；進階評論治理延後） | Phase 1、2；重排依 Phase 5 | 私人清單／內容治理可先行 |
 | 7 | 手機整合、外部跳轉與誠實降級 | 部分完成（公開 Worker／同源 API 已通；手機待驗） | Phase 2～6 | 前端負責串接，後端提供契約與修正 |
 | 8 | 端到端、效能、隱私與 Owner 驗收 | 部分完成（自動＋本機 Runtime 證據） | Phase 7 | 底層證據不能取代完整驗收 |
 

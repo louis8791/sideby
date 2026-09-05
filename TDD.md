@@ -6,7 +6,7 @@
 - 帶 body 的 API 請求在 Origin／設定檢查早退時，`rejectRequest` 以 `pipeTo(new WritableStream())` 完整消耗串流，不轉送／記錄內容；cancel-only 在本機 workerd 仍會造成下一請求 500 與 ProxyWorker 結束，不可當修復。
 - `google-maps.test.mjs` 驗 403／503 早退讀到 EOF 且零 outbound fetch；`check-frontend-proxy.mjs` 真正驗重複拒絕後仍可 API／Bearer／SSE，最後首頁與建置資源仍可讀。2026-09-05：47 根＋15 Maps／proxy 測試、前端 typecheck／build、本機 workerd 與 GitHub PR checks 通過。
 - Railway 根服務連 PostgreSQL，啟動 migration 完成後由 Next 使用平台 `PORT=8080`；Railway public domain 的 target port 必須同為 8080，不能沿用本機 3000。健康路徑 `/api/runtime`、直接匿名建立與 Cloudflare 同源代理均已公開回應成功。
-- Cloudflare Worker 為 `louis8791-sideby-frontend`，正式 `SIDEBY_API_ORIGIN` 指向 Railway、`SIDEBY_PUBLIC_ORIGIN` 指向 Worker 本身；Google server key 只以 secret 上傳。公開 `/maps-check` 驗出 browser/server key 存在，但 Google production 四服務未通過，故正式 Google 仍為 failed verification，不得用本機 PASS 取代。
+- Cloudflare Worker 為 `louis8791-sideby-frontend`，正式 `SIDEBY_API_ORIGIN` 指向 Railway、`SIDEBY_PUBLIC_ORIGIN` 指向 Worker 本身；Google server key 只以 secret 上傳。公開 `/maps-check` 已目視通過 Maps JavaScript 底圖，Places／Routes／Geocoding 的 Worker server calls 仍失敗，正式 Google 維持部分通過。
 
 ## 2026-09-05 環境契約與可延續架構
 
@@ -29,9 +29,9 @@ Google 接線：`frontend/src/lib/google-maps.server.ts` 使用官方 Places／R
 
 開發 `/api/*` 經前端 Vite 代理轉至根後端；正式 TanStack Worker 入口也以 `SIDEBY_API_ORIGIN` 轉送同來源 `/api/*`，保留 Authorization／SSE、驗瀏覽器 Origin，並把 Origin 改為根 API 自身 Origin 供後端守門。未設定或非 HTTPS 目標即回 503。最新主畫面以根 API 的匿名 Bearer 身分完成房間、共享、私密、確認、生成、反應／重排、定案與回饋；Supabase 只是可選帳號功能，不是根 API 身分來源。
 
-根後端正式啟動入口為 `npm start`：`prestart` 先以 advisory lock 冪等執行 PostgreSQL migrations，Next 再綁 `0.0.0.0` 並使用平台 `PORT`。本機隔離資料庫仍只走 `dev:local`／`demo:local`，正式環境不得自動 seed synthetic 資料。
+根後端正式啟動入口為 `npm start`：`prestart` 先以 advisory lock 冪等執行 PostgreSQL migrations，再載入版本化 `sideby-showcase-*` 黑客松展示資料，Next 才綁 `0.0.0.0` 並使用平台 `PORT`。展示資料必須維持 `synthetic_demo`，不得冒充即時價格、營業狀態或正式商家核准資料；未來切換真實資料集時須先移除此 seed。
 
-本輪選 Gemini＋Google Maps，外部服務取代自行訓練／自管模型／RAG 的排程；不因匯入而宣稱已接根後端。下方自管／零 API／訓練工作包是歷史／延後參考，保留已有測試與資料守門。外部解析需有效同意、輸出驗證、私密出口隔離及誠實失敗；既有基準零呼叫不代表整合前端也零呼叫。
+本輪主線選 Google Maps＋確定性規則；Owner 不主打 Gemini。Gemini、自行訓練／自管模型／RAG 均延後，既有 adapter 與資料守門保留但不列入提交 gate。
 
 黑客松 UI 可保留固定邀請碼與範例行程。範例必須有獨立 demo／synthetic 狀態；真正 API 呼叫一旦失敗，只能顯示失敗或不可用，不得切換範例並沿用成功狀態。這項 cut 不降低後端權限、私密隔離與輸出驗證。
 
@@ -170,7 +170,9 @@ MVP 採模組化單體，不拆微服務。以 React、Next.js、TypeScript、Se
 
 `private_remembered` 只在當期條款有效且 `personalization_enabled=true` 時接受；關閉設定時，既有 session_inputs visibility 與 parsed result visibility 一併降為 `private_session`。原始私密輸入不會因 `model_improvement_opt_in` 自動進 training candidate 或共用索引。
 
-### 4.3 Gemini MVP 三接點契約
+### 4.3 Gemini 延後三接點契約
+
+本節保留未來接線邊界；2026-09-05 Owner 決定本輪不主打 Gemini，真實 Gemini 與三接點驗收不阻擋本輪黑客松提交。
 
 Gemini adapter 一律在伺服器執行，`GEMINI_API_KEY` 不得使用 `VITE_` 前綴或出現在 bundle、請求回應、一般日誌與 Git。模型名稱與 prompt／schema 版本須可追蹤；日誌只記 request id、用途、模型版本、schema 版本、狀態、延遲與 token／錯誤分類，不記輸入、輸出、API key 或供應商原始錯誤本文。免費／未付費 API 只接受合成或非敏感輸入；真實私密偏好須使用連結有效帳務的 API 專案並完成告知／同意。此規則依 Google [Gemini API Terms](https://ai.google.dev/gemini-api/terms)／[Billing](https://ai.google.dev/gemini-api/docs/billing)，查核日 2026-09-05，部署前重查。
 
