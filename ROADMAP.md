@@ -2,9 +2,10 @@
 
 ## 2026-09-05 部署接續
 
-- 已完成：修復 `.output` Worker preview、固定 Wrangler 與 deploy 入口、拒絕 POST body 完整消耗；62 項測試、前端 typecheck／build、部署 dry-run、本機 Worker API／SSE／首頁及 10 個建置資源通過。
-- 仍待完成：Railway 的 Sideby GitHub App 連線與 PostgreSQL／後端服務、Cloudflare 部署 OAuth／公開 Worker、平台環境欄位及 HTTPS 驗收。平台網頁已由 Owner 登入，但登入不等於部署工具或 repo 已授權；不索取密碼／key，不動其他專案服務。
-- 公開部署前仍須核對分支／遠端；本機已完成內容不得丟棄或回退至舊 main。真實資料、兩手機與 Owner gate 不因建置或授權成功而升為 PASS。
+- 已完成：PR #4 合併 `main`（`16cfd04`）；Railway GitHub source、自動部署、PostgreSQL reference、migration、健康檢查與 8080 對外埠上線；Cloudflare Worker、兩個 production origin 與 Google server secret 上線。Railway 直接 API 與 Cloudflare 同源 `/api/runtime` 均回 200，匿名身分經公開前端代理回 201。
+- 已完成：`npm run check:all` 通過 47 根＋15 Maps／proxy 測試，GitHub checks 全綠；公開首頁與 `/maps-check` 回 200，兩把 Google key 均由頁面確認存在，秘密值未輸出或提交。
+- 仍待完成：Google production 實測失敗；實際 key 不在目前登入帳號可見的兩個 Google Cloud 專案中，須由金鑰擁有者替 browser key 加入 partner 與本次 Worker referrer，並核對 Places／Routes／Geocoding API restriction、帳務與配額後重驗。真實 Gemini、核准場地、兩支手機與 Owner gate 仍未通過。
+- 公開基礎 Runtime 已完成，不得回退至舊 main，也不得把部署綠燈升格成 Accepted MVP。
 
 ## 2026-09-05 追加：把可發展性做成可驗證功能
 
@@ -19,7 +20,7 @@
 | 產品採用驗證 | PLANNED | 探索性 30–50 對大臺北伴侶；定案時間、雙方完成率、限制漏接、實際出門、30 日再用；不是統計代表性承諾 |
 | RAG／訓練／跨城市／商家平台 | DEFERRED | 先驗本地資料、權利、使用需求與成本；不得列成現成能力 |
 
-原先下一步 Railway＋PostgreSQL 後端、Cloudflare 前端部署順序不變；登入由 Owner 操作，之後仍需 HTTPS／同源代理、真實 Gemini、兩支實機與 Owner 驗收。本輪先交付本機 feature 分支，不自動發布至 main 或雲端。
+Railway＋PostgreSQL 後端與 Cloudflare 前端已完成公開部署及基本 HTTPS／同源代理驗證。下一步只處理未通過的 Google 正式金鑰歸屬／限制、真實 Gemini、真實場地、兩支實機與 Owner 驗收；不可重做已完成部署。
 
 ## 2026-09-05 本輪最新路徑
 
@@ -54,19 +55,19 @@ Owner 已將 Gemini MVP 固定為三個接點，不新增頂層 Phase：私密�
 - `部分完成`：已有可執行交付或相應測試，但仍缺必要功能或較高層驗收。
 - `未開始`：只有需求、schema、fixture 或測試計畫，沒有對應可執行功能。
 
-2026-09-05 本輪工作以 `main` 的 `d54d038` 為基底並匯入隊友前端 `c9b4925`。根後端已有匿名房間、私密輸入、合成三套推薦、reaction／locked／局部重排／定案與本人 `too_dark` 偏好更新；最新 Lovable 主畫面已用同一匿名身分串接這些 API。`npm run check:all` 通過 44 項根測試、14 項 Maps／代理測試、前端 typecheck 與 client／SSR／Cloudflare build；另有前端代理 Runtime PASS。Google 四項本機真實檢查已通過；真實 Gemini、真實場地、兩支實體手機、正式部署及 Owner 驗收仍未完成。
+2026-09-05 功能由 PR #4 合併到 `main` `16cfd04`。根後端已有匿名房間、私密輸入、合成三套推薦、reaction／locked／局部重排／定案與本人 `too_dark` 偏好更新；最新主畫面以同一匿名身分串接這些 API。`npm run check:all` 通過 47 根測試、15 Maps／代理測試、前端 typecheck 與 client／SSR／Cloudflare build；GitHub checks 與公開 Railway／Cloudflare 基礎 Runtime PASS。Google 四項本機真實檢查曾通過，但 production 因 key 歸屬／限制未通過；真實 Gemini、真實場地、兩支實體手機及 Owner 驗收仍未完成。
 
 舊 `phase3-itineraries` 的 19 檔候選已以遠端 `archive/phase3-itineraries-checkpoint-20260905`／`63cfe6c` 保存，狀態為 `PRESERVED_NOT_ADOPTED`。它不能直接刪除，也不能因被保存就視為 main 已完成；後端支援者若要取用，須逐項比對後另開採用 commit。
 
 | Phase | 名稱 | 目前狀態 | 主要依賴 | 可平行資訊 |
 |---|---|---|---|---|
 | 1 | 契約、資料治理與驗收基線 | 完成（文件／契約層） | 無 | Phase 2～4 可依契約並行 |
-| 2 | 匿名雙人房間與共享狀態 | 部分完成（主畫面本機串接；雙手機／正式網域待驗） | Phase 1 | 前端串接可與 Phase 3、4 並行 |
+| 2 | 匿名雙人房間與共享狀態 | 部分完成（公開 API／代理已通；雙手機待驗） | Phase 1 | 前端串接可與 Phase 3、4 並行 |
 | 3 | 條款、私密輸入與 Gemini 需求解析 | 部分完成（主流程＋規則 fallback；真實 Gemini 未驗） | Phase 1、2 | 既有規則基準可作 fallback／對照 |
-| 4 | 場地資料與 Google Maps 整合基礎 | 部分完成（本機四 API PASS；production 守門已建，公開部署未驗） | Phase 1 | 資料政策與外部服務接線可分工 |
+| 4 | 場地資料與 Google Maps 整合基礎 | 部分完成（本機四 API PASS；production 四項 FAIL） | Phase 1 | 資料政策與外部服務接線可分工 |
 | 5 | 雙人推薦與三套可執行行程 | 部分完成（合成資料後端；Gemini 安全理由待接） | Phase 2～4 | 公開理由只能在合法行程後並行 |
 | 6 | 局部重排、私人清單與回饋治理 | 部分完成（Gemini 評論候選標籤待接） | Phase 1、2；重排依 Phase 5 | 私人清單／內容治理可先行 |
-| 7 | 手機整合、外部跳轉與誠實降級 | 部分完成（主畫面本機 synthetic 流程已串） | Phase 2～6 | 前端負責串接，後端提供契約與修正 |
+| 7 | 手機整合、外部跳轉與誠實降級 | 部分完成（公開 Worker／同源 API 已通；手機待驗） | Phase 2～6 | 前端負責串接，後端提供契約與修正 |
 | 8 | 端到端、效能、隱私與 Owner 驗收 | 部分完成（自動＋本機 Runtime 證據） | Phase 7 | 底層證據不能取代完整驗收 |
 
 ## Phase 1 — 契約、資料治理與驗收基線
@@ -119,7 +120,7 @@ Owner 已將 Gemini MVP 固定為三個接點，不新增頂層 Phase：私密�
 
 ### 目前狀態
 
-`部分完成（主畫面本機串接）`。根後端已有匿名身分、邀請、兩人上限、共享條件、版本、確認、GET／SSE 與重連，並有 PostgreSQL／HTTP 測試。最新主畫面以根 Bearer 身分建立／加入真正房間並輪詢同步共享狀態；正式 proxy 另保留 Authorization／SSE。兩支實體手機、跨網路重連、正式 HTTPS、憑證撤銷／刪除及濫用防護尚未驗收。
+`部分完成（公開 API／代理已通）`。根後端已有匿名身分、邀請、兩人上限、共享條件、版本、確認、GET／SSE 與重連，並有 PostgreSQL／HTTP 測試。Railway 正式 HTTPS 與 Cloudflare 同源 proxy 已回應 runtime／匿名身分；主畫面以根 Bearer 身分建立／加入真正房間並輪詢共享狀態。兩支實體手機、跨網路重連、憑證撤銷／刪除及濫用防護尚未驗收。
 
 ### 相依／可平行
 
@@ -179,7 +180,7 @@ Owner 已將 Gemini MVP 固定為三個接點，不新增頂層 Phase：私密�
 
 ### 目前狀態
 
-`部分完成（本機四 API PASS；production 守門已建）`。已有 venue-record schema、來源／權利／審核政策守門、版本化場地／交通矩陣、optional `google_place_id` 與 Maps URL builder。2026-09-05 `/maps-check` 已用真實服務通過四 API；production 只允許設定的同來源 HTTPS 網域。主畫面只有根場地資料帶明確 Place ID 才取 Google 即時詳情；合成名稱不做文字搜尋、不誤配真實商家，也不回存 Google 資料。正式網域、配額與手機仍未驗。
+`部分完成（本機四 API PASS；production 四項 FAIL）`。已有 venue-record schema、來源／權利／審核政策守門、版本化場地／交通矩陣、optional `google_place_id` 與 Maps URL builder。正式 Worker 已設定同來源 HTTPS 與兩把 key，但實測底圖來源授權錯誤、Places／Routes／Geocoding 未通過；實際 key 不在目前登入帳號可見專案。主畫面只有根場地資料帶明確 Place ID 才取 Google 即時詳情；合成名稱不做文字搜尋、不誤配真實商家，也不回存 Google 資料。待 key 擁有者修正限制、配額並重驗。
 
 ### 相依／可平行
 
@@ -266,7 +267,7 @@ Owner 已將 Gemini MVP 固定為三個接點，不新增頂層 Phase：私密�
 
 ### 目前狀態
 
-`部分完成（主畫面本機 synthetic 流程已串）`。`frontend/` 已納入主 Repo，匿名建立／加入房間、共享條件、本人私密需求、雙方確認、三套後端行程、反應／重排、finalize 與本人偏好回饋已接根 API；production Worker 也有同源 `/api` proxy。合成場地不會用名稱誤配真實 Google 商家，畫面明示 synthetic 且不顯示真實商家評分／照片。真實 Gemini、真實場地、兩支實體手機、正式網域及 Owner 驗收仍未完成。
+`部分完成（公開 Worker／同源 API 已通）`。`frontend/` 已納入主 Repo，匿名建立／加入房間、共享條件、本人私密需求、雙方確認、三套後端行程、反應／重排、finalize 與本人偏好回饋已接根 API；production Worker 的同源 `/api` proxy 已用 runtime 與匿名身分驗證。合成場地不會用名稱誤配真實 Google 商家，畫面明示 synthetic 且不顯示真實商家評分／照片。真實 Gemini、真實場地、兩支實體手機、Google production 及 Owner 驗收仍未完成。
 
 ### 相依／可平行
 

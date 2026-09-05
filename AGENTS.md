@@ -1,10 +1,13 @@
 # Sideby 專案規則
 
-## 2026-09-05 部署 Runtime 守門
+## 2026-09-05 公開部署 Runtime 狀態
 
 - 前端正式產物是 Nitro Cloudflare Worker；`frontend/` 的 `npm run preview` 使用固定版本 Wrangler 4.129.0 執行 `.output/server/wrangler.json`，不是 Node／純靜態 preview。`npm run deploy` 使用同一產物並保留平台 vars。
 - API proxy 拒絕帶 body 的請求時，須以串流完整讀至 EOF 後回原 403／503；不緩衝、不轉送、不記錄拒絕內容，不能只取消 body。Node 測試加上真正 workerd 的連續拒絕／正常請求、SSE、首頁與資源驗收，禁止放寬來源檢查掩蓋錯誤。
-- 本機 47 根測試＋15 Maps／proxy 測試與 Worker Runtime 已通過；公開 Railway／PostgreSQL／Cloudflare 仍待部署授權與實際 HTTPS 驗收。登入、OAuth 授權、帳務與秘密由 Owner 操作，不索取值；詳見交接及部署文件。
+- PR #4 已合併至 `main`（merge `16cfd04`）。Railway `chic-bravery` 的 PostgreSQL 與根 Next.js 服務已上線；`DATABASE_URL` 使用資料庫 reference，健康路徑為 `/api/runtime`，公開網域指向實際 `PORT=8080`。`https://sideby-production.up.railway.app/api/runtime` 已回 200／`standard`。
+- Cloudflare Worker `https://louis8791-sideby-frontend.louis8791.workers.dev` 已部署；`SIDEBY_API_ORIGIN`、`SIDEBY_PUBLIC_ORIGIN` 與 Google server secret 已設，首頁、`/maps-check`、同源 `/api/runtime` 回 200，經代理建立匿名身分回 201。秘密值未輸出或提交。
+- `npm run check:all` 通過 47 根測試＋15 Maps／proxy 測試，GitHub PR checks 全綠。這證明公開基礎 Runtime，不等於真實場地、Gemini、Google 正式金鑰限制、雙手機或 Owner 驗收。
+- 正式 `/maps-check` 顯示兩把 Google key 存在，但實際檢查只有 Maps JavaScript 程式載入；底圖回報授權錯誤，Places／Routes／Geocoding 未通過。登入中的 Google 帳號可見兩個專案且都沒有 API key，無法替實際金鑰修改來源限制；須由擁有該金鑰的帳號／專案加入 `https://pairpath-date.dynamic-portfolio-analyzer-worker.workers.dev/*` 與 `https://louis8791-sideby-frontend.louis8791.workers.dev/*`，再重跑驗收。不得冒稱 production Google PASS。
 
 ## 2026-09-05 環境選項、持續發展與需求證據
 

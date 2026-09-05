@@ -1,6 +1,16 @@
 # Sideby 部署與交付
 
-此文件描述現有依賴與驗收步驟，不表示已有公開部署。
+## 2026-09-05 已部署環境
+
+- GitHub：`louis8791/sideby` `main`，產品變更由 PR #4 合併，merge commit `16cfd04`。
+- Railway：專案 `chic-bravery`；根 Next.js 服務連 Railway PostgreSQL，`DATABASE_URL` 使用 reference，自動部署已開啟，健康檢查 `/api/runtime`，public target port 8080。後端：`https://sideby-production.up.railway.app`。
+- Cloudflare：Worker `louis8791-sideby-frontend`；前端：`https://louis8791-sideby-frontend.louis8791.workers.dev`。`SIDEBY_API_ORIGIN` 與 `SIDEBY_PUBLIC_ORIGIN` 已設定，`GOOGLE_MAPS_SERVER_API_KEY` 由 Worker secret 保存；瀏覽器 key 僅在前端 build 中使用。
+- 公開驗證：Railway 與 Cloudflare `/api/runtime` 均回 200／`standard`；Cloudflare 首頁與 `/maps-check` 回 200；匿名身分經同源代理回 201 且具有 token／expiry。未 seed production synthetic 資料。
+- Google production 驗證未通過：Maps JavaScript 程式載入，但底圖顯示授權錯誤，Places／Routes／Geocoding 失敗。實際兩把 key 不在目前登入帳號可見專案的憑證清單；需由 key 擁有者加入 `https://pairpath-date.dynamic-portfolio-analyzer-worker.workers.dev/*` 與 `https://louis8791-sideby-frontend.louis8791.workers.dev/*`，並確認 server key 只允許三項 server API 後重跑 `/maps-check`。
+
+以上是公開基礎 Runtime 證據，不含真實 Gemini、真實場地、兩支手機或 Owner sign-off。
+
+下方保留重建步驟；不能因已有部署而省略秘密、資料與驗收邊界。
 
 ## 乾淨下載與本機
 

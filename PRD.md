@@ -1,8 +1,10 @@
 # Sideby — MVP PRD
 
-## 2026-09-05 部署準備狀態
+## 2026-09-05 公開部署狀態
 
-本輪只修正式前端產物的本機執行與部署入口，不增加產品功能。Worker 已在本機通過同源 API、匿名房間、Bearer、SSE、連續跨來源拒絕與首頁資源測試；這不是公開部署或真實場地驗收。Railway／PostgreSQL、Cloudflare 公開入口、真實 Gemini、兩支實機與 Owner 驗收仍須分別完成。
+PR #4 已合併至 `main`（`16cfd04`）。Railway PostgreSQL 與根 Next.js 已公開，`/api/runtime` 回 200／`standard`；Cloudflare Worker `https://louis8791-sideby-frontend.louis8791.workers.dev` 已設定正式 API／public origins 與 Google server secret，首頁、地圖檢查頁、同源 API 與匿名身分建立已通過公開 HTTPS 驗證。47 根＋15 Maps／proxy 測試及 GitHub checks 全綠。
+
+正式 Google 檢查尚未通過：Maps JavaScript 程式可載入，但底圖因來源授權失敗，Places／Routes／Geocoding 也被拒絕。登入帳號可見的兩個 Google Cloud 專案都沒有這兩把 API key，故無法替實際金鑰新增正式 referrer；須由金鑰擁有者加入 partner 與本次 Worker 網址後重驗。真實 Gemini、真實核准場地、兩支實機與 Owner 驗收仍各自未完成，公開部署不得被寫成 Accepted MVP。
 
 ## 2026-09-05 補充：34 選項與持續發展
 
@@ -48,7 +50,7 @@ Google 地圖入口為 `/maps-check`：不依賴 Supabase／Gemini，可填自�
 
 舊 `phase3-itineraries` 的 19 檔推薦候選已在遠端 archive branch／commit `63cfe6c` 保存。尚未決定採用，也不構成目前產品完成證據；正式納入前須依本 PRD 的現行 Gemini＋Google API cut、隱私與資料邊界逐項審查。
 
-目標是正式網址能完成雙人核心流程，並提供可重建程式碼與環境說明。最新 Lovable 主畫面已接根後端的匿名房間、邀請碼、共享條件、私密需求、雙方確認、合成三套行程、反應／重排、定案與本人偏好回饋；私密原文仍互不可見，硬限制、權限與定案由後端驗證。這是本機整合證據，不等於 Supabase、真實 Gemini、真實場地、公開部署或雙裝置已驗收。
+正式網址已完成 Railway／PostgreSQL／Cloudflare 基礎部署與 runtime／匿名身分驗證，並提供可重建程式碼與環境說明。最新主畫面已接根後端的匿名房間、邀請碼、共享條件、私密需求、雙方確認、合成三套行程、反應／重排、定案與本人偏好回饋；私密原文仍互不可見，硬限制、權限與定案由後端驗證。這不等於 Supabase、真實 Gemini、真實場地、Google production、雙裝置或 Owner 已驗收。
 
 ### Gemini MVP 三個接點（2026-09-05 Owner 決定）
 

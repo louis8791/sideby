@@ -1,10 +1,12 @@
 # Sideby — MVP TDD
 
-## 2026-09-05 Worker 執行契約
+## 2026-09-05 公開 Worker／Railway 執行契約
 
 - `frontend/package.json` 固定 Wrangler 4.129.0；preview／deploy 均讀 Nitro `.output/server/wrangler.json`，保留 generated `no_bundle` 與 assets。deploy 加 `--keep-vars`，避免重部署清掉 Dashboard 的一般環境變數；server secrets 仍由平台保存。
 - 帶 body 的 API 請求在 Origin／設定檢查早退時，`rejectRequest` 以 `pipeTo(new WritableStream())` 完整消耗串流，不轉送／記錄內容；cancel-only 在本機 workerd 仍會造成下一請求 500 與 ProxyWorker 結束，不可當修復。
-- `google-maps.test.mjs` 驗 403／503 早退讀到 EOF 且零 outbound fetch；`check-frontend-proxy.mjs` 真正驗重複拒絕後仍可 API／Bearer／SSE，最後首頁與建置資源仍可讀。2026-09-05：47 根＋15 Maps／proxy 測試、前端 typecheck／build 及本機 workerd 通過；正式 Cloudflare Runtime 仍待驗。
+- `google-maps.test.mjs` 驗 403／503 早退讀到 EOF 且零 outbound fetch；`check-frontend-proxy.mjs` 真正驗重複拒絕後仍可 API／Bearer／SSE，最後首頁與建置資源仍可讀。2026-09-05：47 根＋15 Maps／proxy 測試、前端 typecheck／build、本機 workerd 與 GitHub PR checks 通過。
+- Railway 根服務連 PostgreSQL，啟動 migration 完成後由 Next 使用平台 `PORT=8080`；Railway public domain 的 target port 必須同為 8080，不能沿用本機 3000。健康路徑 `/api/runtime`、直接匿名建立與 Cloudflare 同源代理均已公開回應成功。
+- Cloudflare Worker 為 `louis8791-sideby-frontend`，正式 `SIDEBY_API_ORIGIN` 指向 Railway、`SIDEBY_PUBLIC_ORIGIN` 指向 Worker 本身；Google server key 只以 secret 上傳。公開 `/maps-check` 驗出 browser/server key 存在，但 Google production 四服務未通過，故正式 Google 仍為 failed verification，不得用本機 PASS 取代。
 
 ## 2026-09-05 環境契約與可延續架構
 
@@ -21,7 +23,7 @@
 
 跨對話接續先讀 `docs/NEXT_SESSION_HANDOFF.md`，再用目前 Git、環境欄位存在性、測試與 Runtime 重驗；交接記錄不是部署或外部服務成功證據。
 
-Google 接線：`frontend/src/lib/google-maps.server.ts` 使用官方 Places／Routes／Geocoding REST；`maps.functions.ts` 在 development 檢查 loopback＋同 Origin，在 production 只接受 `SIDEBY_PUBLIC_ORIGIN` 指定的同來源 HTTPS 請求。瀏覽器 loader 只用 `VITE_GOOGLE_MAPS_API_KEY`，其餘用不同 `GOOGLE_MAPS_SERVER_API_KEY`。無全域 Places／照片快取；照片保留作者歸屬；逾時／拒絕不洩漏 key／原始錯誤。2026-09-05 本機四項服務已單次驗收成功；正式網域與手機仍分開驗收。
+Google 接線：`frontend/src/lib/google-maps.server.ts` 使用官方 Places／Routes／Geocoding REST；`maps.functions.ts` 在 development 檢查 loopback＋同 Origin，在 production 只接受 `SIDEBY_PUBLIC_ORIGIN` 指定的同來源 HTTPS 請求。瀏覽器 loader 只用 `VITE_GOOGLE_MAPS_API_KEY`，其餘用不同 `GOOGLE_MAPS_SERVER_API_KEY`。無全域 Places／照片快取；照片保留作者歸屬；逾時／拒絕不洩漏 key／原始錯誤。2026-09-05 本機四項服務曾單次驗收成功；正式 Worker 已部署但四項實測未通過，需由實際 key 擁有者修正限制後重驗，手機另行驗收。
 
 唯一主 Repo 為 `louis8791/sideby`。根 Next.js／PostgreSQL 管既有應用狀態；`frontend/` 為 TanStack Start／Vite＋Supabase／Gemini／Google Maps 來源程式，包含獨立伺服器功能，不能當成純靜態網頁。根 npm lockfile、前端 Bun lockfile 各自安裝；根 TypeScript 排除 frontend 及 .local。
 
