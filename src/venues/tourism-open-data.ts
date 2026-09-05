@@ -165,7 +165,8 @@ export function buildTourismVenueBatch(payloads: Record<SourceKey, unknown>, raw
     if (!value || Number.isNaN(new Date(value).valueOf())) throw new Error(`${key}: missing valid UpdateTime`);
     return value;
   });
-  const sourceBundleHash = createHash('sha256').update(
+  // Include mapping revision so new fields are not skipped when upstream data is unchanged.
+  const sourceBundleHash = createHash('sha256').update('tourism-normalization-v2-admission\n').update(
     (Object.keys(tourismSources) as SourceKey[]).map(key => rawPayloads?.[key] ?? JSON.stringify(payloads[key])).join('\n'),
     'utf8',
   ).digest('hex');

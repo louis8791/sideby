@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { createHash } from 'node:crypto';
 import { Pool } from 'pg';
 import { localPostgres } from '../scripts/postgres';
 import { seedShowcase } from '../scripts/seed-showcase';
@@ -14,7 +15,7 @@ const payloads = {
     Attractions: [
       { AttractionID: 'a-1', AttractionName: '臺北測試景點', Description: '授權景點介紹', PositionLat: 25.04, PositionLon: 121.52,
         PostalAddress: { City: '台北市', Town: '中山區', StreetAddress: '測試路1號' }, Telephones: [{ Tel: '02-12345678' }],
-        WebsiteURL: 'https://example.gov.tw/a-1', ServiceTimeInfo: '10:00-18:00' },
+        WebsiteURL: 'https://example.gov.tw/a-1', ServiceTimeInfo: '10:00-18:00', FeeInfo: '門票 120 元' },
       { AttractionID: 'a-2', AttractionName: '範圍外景點', Description: '不匯入', PositionLat: 24.14, PositionLon: 120.68,
         PostalAddress: { City: '臺中市', Town: '西區', StreetAddress: '測試路2號' } },
       { AttractionID: 'a-3', AttractionName: '缺街道景點', Description: '應保留並明示缺值', PositionLat: 25.06, PositionLon: 121.55,
@@ -47,6 +48,14 @@ test('tourism open data creates Taipei/New Taipei draft candidates without infer
   assert.match(batch.records[1]!.location.address, /未提供街道地址/);
   assert.ok(batch.records.every(item => item.sources[0].rightsStatus === 'open_license_verified'));
   assert.ok(batch.records.every(item => !('google_place_id' in item)));
+});
+
+test('normalization revision invalidates old imports while preserving upstream admission evidence', () => {
+  const batch = buildTourismVenueBatch(payloads);
+  const oldHash = createHash('sha256').update(Object.values(payloads).map(value => JSON.stringify(value)).join('\n')).digest('hex');
+  assert.notEqual(batch.sourceBundleHash, oldHash);
+  assert.ok(batch.records.some(record => record.facts.admissionText === '門票 120 元'));
+  assert.equal(batch.sourceBundleHash, buildTourismVenueBatch(payloads).sourceBundleHash);
 });
 
 test('staging is transactional and idempotent without replacing the active dataset', { timeout: 60_000 }, async () => {
